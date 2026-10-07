@@ -65,7 +65,8 @@
 			title="Settings"><Icon name="ph-gear-six" /></a
 		>
 	{/if}
-	{#if service.base_url}
+	<!-- The WireGuard base URL is the Quorum agent, which has no web UI. -->
+	{#if service.base_url && service.kind !== 'wireguard'}
 		<a class="btn btn-primary" href={service.base_url} target="_blank" rel="noreferrer noopener">
 			<Icon name="ph-arrow-square-out" />Open web UI
 		</a>

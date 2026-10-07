@@ -1,4 +1,5 @@
 // Signed-in user and the list of services (drives the sidebar and categories).
+import { alerts } from '#lib/alerts.svelte.js';
 import { api, unwrap, type Me, type ServiceView } from '#lib/api/client.js';
 import { live } from '#lib/live.svelte.js';
 
@@ -33,6 +34,7 @@ class Session {
 	async start(me: Me) {
 		this.me = me;
 		live.start();
+		alerts.start();
 		await this.loadServices().catch(() => {});
 	}
 
@@ -42,6 +44,7 @@ class Session {
 	}
 
 	clear() {
+		alerts.stop();
 		this.me = null;
 		this.services = [];
 		this.servicesLoaded = false;

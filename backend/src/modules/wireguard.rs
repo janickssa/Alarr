@@ -288,7 +288,7 @@ impl ServiceModule for WireguardModule {
             health,
             health_reason: reason,
             response_ms: Some(started.elapsed().as_millis() as u64),
-            version: data.agent_version.as_ref().map(|v| format!("agent {v}")),
+            version: data.agent_version.clone(),
             data: ModuleData::Wireguard(Box::new(data)),
         })
     }
@@ -362,7 +362,7 @@ mod tests {
             panic!()
         };
         assert!(d.agent_installed);
-        assert_eq!(out.version.as_deref(), Some("agent 0.1.0"));
+        assert_eq!(out.version.as_deref(), Some("0.1.0"));
         assert_eq!(d.peers[0].name.as_deref(), Some("phone"));
         assert!(d.peers[0].online && !d.peers[1].online);
         assert_eq!(d.headline().0, "1 of 2 peers online");

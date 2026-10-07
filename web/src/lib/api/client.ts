@@ -45,6 +45,10 @@ export type NpmData = Schemas['NpmData'];
 export type AuthentikData = Schemas['AuthentikData'];
 export type NextcloudData = Schemas['NextcloudData'];
 export type WireguardData = Schemas['WireguardData'];
+export type Alert = Schemas['Alert'];
+export type AlertType = Schemas['AlertType'];
+export type AlertSettingsView = Schemas['AlertSettingsView'];
+export type TypeSettings = Schemas['TypeSettings'];
 export type MediaOverview = Schemas['MediaOverview'];
 
 /** An error response from the API, with the server's message. */

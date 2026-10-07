@@ -1,5 +1,5 @@
 // Live updates over Server-Sent Events (`GET /api/v1/events`), merged into reactive state.
-import type { ActivityEntry, Health, ServiceSnapshot } from '#lib/api/client.js';
+import type { ActivityEntry, Alert, Health, ServiceSnapshot } from '#lib/api/client.js';
 import { connection } from '#lib/connection.svelte.js';
 
 export interface HealthChange {
@@ -14,7 +14,13 @@ export interface ActionEvent {
 	entry: ActivityEntry;
 }
 
+export interface AlertEvent {
+	service_id: string | null;
+	alert: Alert;
+}
+
 type ActionListener = (event: ActionEvent) => void;
+type AlertListener = (event: AlertEvent) => void;
 
 class Live {
 	/** Latest snapshot per service id. */
@@ -28,6 +34,7 @@ class Live {
 
 	#source: EventSource | null = null;
 	#listeners = new Set<ActionListener>();
+	#alertListeners = new Set<AlertListener>();
 	#retry: ReturnType<typeof setTimeout> | null = null;
 
 	start() {
@@ -59,6 +66,10 @@ class Live {
 		source.addEventListener('health', () => {
 			this.healthTick++;
 		});
+		source.addEventListener('alert', (e) => {
+			const event = JSON.parse((e as MessageEvent).data) as AlertEvent;
+			for (const l of this.#alertListeners) l(event);
+		});
 		source.addEventListener('action', (e) => {
 			const event = JSON.parse((e as MessageEvent).data) as ActionEvent;
 			this.actionTick++;
@@ -77,6 +88,11 @@ class Live {
 	onAction(listener: ActionListener): () => void {
 		this.#listeners.add(listener);
 		return () => this.#listeners.delete(listener);
+	}
+
+	onAlert(listener: AlertListener): () => void {
+		this.#alertListeners.add(listener);
+		return () => this.#alertListeners.delete(listener);
 	}
 }
 

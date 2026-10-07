@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { CATEGORY_LABEL, CATEGORY_ORDER, HEALTH } from '#lib/health.js';
+	import { alerts } from '#lib/alerts.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 	import Icon from '../Icon.svelte';
 	import Logo from '../Logo.svelte';
@@ -51,6 +52,14 @@
 				match: (p: string) => p.startsWith('/health')
 			},
 			{
+				href: resolve('/alerts'),
+				label: 'Alerts',
+				icon: 'ph-bell',
+				show: true,
+				badge: alerts.active,
+				match: (p: string) => p.startsWith('/alerts')
+			},
+			{
 				href: resolve('/activity'),
 				label: 'Activity',
 				icon: 'ph-list-bullets',
@@ -83,6 +92,9 @@
 			<li>
 				<a href={n.href} aria-current={n.match(path) ? 'page' : undefined}>
 					<Icon name={n.icon} size={18} />{n.label}
+					{#if 'badge' in n && n.badge}<span class="badge num" aria-label="{n.badge} active"
+							>{n.badge}</span
+						>{/if}
 				</a>
 			</li>
 		{/each}
@@ -115,6 +127,16 @@
 </nav>
 
 <style>
+	.badge {
+		margin-left: auto;
+		min-width: 20px;
+		padding: 1px 6px;
+		border-radius: 999px;
+		font-size: 11px;
+		text-align: center;
+		background: var(--health-warning-fill);
+		color: var(--health-warning);
+	}
 	.sidebar {
 		width: 232px;
 		flex: none;
