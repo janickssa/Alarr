@@ -5,6 +5,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
+	import { swipe } from '#lib/swipe.js';
 	import { api, errorMessage, unwrap, type Guest, type Schemas } from '#lib/api/client.js';
 	import DetailPanel from '#lib/components/DetailPanel.svelte';
 	import Dialog from '#lib/components/Dialog.svelte';
@@ -133,6 +134,13 @@
 				: g.status === 'stopped'
 					? 'disabled'
 					: 'unknown';
+	}
+
+	/** Swipe on a guest row opens its power menu (a bottom sheet on phones). */
+	function openPower(vmid: number) {
+		document
+			.querySelector<HTMLButtonElement>(`[data-power="${vmid}"] [aria-haspopup="menu"]`)
+			?.click();
 	}
 </script>
 
@@ -307,6 +315,14 @@
 								{#each shown as g (g.vmid)}
 									<tr
 										aria-selected={openVmid === g.vmid}
+										use:swipe={{
+											disabled: !canAct || g.template,
+											left: {
+												label: 'Power',
+												color: 'var(--color-accent-800)',
+												run: () => openPower(g.vmid)
+											}
+										}}
 										class="clickable"
 										onclick={(e) => {
 											if (!(e.target as HTMLElement).closest('button, input, a'))
@@ -362,7 +378,7 @@
 												>
 											{/each}
 										</td>
-										<td class="right"
+										<td class="right" data-power={g.vmid}
 											><PowerMenu
 												guest={g}
 												disabled={!canAct}

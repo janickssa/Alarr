@@ -15,6 +15,7 @@
 	import Logo from '#lib/components/Logo.svelte';
 	import Header from '#lib/components/shell/Header.svelte';
 	import Sidebar from '#lib/components/shell/Sidebar.svelte';
+	import PullToRefresh from '#lib/components/shell/PullToRefresh.svelte';
 	import TabBar from '#lib/components/shell/TabBar.svelte';
 	import Toaster from '#lib/components/Toaster.svelte';
 	import { connection } from '#lib/connection.svelte.js';
@@ -165,6 +166,7 @@
 				</div>
 			{/if}
 			<main id="main" tabindex="-1">
+				<PullToRefresh />
 				{@render children()}
 			</main>
 		</div>

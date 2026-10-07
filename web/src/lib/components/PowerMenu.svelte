@@ -81,6 +81,7 @@
 		<Icon name="ph-power" />
 	</button>
 	{#if open}
+		<div class="scrim" aria-hidden="true"></div>
 		<div class="menu" role="menu" tabindex="-1" bind:this={menu} {onkeydown}>
 			<div class="head mono">
 				{guestId(guest.guest_type, guest.vmid)} · {guest.name} · {guest.status}
@@ -118,6 +119,38 @@
 		padding: 4px;
 		display: flex;
 		flex-direction: column;
+	}
+	.scrim {
+		display: none;
+	}
+	/* Phones: a bottom sheet. */
+	@media (max-width: 767px) {
+		.scrim {
+			display: block;
+			position: fixed;
+			inset: 0;
+			z-index: 59;
+			background: color-mix(in srgb, #0e0f18 60%, transparent);
+		}
+		.menu {
+			position: fixed;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			top: auto;
+			z-index: 60;
+			min-width: 0;
+			border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+			padding: 8px 8px calc(8px + var(--safe-bottom));
+		}
+		.menu .item {
+			min-height: 52px;
+			font-size: 16px;
+		}
+		.menu .head {
+			font-size: 12px;
+			text-align: center;
+		}
 	}
 	.head {
 		padding: 6px 10px;
