@@ -17,10 +17,10 @@ Run the backend with fake data for development: `cd ../backend && cargo run -- -
 
 ## Layout
 
-| Path | What |
-| --- | --- |
-| `src/lib/styles/` | Design tokens (`tokens.css`, from the Nocturne design system + batch 1) and base/component classes |
-| `src/lib/api/` | Generated API types and the typed client |
-| `src/lib/*.svelte.ts` | Shared state: session, live updates (SSE), connection, toasts, power actions |
-| `src/lib/components/` | Component library matching design batch 1 |
-| `src/routes/` | Pages. `/dev/components` is the component gallery (dev server only) |
+| Path                  | What                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------- |
+| `src/lib/styles/`     | Design tokens (`tokens.css`, from the Nocturne design system + batch 1) and base/component classes |
+| `src/lib/api/`        | Generated API types and the typed client                                                           |
+| `src/lib/*.svelte.ts` | Shared state: session, live updates (SSE), connection, toasts, power actions                       |
+| `src/lib/components/` | Component library matching design batch 1                                                          |
+| `src/routes/`         | Pages. `/dev/components` is the component gallery (dev server only)                                |
