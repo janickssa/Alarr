@@ -126,7 +126,7 @@ Container IDs are the owner's current setup and only used as seed/demo data. Rea
 | Fonts | Inter and JetBrains Mono **self-hosted** in the web build (no Google Fonts / unpkg at runtime: the app must work without internet) |
 | PWA | `vite-plugin-pwa` (manifest + service worker) |
 | iOS | SwiftUI, iOS 17+, `swift-openapi-generator`, WidgetKit, Keychain, App Group for widget data |
-| Notifications | ntfy (self-hosted) first; APNs optional later |
+| Notifications | Both ntfy (self-hosted) and Apple Push Notification service (APNs, sent directly from the backend with the `a2` crate and a token-based `.p8` key). The owner has a paid Apple Developer account |
 | Deployment | Single static binary in a Debian/Alpine LXC on Proxmox, or Docker image. systemd unit provided |
 
 ### Security rules (non-negotiable)
@@ -211,6 +211,14 @@ database = "/var/lib/quorum/quorum.db"
 [ntfy]
 url = "https://ntfy.example.lan"
 topic = "quorum"
+
+[apns]
+enabled = true
+team_id = "ABCDE12345"
+key_id = "XYZ987WVUT"
+key_path = "/etc/quorum/AuthKey_XYZ987WVUT.p8"   # file mode 600, never committed
+bundle_id = "com.example.quorum"
+environment = "production"                        # or "sandbox" for Xcode debug builds
 ```
 
 ### External API hints (verify against current docs)
@@ -338,6 +346,7 @@ Backend module + web page for each, in this order. Each needs demo data and wire
 - [ ] lxc-updater: **first ask the owner what it is and what it outputs**; then integrate (pending updates per container + badges on guest rows), or skip with a note.
 - [ ] `agent/`: tiny Rust binary for the WireGuard container that runs `wg show all dump` and exposes peers on `GET /peers` with a shared token. Install script + systemd unit. WireGuard module consumes it; "agent not installed" state.
 - [ ] Alerts engine: service down, disk ≥ 90 %, download failed, certificate < 14 d, new request, node offline. Per-type settings, quiet hours, deduplication.
+- [ ] Notification channel abstraction (`NotificationChannel` trait) so alerts can go to several channels; per alert type the owner picks ntfy, iOS push or both, and each user/device can mute types.
 - [ ] ntfy delivery.
 - [ ] Automation: auto-throttle qBittorrent (alt speed on) while Jellyfin has active streams (option: only remote streams), with hysteresis so it doesn't flap.
 - [ ] Backup status: last vzdump job per guest on guest detail and Health.
@@ -371,10 +380,12 @@ Same web codebase; this phase makes it a first-class mobile app.
 - [ ] Widgets via App Group cache: small (problems count or one service number), medium (download queue or active streams), large (nodes + problems), lock screen (download speed gauge, problems count).
 - [ ] Optional: Live Activity for an active download or library scan.
 - [ ] App icon (1024, single size) from the design.
-- [ ] Notifications: keep ntfy as default. APNs only if the owner has a paid Apple Developer account (needs a small push relay in the backend).
-- [ ] Distribution notes in `ios/README.md`: free Apple ID builds expire after 7 days (AltStore/SideStore can refresh); a paid account removes that and enables TestFlight and APNs.
+- [ ] APNs in the backend: `a2` crate, token-based auth with the `.p8` key from `[apns]` config, device push tokens registered per paired device (`POST /devices/{id}/push-token`), invalid tokens (HTTP 410) removed automatically, sandbox vs production per device, delivery result in the activity log.
+- [ ] APNs in the app: request permission after pairing, register the token with the backend, notification categories with actions where safe (e.g. "Approve" / "Decline" on a new Seerr request, "Open" on a down service; never power actions from a notification), deep links from a notification to the right page, Time Sensitive interruption level for "service down" and "node offline".
+- [ ] Notification settings screen in the app: per alert type ntfy / push / both, quiet hours, mirrored from the web Settings.
+- [ ] Distribution notes in `ios/README.md`: the owner has a paid Apple Developer account, so install via TestFlight or ad hoc builds (no 7-day expiry). Document creating the App ID with the Push Notifications capability, the APNs `.p8` key, and the App Group for widgets.
 
-**Definition of done:** the app pairs with the backend, shows all pages live, runs power actions and scans, and the widgets update.
+**Definition of done:** the app pairs with the backend, shows all pages live, runs power actions and scans, the widgets update, and alerts arrive as iOS push notifications (and in ntfy when chosen).
 
 ---
 
@@ -384,7 +395,6 @@ Same web codebase; this phase makes it a first-class mobile app.
 - Light mode: derive now or wait for the designer? (Brief asks for both; batch 1 is dark only.)
 - What does `lxc-updater` (CT 104) output?
 - Are there more containers/VMs beyond CT 128 to add to the catalogue?
-- Paid Apple Developer account: yes/no (affects iOS distribution and push).
 
 ## Decisions log
 
@@ -393,3 +403,4 @@ Same web codebase; this phase makes it a first-class mobile app.
 | 2026-10-07 | Rust backend, SvelteKit web/PWA, SwiftUI iOS | Owner's choice; one binary serves API + web |
 | 2026-10-07 | Access over Tailscale/WireGuard only, auth still required | Defence in depth |
 | 2026-10-07 | Fonts and icons self-hosted | Must work without internet |
+| 2026-10-07 | Notifications via both ntfy and APNs | Owner has a paid Apple Developer account; ntfy also covers Android |
