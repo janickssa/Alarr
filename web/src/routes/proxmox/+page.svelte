@@ -469,6 +469,12 @@
 	.narrow :global(.wide) {
 		display: none;
 	}
+	/* Tablets and phones: RAM, uptime and services move to the guest detail. */
+	@media (max-width: 1023px) {
+		.table-card :global(.wide) {
+			display: none;
+		}
+	}
 	@media (max-width: 767px) {
 		.table-card :global(.wide) {
 			display: none;
