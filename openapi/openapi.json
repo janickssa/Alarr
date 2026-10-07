@@ -809,6 +809,38 @@
         }
       }
     },
+    "/proxmox/backups": {
+      "get": {
+        "tags": [
+          "proxmox"
+        ],
+        "summary": "Latest backup (`vzdump`) per guest, from the task list and job logs of the last 35 days.",
+        "operationId": "backups",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GuestBackup"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/proxmox/cluster": {
       "get": {
         "tags": [
@@ -3349,6 +3381,46 @@
           }
         }
       },
+      "GuestBackup": {
+        "type": "object",
+        "required": [
+          "vmid",
+          "node",
+          "ok",
+          "upid"
+        ],
+        "properties": {
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the backup task ended."
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error text when it failed."
+          },
+          "node": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "upid": {
+            "type": "string"
+          },
+          "vmid": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
       "GuestCounts": {
         "type": "object",
         "required": [
@@ -3383,6 +3455,17 @@
           "recent_tasks"
         ],
         "properties": {
+          "backup": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuestBackup",
+                "description": "Latest backup of this guest, including backup jobs over several guests."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "guest": {
             "$ref": "#/components/schemas/Guest"
           },
@@ -3393,7 +3476,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/Task",
-                "description": "Latest finished backup (`vzdump`) task."
+                "description": "Latest finished backup (`vzdump`) task that names this guest."
               },
               {
                 "type": "null"
@@ -3580,6 +3663,17 @@
           "warnings"
         ],
         "properties": {
+          "backup": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuestBackup",
+                "description": "Guests: latest backup in the last 35 days."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "guest_type": {
             "oneOf": [
               {

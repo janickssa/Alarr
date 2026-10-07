@@ -373,6 +373,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxmox/backups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest backup (`vzdump`) per guest, from the task list and job logs of the last 35 days. */
+        get: operations["backups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/proxmox/cluster": {
         parameters: {
             query?: never;
@@ -1207,6 +1224,20 @@ export interface components {
             /** Format: int32 */
             vmid: number;
         };
+        GuestBackup: {
+            /**
+             * Format: date-time
+             * @description When the backup task ended.
+             */
+            at?: string | null;
+            /** @description Error text when it failed. */
+            error?: string | null;
+            node: string;
+            ok: boolean;
+            upid: string;
+            /** Format: int32 */
+            vmid: number;
+        };
         GuestCounts: {
             /** Format: int32 */
             running: number;
@@ -1216,6 +1247,7 @@ export interface components {
             total: number;
         };
         GuestDetail: {
+            backup?: components["schemas"]["GuestBackup"] | null;
             guest: components["schemas"]["Guest"];
             ha_managed: boolean;
             last_backup?: components["schemas"]["Task"] | null;
@@ -1286,6 +1318,7 @@ export interface components {
             tls_fingerprint: string | null;
         };
         HealthEntry: {
+            backup?: components["schemas"]["GuestBackup"] | null;
             guest_type?: components["schemas"]["GuestType"] | null;
             health: components["schemas"]["Health"];
             health_reason?: string | null;
@@ -3076,6 +3109,33 @@ export interface operations {
                 };
             };
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    backups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestBackup"][];
+                };
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

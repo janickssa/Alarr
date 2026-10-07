@@ -396,3 +396,66 @@ async fn auto_throttle_turns_alt_speed_on_while_streaming() {
     assert_eq!(on["detail"], "1 remote stream on Jellyfin");
     assert_eq!(on["result"], "ok");
 }
+
+#[tokio::test]
+async fn backup_status_per_guest_from_vzdump_tasks() {
+    let ntfy = MockServer::start().await;
+    let (_state, router) = app(&ntfy).await;
+    let owner = login(&router, "demo").await;
+    let (status, list, _) = call(
+        &router,
+        "GET",
+        "/api/v1/proxmox/backups",
+        Some(&owner),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{list}");
+    let find = |vmid: u64| {
+        list.as_array()
+            .unwrap()
+            .iter()
+            .find(|b| b["vmid"] == vmid)
+            .cloned()
+    };
+    // From the nightly multi-guest job log.
+    assert_eq!(find(123).unwrap()["ok"], true);
+    // Failing in the job log, with the error text.
+    let drawio = find(116).unwrap();
+    assert_eq!(drawio["ok"], false);
+    assert!(drawio["error"].as_str().unwrap().contains("No space left"));
+    // A newer single-guest backup wins over the night's job.
+    assert!(
+        find(113).unwrap()["upid"]
+            .as_str()
+            .unwrap()
+            .contains(":vzdump:113:")
+    );
+    // Excluded from the job.
+    assert!(find(128).is_none());
+
+    let (_, health, _) = call(&router, "GET", "/api/v1/health", Some(&owner), None).await;
+    let e = health["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|e| e["id"] == "guest:116")
+        .unwrap()
+        .clone();
+    assert_eq!(e["backup"]["ok"], false);
+    assert!(
+        e["warnings"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("last backup failed"))
+    );
+    let (_, g, _) = call(
+        &router,
+        "GET",
+        "/api/v1/proxmox/guests/123",
+        Some(&owner),
+        None,
+    )
+    .await;
+    assert_eq!(g["backup"]["ok"], true);
+}

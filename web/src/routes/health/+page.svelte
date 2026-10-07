@@ -6,11 +6,12 @@
 	import EmptyState from '#lib/components/EmptyState.svelte';
 	import ErrorState from '#lib/components/ErrorState.svelte';
 	import HealthDot from '#lib/components/HealthDot.svelte';
+	import RelativeTime from '#lib/components/RelativeTime.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import SearchField from '#lib/components/SearchField.svelte';
 	import SegFilter from '#lib/components/SegFilter.svelte';
 	import UptimeStrip from '#lib/components/UptimeStrip.svelte';
-	import { guestId, ms, percent } from '#lib/format.js';
+	import { dateTime, guestId, ms, percent } from '#lib/format.js';
 	import { refetchOnLive } from '#lib/live.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 
@@ -100,7 +101,8 @@
 						<th class="right">Response</th>
 						<th class="right">24 h</th>
 						<th class="right">7 d</th>
-						<th style="width:32%">Last 24 h</th>
+						<th style="width:28%">Last 24 h</th>
+						<th>Last backup</th>
 						<th>Notes</th>
 					</tr>
 				</thead>
@@ -134,6 +136,19 @@
 							<td class="right mono num">{percent(e.uptime_24h)}</td>
 							<td class="right mono num">{percent(e.uptime_7d)}</td>
 							<td><UptimeStrip buckets={e.timeline} height={14} labels={false} /></td>
+							<td class="caption nowrap">
+								{#if e.backup}
+									<span
+										class="backup"
+										title={e.backup.ok ? dateTime(e.backup.at) : (e.backup.error ?? 'failed')}
+										><Icon
+											name={e.backup.ok ? 'ph-check-circle' : 'ph-x-circle'}
+											fill
+											color={e.backup.ok ? 'var(--health-healthy)' : 'var(--health-down)'}
+										/><RelativeTime value={e.backup.at} /></span
+									>
+								{:else if e.kind === 'guest'}<span class="faint">None in 35 d</span>{/if}
+							</td>
 							<td class="notes">
 								{#if e.kind === 'service' && e.health_reason}<span class="reason"
 										>{e.health_reason}</span
@@ -171,6 +186,14 @@
 	}
 	.name:hover {
 		color: var(--color-accent-300);
+	}
+	.nowrap {
+		white-space: nowrap;
+	}
+	.backup {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 	}
 	.notes {
 		font-size: 12px;

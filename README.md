@@ -349,7 +349,7 @@ Backend module + web page for each, in this order. Each needs demo data and wire
 - [x] Notification channel abstraction (`NotificationChannel` trait) so alerts can go to several channels; per alert type the owner picks ntfy, iOS push or both, and each user/device can mute types.
 - [x] ntfy delivery.
 - [x] Automation: auto-throttle qBittorrent (alt speed on) while Jellyfin has active streams (option: only remote streams), with hysteresis so it doesn't flap.
-- [ ] Backup status: last vzdump job per guest on guest detail and Health.
+- [x] Backup status: last vzdump job per guest on guest detail and Health.
 - [ ] Launcher view.
 
 **Definition of done:** all modules from the catalogue exist and can be toggled; alerts arrive in ntfy; auto-throttle works.

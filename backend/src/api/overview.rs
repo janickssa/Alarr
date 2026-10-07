@@ -324,6 +324,8 @@ pub struct HealthEntry {
     pub timeline: Vec<TimelineBucket>,
     /// e.g. "disk at 92 %".
     pub warnings: Vec<String>,
+    /// Guests: latest backup in the last 35 days.
+    pub backup: Option<crate::modules::proxmox::backups::GuestBackup>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -379,15 +381,21 @@ async fn health(State(state): State<AppState>, user: CurrentUser) -> ApiResult<J
                 uptime_7d: s.and_then(|s| uptime_pct(s.up_7d, s.total_7d)),
                 timeline: timeline(s, now),
                 warnings: Vec::new(),
+                backup: None,
             }
         })
         .collect();
     if let Some((pve, guests)) = services::guests_with_links(&state, &rows)
         && user.can_see(&pve)
     {
+        let mut backups = super::proxmox::guest_backups(&state, &pve).await;
         for g in guests.iter().filter(|g| !g.template) {
             let s = stats.get(&format!("guest:{}", g.vmid));
             let mut warnings = Vec::new();
+            let backup = backups.remove(&g.vmid);
+            if backup.as_ref().is_some_and(|b| !b.ok) {
+                warnings.push("last backup failed".into());
+            }
             if let (Some(used), Some(total)) = (g.disk_used, g.disk_total.filter(|t| *t > 0)) {
                 let usage = used as f64 / total as f64;
                 if usage >= 0.8 {
@@ -409,6 +417,7 @@ async fn health(State(state): State<AppState>, user: CurrentUser) -> ApiResult<J
                 uptime_7d: s.and_then(|s| uptime_pct(s.up_7d, s.total_7d)),
                 timeline: timeline(s, now),
                 warnings,
+                backup,
             });
         }
     }
