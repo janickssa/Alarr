@@ -95,7 +95,12 @@ writeFileSync(
 	`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><defs><radialGradient id="g" cx="30%" cy="15%" r="120%"><stop offset="0" stop-color="#353b80"/><stop offset=".4" stop-color="#262a60"/><stop offset="1" stop-color="#161826"/></radialGradient></defs><rect width="48" height="48" rx="10" fill="url(#g)"/><g transform="translate(12.96 12.96) scale(.46)">${mark('#262a60').replace(/^<svg[^>]*>|<\/svg>$/g, '')}</g></svg>\n`
 );
 for (const [w, h, dpr] of SPLASHES) {
-	await shot(splashHtml(w * dpr, h * dpr, dpr), w * dpr, h * dpr, `${root}/static/splash/${w * dpr}x${h * dpr}.jpg`);
+	await shot(
+		splashHtml(w * dpr, h * dpr, dpr),
+		w * dpr,
+		h * dpr,
+		`${root}/static/splash/${w * dpr}x${h * dpr}.jpg`
+	);
 }
 await browser.close();
 console.log('done');
