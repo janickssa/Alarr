@@ -51,8 +51,8 @@
 			<table class="table">
 				<thead>
 					<tr
-						><th>Certificate</th><th>Provider</th><th>Expires</th><th class="right">Days left</th
-						><th class="right">Hosts</th></tr
+						><th>Certificate</th><th class="hide-sm">Provider</th><th class="hide-sm">Expires</th
+						><th class="right">Days left</th><th class="right">Hosts</th></tr
 					>
 				</thead>
 				<tbody>
@@ -63,8 +63,10 @@
 										class="caption faint block">{c.domains.join(', ')}</span
 									>{/if}</td
 							>
-							<td class="muted">{c.provider === 'letsencrypt' ? "Let's Encrypt" : 'Custom'}</td>
-							<td class="mono">{date(c.expires_at)}</td>
+							<td class="muted hide-sm"
+								>{c.provider === 'letsencrypt' ? "Let's Encrypt" : 'Custom'}</td
+							>
+							<td class="mono hide-sm">{date(c.expires_at)}</td>
 							<td class="right mono num" style:color={tone(c.days_left)}>
 								{#if c.days_left != null && c.days_left < WARN}<Icon
 										name="ph-warning"
@@ -89,7 +91,10 @@
 		<div class="card tablecard">
 			<table class="table">
 				<thead>
-					<tr><th>Domain</th><th>Forwards to</th><th>Status</th><th>Certificate</th></tr>
+					<tr
+						><th>Domain</th><th class="hide-sm">Forwards to</th><th>Status</th><th>Certificate</th
+						></tr
+					>
 				</thead>
 				<tbody>
 					{#each data.hosts as h (h.id)}
@@ -100,7 +105,7 @@
 										>{` +${h.domains.length - 1}`}</span
 									>{/if}</td
 							>
-							<td class="mono muted">{h.forward}</td>
+							<td class="mono muted hide-sm">{h.forward}</td>
 							<td>
 								<HealthDot
 									health={!h.enabled ? 'disabled' : h.online === false ? 'down' : 'healthy'}

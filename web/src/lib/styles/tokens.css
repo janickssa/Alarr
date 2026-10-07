@@ -114,3 +114,27 @@
 	/* Motion */
 	--shimmer-duration: 1.2s;
 }
+
+/*
+ * Layout tokens (theme-independent). Phones (< 768 px) get the comfortable density from the
+ * README: 56 pt rows, 44 pt targets, 16 px margins, 12 px gaps, and a bottom tab bar.
+ */
+:root {
+	--tabbar-h: 0px;
+	--target: 36px;
+	--safe-top: env(safe-area-inset-top, 0px);
+	--safe-right: env(safe-area-inset-right, 0px);
+	--safe-bottom: env(safe-area-inset-bottom, 0px);
+	--safe-left: env(safe-area-inset-left, 0px);
+}
+
+@media (max-width: 767px) {
+	:root {
+		--row-height: 56px;
+		--gutter: 16px;
+		--gap: 12px;
+		--header-h: 52px;
+		--tabbar-h: 56px;
+		--target: 44px;
+	}
+}

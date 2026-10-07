@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { api } from '#lib/api/client.js';
 	import { connection } from '#lib/connection.svelte.js';
-	import { live } from '#lib/live.svelte.js';
+	import { page } from '$app/state';
+	import { nav, parentOf } from '#lib/nav.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 	import Icon from '../Icon.svelte';
 	import GlobalSearch from './GlobalSearch.svelte';
@@ -13,12 +13,11 @@
 	}: { searchInput?: HTMLInputElement } = $props();
 
 	let menuOpen = $state(false);
+	const pushed = $derived(parentOf(page.url.pathname) != null);
 
 	async function logout() {
 		menuOpen = false;
-		await api.POST('/auth/logout');
-		live.stop();
-		session.clear();
+		await session.signOut();
 		await goto(resolve('/login'));
 	}
 </script>
@@ -30,14 +29,21 @@
 />
 
 <header class="header">
-	<GlobalSearch bind:input={searchInput} />
+	{#if pushed}
+		<button class="back" type="button" aria-label="Back" onclick={() => nav.back(page.url.pathname)}
+			><Icon name="ph-caret-left" size={22} /></button
+		>
+	{/if}
+	<div class="search"><GlobalSearch bind:input={searchInput} /></div>
 	<div class="spacer"></div>
 	<span
 		class="live"
 		class:off={connection.live !== 'open'}
 		title={connection.live === 'open' ? 'Live updates connected' : 'Live updates reconnecting'}
 	>
-		<span class="pulse"></span>{connection.live === 'open' ? 'Live' : 'Reconnecting'}
+		<span class="pulse"></span><span class="live-text"
+			>{connection.live === 'open' ? 'Live' : 'Reconnecting'}</span
+		>
 	</span>
 	<div class="user">
 		<button
@@ -72,6 +78,40 @@
 		z-index: 20;
 		background: color-mix(in srgb, var(--color-bg) 92%, transparent);
 		backdrop-filter: blur(6px);
+	}
+	.search {
+		min-width: 0;
+	}
+	.back {
+		display: none;
+	}
+	@media (max-width: 767px) {
+		.header {
+			gap: 8px;
+			padding: var(--safe-top) calc(var(--gutter) + var(--safe-right)) 0
+				calc(var(--gutter) + var(--safe-left));
+			height: calc(var(--header-h) + var(--safe-top));
+		}
+		.search {
+			flex: 1;
+		}
+		/* Account lives under More on phones; keep only the live dot. */
+		.user,
+		.spacer,
+		.live-text {
+			display: none;
+		}
+		.back {
+			display: grid;
+			place-items: center;
+			width: 44px;
+			height: 44px;
+			margin-left: -12px;
+			border: 0;
+			background: none;
+			color: var(--color-accent-300);
+			cursor: pointer;
+		}
 	}
 	.live {
 		display: inline-flex;

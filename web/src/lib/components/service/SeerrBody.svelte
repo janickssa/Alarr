@@ -236,6 +236,18 @@
 		border-radius: var(--radius-md);
 		background: var(--color-surface);
 	}
+	@media (max-width: 767px) {
+		.req:not(.small) {
+			flex-wrap: wrap;
+		}
+		.req:not(.small) .txt {
+			flex: 1 1 calc(100% - 64px);
+		}
+		.req:not(.small) :global(.btn) {
+			flex: 1;
+			justify-content: center;
+		}
+	}
 	.req.small {
 		min-height: 48px;
 	}

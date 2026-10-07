@@ -178,8 +178,9 @@
 				<table class="table">
 					<thead
 						><tr
-							><th>Pool</th><th>Type</th><th style="width:40%">Usage</th><th class="right">Used</th
-							></tr
+							><th>Pool</th><th class="hide-sm">Type</th><th class="hide-sm" style="width:40%"
+								>Usage</th
+							><th class="right">Used</th></tr
 						></thead
 					>
 					<tbody>
@@ -190,11 +191,13 @@
 											>shared</span
 										>{/if}</td
 								>
-								<td class="muted"
+								<td class="muted hide-sm"
 									>{s.plugin_type ?? ''}{#if !s.active}
 										· <span style="color:var(--health-down)">inactive</span>{/if}</td
 								>
-								<td><ResourceBar fraction={s.total ? (s.used ?? 0) / s.total : null} compact /></td>
+								<td class="hide-sm"
+									><ResourceBar fraction={s.total ? (s.used ?? 0) / s.total : null} compact /></td
+								>
 								<td class="right mono num"
 									>{usedOf(s.used, s.total)} · {pct(s.total ? (s.used ?? 0) / s.total : null)}</td
 								>
@@ -281,7 +284,7 @@
 						<table class="table" class:narrow={openGuest != null}>
 							<thead>
 								<tr>
-									<th style="width:28px"
+									<th class="hide-sm" style="width:28px"
 										><input
 											type="checkbox"
 											aria-label="Select all shown guests"
@@ -290,9 +293,9 @@
 										/></th
 									>
 									<th>Status</th>
-									<th>ID</th>
+									<th class="hide-sm">ID</th>
 									<th>Name</th>
-									<th>Node</th>
+									<th class="hide-sm">Node</th>
 									<th class="right">CPU</th>
 									<th class="wide" style="width:16%">RAM</th>
 									<th class="right wide">Uptime</th>
@@ -310,7 +313,7 @@
 												openGuestPanel(g.vmid);
 										}}
 									>
-										<td
+										<td class="hide-sm"
 											><input
 												type="checkbox"
 												aria-label="Select {g.name}"
@@ -319,17 +322,27 @@
 											/></td
 										>
 										<td
-											><HealthDot
-												health={statusHealth(g)}
-												label={g.status[0].toUpperCase() + g.status.slice(1)}
-											/></td
+											><span class="hide-sm"
+												><HealthDot
+													health={statusHealth(g)}
+													label={g.status[0].toUpperCase() + g.status.slice(1)}
+												/></span
+											><span class="show-sm"
+												><HealthDot
+													health={statusHealth(g)}
+													label={g.status === 'running' ? '' : g.status}
+												/></span
+											></td
 										>
-										<td class="mono">{guestId(g.guest_type, g.vmid)}</td>
+										<td class="mono hide-sm">{guestId(g.guest_type, g.vmid)}</td>
 										<td>
 											<button class="link" onclick={() => openGuestPanel(g.vmid)}>{g.name}</button>
 											{#if g.lock}<span class="tag tag-neutral">{g.lock}</span>{/if}
+											<span class="show-sm caption faint mono"
+												>{guestId(g.guest_type, g.vmid)} · {g.node}</span
+											>
 										</td>
-										<td class="mono muted">{g.node}</td>
+										<td class="mono muted hide-sm">{g.node}</td>
 										<td class="right mono num">{g.status === 'running' ? pct(g.cpu_usage) : '–'}</td
 										>
 										<td class="wide"
@@ -439,6 +452,18 @@
 	}
 	.narrow :global(.wide) {
 		display: none;
+	}
+	@media (max-width: 767px) {
+		.table-card :global(.wide) {
+			display: none;
+		}
+		.show-sm.caption {
+			display: block;
+		}
+		.link {
+			font-size: 15px;
+			min-height: 24px;
+		}
 	}
 	.clickable {
 		cursor: pointer;

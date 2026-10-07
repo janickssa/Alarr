@@ -3,7 +3,7 @@
 	import '#lib/styles/tokens.css';
 	import '#lib/styles/base.css';
 	import favicon from '#lib/assets/favicon.svg';
-	import { goto } from '$app/navigation';
+	import { afterNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -15,13 +15,39 @@
 	import Logo from '#lib/components/Logo.svelte';
 	import Header from '#lib/components/shell/Header.svelte';
 	import Sidebar from '#lib/components/shell/Sidebar.svelte';
+	import TabBar from '#lib/components/shell/TabBar.svelte';
 	import Toaster from '#lib/components/Toaster.svelte';
 	import { connection } from '#lib/connection.svelte.js';
 	import { time } from '#lib/format.js';
 	import { live, refetchOnLive } from '#lib/live.svelte.js';
+	import { nav, parentOf } from '#lib/nav.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 
 	let { children }: LayoutProps = $props();
+
+	afterNavigate((n) => {
+		if (n.type === 'enter') return;
+		if (n.type === 'popstate') nav.depth = Math.max(0, nav.depth - (n.delta ?? 1));
+		else nav.depth++;
+	});
+
+	// Edge swipe (phones): from the left edge to the right goes back on pushed pages.
+	let swipe: { x: number; y: number } | null = null;
+	function ontouchstart(e: TouchEvent) {
+		const t = e.touches[0];
+		swipe =
+			t.clientX < 24 && window.innerWidth < 768 && parentOf(page.url.pathname)
+				? { x: t.clientX, y: t.clientY }
+				: null;
+	}
+	function ontouchend(e: TouchEvent) {
+		if (!swipe) return;
+		const t = e.changedTouches[0];
+		const dx = t.clientX - swipe.x;
+		const dy = Math.abs(t.clientY - swipe.y);
+		swipe = null;
+		if (dx > 80 && dy < 50) nav.back(page.url.pathname);
+	}
 
 	const PUBLIC = ['/login', '/setup', '/pair'];
 	const isPublic = $derived(PUBLIC.some((p) => page.url.pathname.startsWith(p)));
@@ -110,7 +136,7 @@
 	<title>{APP_NAME}</title>
 </svelte:head>
 
-<svelte:window {onkeydown} />
+<svelte:window {onkeydown} {ontouchstart} {ontouchend} />
 
 <a class="skip" href="#main">Skip to content</a>
 
@@ -143,6 +169,7 @@
 			</main>
 		</div>
 	</div>
+	<TabBar />
 	<Toaster />
 	<ConfirmDialog />
 {/if}
@@ -161,6 +188,9 @@
 	main {
 		flex: 1;
 		min-width: 0;
+		padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+		padding-left: var(--safe-left);
+		padding-right: var(--safe-right);
 	}
 	main:focus {
 		outline: none;

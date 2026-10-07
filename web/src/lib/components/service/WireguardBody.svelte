@@ -59,8 +59,9 @@
 			<table class="table">
 				<thead>
 					<tr
-						><th>Peer</th><th>Status</th><th>Last handshake</th><th>Endpoint</th><th>Allowed IPs</th
-						><th class="right">Received</th><th class="right">Sent</th></tr
+						><th>Peer</th><th>Status</th><th>Last handshake</th><th class="hide-sm">Endpoint</th><th
+							class="hide-sm">Allowed IPs</th
+						><th class="right">Received</th><th class="right hide-sm">Sent</th></tr
 					>
 				</thead>
 				<tbody>
@@ -84,10 +85,10 @@
 										class="faint">Never</span
 									>{/if}</td
 							>
-							<td class="mono muted">{p.endpoint ?? '–'}</td>
-							<td class="mono muted">{p.allowed_ips.join(', ')}</td>
+							<td class="mono muted hide-sm">{p.endpoint ?? '–'}</td>
+							<td class="mono muted hide-sm">{p.allowed_ips.join(', ')}</td>
 							<td class="right mono num">{bytes(p.rx_bytes)}</td>
-							<td class="right mono num">{bytes(p.tx_bytes)}</td>
+							<td class="right mono num hide-sm">{bytes(p.tx_bytes)}</td>
 						</tr>
 					{/each}
 				</tbody>

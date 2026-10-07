@@ -44,9 +44,11 @@
 	<table class="table">
 		<thead>
 			<tr
-				><th>Indexer</th><th>Status</th><th>Privacy</th><th class="right">Response</th><th
-					class="right">Queries</th
-				><th class="right">Grabs</th><th class="right">Failures · 24 h</th></tr
+				><th>Indexer</th><th>Status</th><th class="hide-sm">Privacy</th><th class="right hide-sm"
+					>Response</th
+				><th class="right hide-sm">Queries</th><th class="right">Grabs</th><th class="right"
+					>Failures · 24 h</th
+				></tr
 			>
 		</thead>
 		<tbody>
@@ -63,9 +65,9 @@
 									: 'Disabled'}
 						/>
 					</td>
-					<td class="muted">{i.privacy}</td>
-					<td class="right mono num">{ms(i.avg_response_ms)}</td>
-					<td class="right mono num">{i.queries_24h}</td>
+					<td class="muted hide-sm">{i.privacy}</td>
+					<td class="right mono num hide-sm">{ms(i.avg_response_ms)}</td>
+					<td class="right mono num hide-sm">{i.queries_24h}</td>
 					<td class="right mono num">{i.grabs_24h}</td>
 					<td
 						class="right mono num"

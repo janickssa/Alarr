@@ -43,6 +43,13 @@ class Session {
 		this.servicesLoaded = true;
 	}
 
+	/** Sign out (on a paired PWA this also unpairs the device) and forget local state. */
+	async signOut() {
+		await api.POST('/auth/logout').catch(() => {});
+		live.stop();
+		this.clear();
+	}
+
 	clear() {
 		alerts.stop();
 		this.me = null;

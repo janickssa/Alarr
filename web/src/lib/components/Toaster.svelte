@@ -46,6 +46,20 @@
 		gap: 8px;
 		width: min(380px, calc(100vw - 32px));
 	}
+	/* Phones: bottom-centre, above the tab bar. */
+	@media (max-width: 767px) {
+		.toaster {
+			right: 16px;
+			left: 16px;
+			width: auto;
+			bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 12px);
+			align-items: stretch;
+		}
+		/* Keep the screen usable: only the two newest toasts. */
+		.toast:not(:nth-last-child(-n + 2)) {
+			display: none;
+		}
+	}
 	.toast {
 		background: var(--color-surface);
 		border-radius: 10px;

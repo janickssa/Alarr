@@ -54,8 +54,9 @@
 		<table class="table">
 			<thead>
 				<tr
-					><th>Service</th><th>Category</th><th>Status</th><th>Container</th><th>On</th><th
-					></th></tr
+					><th>Service</th><th class="hide-sm">Category</th><th>Status</th><th class="hide-sm"
+						>Container</th
+					><th>On</th><th></th></tr
 				>
 			</thead>
 			<tbody>
@@ -67,9 +68,9 @@
 								{s.name}<span class="mono faint">{s.id}</span>
 							</span>
 						</td>
-						<td class="muted">{CATEGORY_LABEL[s.category]}</td>
+						<td class="muted hide-sm">{CATEGORY_LABEL[s.category]}</td>
 						<td><HealthBadge health={s.health} small /></td>
-						<td class="mono muted"
+						<td class="mono muted hide-sm"
 							>{s.linked_guest ? guestId(s.linked_guest.guest_type, s.linked_guest.vmid) : '–'}</td
 						>
 						<td

@@ -98,12 +98,12 @@
 					<tr>
 						<th>Name</th>
 						<th>Status</th>
-						<th class="right">Response</th>
+						<th class="right hide-sm">Response</th>
 						<th class="right">24 h</th>
-						<th class="right">7 d</th>
-						<th style="width:28%">Last 24 h</th>
-						<th>Last backup</th>
-						<th>Notes</th>
+						<th class="right hide-sm">7 d</th>
+						<th class="hide-sm" style="width:28%">Last 24 h</th>
+						<th class="hide-sm">Last backup</th>
+						<th class="hide-sm">Notes</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -132,11 +132,14 @@
 										: undefined}
 								/>
 							</td>
-							<td class="right mono num">{e.kind === 'service' ? ms(e.response_ms) : ''}</td>
+							<td class="right mono num hide-sm">{e.kind === 'service' ? ms(e.response_ms) : ''}</td
+							>
 							<td class="right mono num">{percent(e.uptime_24h)}</td>
-							<td class="right mono num">{percent(e.uptime_7d)}</td>
-							<td><UptimeStrip buckets={e.timeline} height={14} labels={false} /></td>
-							<td class="caption nowrap">
+							<td class="right mono num hide-sm">{percent(e.uptime_7d)}</td>
+							<td class="hide-sm"
+								><UptimeStrip buckets={e.timeline} height={14} labels={false} /></td
+							>
+							<td class="caption nowrap hide-sm">
 								{#if e.backup}
 									<span
 										class="backup"
@@ -149,7 +152,7 @@
 									>
 								{:else if e.kind === 'guest'}<span class="faint">None in 35 d</span>{/if}
 							</td>
-							<td class="notes">
+							<td class="notes hide-sm">
 								{#if e.kind === 'service' && e.health_reason}<span class="reason"
 										>{e.health_reason}</span
 									>{/if}

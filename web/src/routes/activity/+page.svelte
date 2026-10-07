@@ -83,8 +83,8 @@
 			<table class="table">
 				<thead
 					><tr
-						><th>When</th><th>Who</th><th>Action</th><th>Target</th><th>Result</th><th>Detail</th
-						></tr
+						><th>When</th><th>Who</th><th>Action</th><th class="hide-sm">Target</th><th>Result</th
+						><th class="hide-sm">Detail</th></tr
 					></thead
 				>
 				<tbody>
@@ -93,7 +93,7 @@
 							<td class="caption nowrap"><RelativeTime value={e.at} /></td>
 							<td>{e.username ?? '–'}</td>
 							<td>{label(e)}</td>
-							<td class="mono caption">{e.target}</td>
+							<td class="mono caption hide-sm">{e.target}</td>
 							<td>
 								<HealthBadge
 									health={e.result === 'ok'
@@ -105,7 +105,7 @@
 									small
 								/>
 							</td>
-							<td class="caption muted detail">{e.detail ?? ''}</td>
+							<td class="caption muted detail hide-sm">{e.detail ?? ''}</td>
 						</tr>
 					{/each}
 				</tbody>
