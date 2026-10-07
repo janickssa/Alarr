@@ -3,6 +3,7 @@
 //! settings and quiet hours, and delivers through the notification channels.
 
 pub mod channels;
+pub mod push;
 pub mod rules;
 
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -362,11 +363,15 @@ impl Engine {
             )
             .await?;
         tracing::info!(key = %c.key, title = %c.title, "alert");
-        let click = match (&c.service_id, c.alert_type) {
-            (_, AlertType::NodeOffline | AlertType::DiskFull) => self.click_url("/proxmox"),
-            (Some(id), _) => self.click_url(&format!("/services/{id}")),
-            (None, _) => self.click_url("/alerts"),
+        let path = match (&c.service_id, c.alert_type) {
+            (_, AlertType::NodeOffline | AlertType::DiskFull) => "/proxmox".to_owned(),
+            (Some(id), _) => format!("/services/{id}"),
+            (None, _) => "/alerts".to_owned(),
         };
+        // `new_request:<service>:<request id>`
+        let request_id = (c.alert_type == AlertType::NewRequest)
+            .then(|| c.key.rsplit(':').next()?.parse().ok())
+            .flatten();
         let delivery = self
             .deliver(
                 &Notification {
@@ -374,7 +379,11 @@ impl Engine {
                     message: c.message.clone(),
                     severity: c.severity,
                     recovery: false,
-                    click,
+                    click: self.click_url(&path),
+                    alert_type: Some(c.alert_type),
+                    service_id: c.service_id.clone(),
+                    path: Some(path),
+                    request_id,
                 },
                 settings,
                 now,
@@ -415,6 +424,10 @@ impl Engine {
             severity: Severity::Info,
             recovery: true,
             click: None,
+            alert_type: Some(t),
+            service_id: a.service_id.clone(),
+            path: a.service_id.as_ref().map(|id| format!("/services/{id}")),
+            request_id: None,
         };
         let s = &settings[&t];
         self.deliver(&n, s, now).await;
@@ -433,6 +446,10 @@ impl Engine {
             severity: Severity::Info,
             recovery: false,
             click: None,
+            alert_type: None,
+            service_id: None,
+            path: None,
+            request_id: None,
         })
         .await
     }

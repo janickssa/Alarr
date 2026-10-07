@@ -12,6 +12,7 @@ name = "quorum-server"
 path = "src/main.rs"
 
 [dependencies]
+a2 = { version = "0.10", default-features = false, features = ["ring"] }
 anyhow = "1"
 argon2 = "0.5"
 async-trait = "0.1"
@@ -43,6 +44,7 @@ utoipa-axum = "0.3"
 [dev-dependencies]
 http-body-util = "0.1"
 rcgen = "0.13"
+ring = "0.17"
 tower = { version = "0.5", features = ["util"] }
 wiremock = "0.6"
 

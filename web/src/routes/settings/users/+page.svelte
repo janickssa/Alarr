@@ -249,7 +249,7 @@
 					{#each devices as d (d.id)}
 						<tr>
 							<td>{d.name}</td>
-							<td class="mono muted hide-sm">{d.platform}</td>
+							<td class="mono muted hide-sm">{d.platform}{d.push ? ' · push' : ''}</td>
 							<td>{userName(d.user_id)}</td>
 							<td class="caption muted hide-sm">{date(d.created_at)}</td>
 							<td class="caption muted"><RelativeTime value={d.last_seen_at} /></td>

@@ -12,6 +12,7 @@ pub mod pairing;
 pub mod proxmox;
 pub mod services;
 pub mod settings;
+pub mod widget;
 
 use axum::extract::State;
 use axum::{Json, Router};
@@ -101,6 +102,7 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(alerts::router())
         .merge(automation::router())
         .merge(settings::router())
+        .merge(widget::router())
         .merge(events::router())
 }
 

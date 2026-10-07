@@ -3,8 +3,7 @@
 //! - `ntfy`: JSON publish to the ntfy root URL (`POST /` with `{topic, title, message,
 //!   priority, tags, click}`), checked against ntfy's "Publishing" docs. An access token,
 //!   when needed, comes from `QUORUM_NTFY_TOKEN` (never from the config file).
-//! - `push`: iOS push through APNs, built in phase 6. Until then it reports
-//!   "not configured".
+//! - `push`: iOS push through APNs (see `push`), when `[apns]` is enabled.
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -26,6 +25,13 @@ pub struct Notification {
     pub recovery: bool,
     /// Opened when the notification is tapped.
     pub click: Option<String>,
+    /// `None` for test notifications.
+    pub alert_type: Option<super::AlertType>,
+    pub service_id: Option<String>,
+    /// App path the notification opens (`/services/sonarr`), for push deep links.
+    pub path: Option<String>,
+    /// Seerr request id for new-request alerts (Approve / Decline from the notification).
+    pub request_id: Option<i64>,
 }
 
 /// What the settings page shows about a channel.
@@ -168,7 +174,11 @@ impl NotificationChannel for Unconfigured {
 }
 
 /// All channels, in display order.
-pub fn from_config(config: &Config) -> Vec<Arc<dyn NotificationChannel>> {
+pub fn from_config(
+    config: &Config,
+    db: &crate::db::Db,
+    events: &crate::events::EventHub,
+) -> Vec<Arc<dyn NotificationChannel>> {
     let token = std::env::var("QUORUM_NTFY_TOKEN")
         .ok()
         .filter(|t| !t.trim().is_empty());
@@ -190,14 +200,30 @@ pub fn from_config(config: &Config) -> Vec<Arc<dyn NotificationChannel>> {
             detail: "Add [ntfy] url and topic to quorum.toml",
         }),
     };
-    vec![
-        ntfy,
-        Arc::new(Unconfigured {
+    let push: Arc<dyn NotificationChannel> = match config.apns.as_ref().filter(|a| a.enabled) {
+        Some(a) => match super::push::A2Sender::new(a) {
+            Ok(sender) => Arc::new(super::push::PushChannel::new(
+                db.clone(),
+                events.clone(),
+                Arc::new(sender),
+                &a.bundle_id,
+            )),
+            Err(e) => {
+                tracing::warn!(error = %e, "iOS push disabled");
+                Arc::new(Unconfigured {
+                    id: "push",
+                    label: "iOS push",
+                    detail: "Could not load the APNs key; see the server log",
+                })
+            }
+        },
+        None => Arc::new(Unconfigured {
             id: "push",
             label: "iOS push",
-            detail: "Arrives with the iPhone app",
+            detail: "Add [apns] with enabled = true to quorum.toml (see ios/README.md)",
         }),
-    ]
+    };
+    vec![ntfy, push]
 }
 
 pub const CHANNEL_IDS: [&str; 2] = ["ntfy", "push"];
@@ -229,6 +255,10 @@ mod tests {
             severity: Severity::Critical,
             recovery: false,
             click: Some("https://q.example/services/sonarr".into()),
+            alert_type: None,
+            service_id: None,
+            path: None,
+            request_id: None,
         })
         .await
         .unwrap();
@@ -249,6 +279,10 @@ mod tests {
                 severity: Severity::Info,
                 recovery: false,
                 click: None,
+                alert_type: None,
+                service_id: None,
+                path: None,
+                request_id: None,
             })
             .await
             .unwrap_err()

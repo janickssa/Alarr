@@ -229,6 +229,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/devices/{id}/push-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register this device's APNs token so alerts chosen for `push` reach it. */
+        post: operations["set_push_token"];
+        /** Stop push to this device (turned off in the app). */
+        delete: operations["delete_push_token"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/events": {
         parameters: {
             query?: never;
@@ -810,6 +828,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/widget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Everything the iPhone widgets show, in one call. */
+        get: operations["widget"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1135,6 +1170,10 @@ export interface components {
             last_seen_at: string;
             name: string;
             platform: string;
+            /** @description An APNs token is registered (iOS push). */
+            push: boolean;
+            /** @description `sandbox` or `production` when `push` is set. */
+            push_env?: string | null;
             /** Format: int64 */
             user_id: number;
         };
@@ -1870,6 +1909,15 @@ export interface components {
             online?: boolean | null;
             ssl_forced: boolean;
         };
+        PushToken: {
+            /**
+             * @description `sandbox` (Xcode debug build) or `production` (TestFlight, ad hoc). Default: the
+             *     server's `[apns] environment`.
+             */
+            environment?: string | null;
+            /** @description APNs device token, hex as the app gets it from `registerForRemoteNotifications`. */
+            token: string;
+        };
         QbittorrentData: {
             /** @description Alternative ("turtle") speed limits on. */
             alt_speed: boolean;
@@ -2469,6 +2517,77 @@ export interface components {
             /** Format: int64 */
             tx_bytes: number;
         };
+        WidgetDownload: {
+            /**
+             * Format: int64
+             * @description Bytes per second.
+             */
+            dl_speed: number;
+            /** Format: int64 */
+            eta_s?: number | null;
+            name: string;
+            /**
+             * Format: double
+             * @description 0.0–1.0.
+             */
+            progress: number;
+        };
+        WidgetDownloads: {
+            /**
+             * Format: int64
+             * @description Bytes per second, across qBittorrent instances.
+             */
+            dl_speed: number;
+            /** Format: int32 */
+            downloading: number;
+            /** Format: int32 */
+            errored: number;
+            /** @description Busiest downloads first (at most 4). */
+            items: components["schemas"]["WidgetDownload"][];
+            /** Format: int64 */
+            up_speed: number;
+        };
+        /** @description One number per visible service for the small widget ("Sonarr: 3 in queue"). */
+        WidgetService: {
+            headline: string;
+            health: components["schemas"]["Health"];
+            /** @description Phosphor icon name. */
+            icon: string;
+            id: string;
+            name: string;
+        };
+        WidgetStream: {
+            paused: boolean;
+            /**
+             * Format: double
+             * @description 0.0–1.0.
+             */
+            progress?: number | null;
+            service_name: string;
+            subtitle?: string | null;
+            title: string;
+            transcoding: boolean;
+            user: string;
+        };
+        WidgetStreams: {
+            /** Format: int32 */
+            count: number;
+            /** @description At most 4. */
+            items: components["schemas"]["WidgetStream"][];
+            /** Format: int32 */
+            transcodes: number;
+        };
+        WidgetSummary: {
+            downloads?: components["schemas"]["WidgetDownloads"] | null;
+            /** Format: date-time */
+            generated_at: string;
+            nodes: components["schemas"]["NodeSummary"][];
+            /** @description Worst first. */
+            problems: components["schemas"]["Problem"][];
+            services: components["schemas"]["WidgetService"][];
+            status: components["schemas"]["StatusSummary"];
+            streams?: components["schemas"]["WidgetStreams"] | null;
+        };
         WireguardData: {
             /** @description False when no agent answers: the page shows install steps. */
             agent_installed: boolean;
@@ -2917,6 +3036,72 @@ export interface operations {
                 content?: never;
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    set_push_token: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushToken"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    delete_push_token: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4030,6 +4215,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    widget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WidgetSummary"];
                 };
             };
         };

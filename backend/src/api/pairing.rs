@@ -24,6 +24,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(complete))
         .routes(routes!(list_devices))
         .routes(routes!(delete_device))
+        .routes(routes!(set_push_token, delete_push_token))
 }
 
 #[derive(Debug, Default, Deserialize, ToSchema)]
@@ -228,6 +229,106 @@ async fn delete_device(
             None,
         )
         .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PushToken {
+    /// APNs device token, hex as the app gets it from `registerForRemoteNotifications`.
+    pub token: String,
+    /// `sandbox` (Xcode debug build) or `production` (TestFlight, ad hoc). Default: the
+    /// server's `[apns] environment`.
+    pub environment: Option<String>,
+}
+
+/// The calling device itself (push tokens are registered by the iPhone, never for it).
+fn own_device(user: &CurrentUser, id: i64) -> Result<(), ApiError> {
+    match user.via {
+        crate::auth::AuthVia::Device(d) if d == id => Ok(()),
+        _ => Err(ApiError::Forbidden),
+    }
+}
+
+/// Register this device's APNs token so alerts chosen for `push` reach it.
+#[utoipa::path(post, path = "/devices/{id}/push-token", tag = "devices",
+    params(("id" = i64, Path)),
+    request_body = PushToken,
+    responses((status = 204), (status = 400, body = ErrorBody), (status = 403, body = ErrorBody)))]
+async fn set_push_token(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<i64>,
+    Json(req): Json<PushToken>,
+) -> ApiResult<StatusCode> {
+    own_device(&user, id)?;
+    let token = req.token.trim().to_ascii_lowercase();
+    if !(32..=200).contains(&token.len()) || !token.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err(ApiError::BadRequest(
+            "token: APNs device token in hex".into(),
+        ));
+    }
+    let env = req.environment.unwrap_or_else(|| {
+        state
+            .config
+            .apns
+            .as_ref()
+            .map(|a| a.environment.clone())
+            .unwrap_or_else(|| "production".into())
+    });
+    if env != "sandbox" && env != "production" {
+        return Err(ApiError::BadRequest(
+            "environment must be sandbox or production".into(),
+        ));
+    }
+    let before = state
+        .db
+        .device(id)
+        .await?
+        .ok_or(ApiError::NotFound("no such device".into()))?;
+    state.db.set_push_token(id, &token, &env).await?;
+    if !before.push {
+        state
+            .log(
+                Some(&user.user),
+                "device.push_on",
+                &format!("device:{id}"),
+                ActivityResult::Ok,
+                Some(&format!("{} ({env})", before.name)),
+                None,
+            )
+            .await?;
+    }
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Stop push to this device (turned off in the app).
+#[utoipa::path(delete, path = "/devices/{id}/push-token", tag = "devices",
+    params(("id" = i64, Path)),
+    responses((status = 204), (status = 403, body = ErrorBody)))]
+async fn delete_push_token(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<i64>,
+) -> ApiResult<StatusCode> {
+    let device = state
+        .db
+        .device(id)
+        .await?
+        .filter(|d| user.is_owner() || d.user_id == user.user.id)
+        .ok_or(ApiError::NotFound("no such device".into()))?;
+    state.db.clear_push_token(id).await?;
+    if device.push {
+        state
+            .log(
+                Some(&user.user),
+                "device.push_off",
+                &format!("device:{id}"),
+                ActivityResult::Ok,
+                Some(&device.name),
+                None,
+            )
+            .await?;
+    }
     Ok(StatusCode::NO_CONTENT)
 }
 

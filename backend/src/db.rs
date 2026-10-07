@@ -92,6 +92,10 @@ pub struct Device {
     pub platform: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub last_seen_at: chrono::DateTime<chrono::Utc>,
+    /// An APNs token is registered (iOS push).
+    pub push: bool,
+    /// `sandbox` or `production` when `push` is set.
+    pub push_env: Option<String>,
 }
 
 #[derive(FromRow)]
@@ -102,6 +106,8 @@ struct DeviceRow {
     platform: String,
     created_at: i64,
     last_seen_at: i64,
+    push: bool,
+    push_env: Option<String>,
 }
 
 impl From<DeviceRow> for Device {
@@ -113,8 +119,20 @@ impl From<DeviceRow> for Device {
             platform: r.platform,
             created_at: ts(r.created_at),
             last_seen_at: ts(r.last_seen_at),
+            push: r.push,
+            push_env: r.push_env,
         }
     }
+}
+
+/// A device that receives iOS push.
+#[derive(Debug, Clone, FromRow)]
+pub struct PushTarget {
+    pub device_id: i64,
+    pub user_id: i64,
+    pub name: String,
+    pub token: String,
+    pub sandbox: bool,
 }
 
 /// A stored service instance. `secrets` holds sealed (encrypted) values.
@@ -498,13 +516,15 @@ impl Db {
             platform: platform.to_owned(),
             created_at: ts(now),
             last_seen_at: ts(now),
+            push: false,
+            push_env: None,
         })
     }
 
     /// The device and its user for a bearer token; updates `last_seen_at`.
     pub async fn device_user(&self, token_hash: &str) -> anyhow::Result<Option<(Device, User)>> {
         let row = sqlx::query_as::<_, DeviceRow>(
-            "SELECT id, user_id, name, platform, created_at, last_seen_at FROM devices WHERE token_hash = ?",
+            "SELECT id, user_id, name, platform, created_at, last_seen_at, push_token IS NOT NULL AS push, push_env FROM devices WHERE token_hash = ?",
         )
         .bind(token_hash)
         .fetch_optional(&self.pool)
@@ -524,7 +544,7 @@ impl Db {
 
     pub async fn list_devices(&self, user_id: Option<i64>) -> anyhow::Result<Vec<Device>> {
         let rows = sqlx::query_as::<_, DeviceRow>(
-            "SELECT id, user_id, name, platform, created_at, last_seen_at FROM devices
+            "SELECT id, user_id, name, platform, created_at, last_seen_at, push_token IS NOT NULL AS push, push_env FROM devices
              WHERE ? IS NULL OR user_id = ? ORDER BY id",
         )
         .bind(user_id)
@@ -536,7 +556,7 @@ impl Db {
 
     pub async fn device(&self, id: i64) -> anyhow::Result<Option<Device>> {
         Ok(sqlx::query_as::<_, DeviceRow>(
-            "SELECT id, user_id, name, platform, created_at, last_seen_at FROM devices WHERE id = ?",
+            "SELECT id, user_id, name, platform, created_at, last_seen_at, push_token IS NOT NULL AS push, push_env FROM devices WHERE id = ?",
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -550,6 +570,52 @@ impl Db {
             .execute(&self.pool)
             .await?;
         Ok(())
+    }
+
+    /// Register (or replace) a device's APNs token. A token moves to this device if another
+    /// device row still holds it (re-paired phone).
+    pub async fn set_push_token(&self, id: i64, token: &str, env: &str) -> anyhow::Result<()> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query(
+            "UPDATE devices SET push_token = NULL, push_env = NULL WHERE push_token = ? AND id != ?",
+        )
+        .bind(token)
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query(
+            "UPDATE devices SET push_token = ?, push_env = ?, push_updated_at = ? WHERE id = ?",
+        )
+        .bind(token)
+        .bind(env)
+        .bind(now())
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        Ok(())
+    }
+
+    /// Forget a device's APNs token (turned off in the app, or APNs said it is invalid).
+    pub async fn clear_push_token(&self, id: i64) -> anyhow::Result<()> {
+        sqlx::query(
+            "UPDATE devices SET push_token = NULL, push_env = NULL, push_updated_at = ? WHERE id = ?",
+        )
+        .bind(now())
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    /// Every device with an APNs token.
+    pub async fn push_targets(&self) -> anyhow::Result<Vec<PushTarget>> {
+        Ok(sqlx::query_as::<_, PushTarget>(
+            "SELECT id AS device_id, user_id, name, push_token AS token, push_env = 'sandbox' AS sandbox
+             FROM devices WHERE push_token IS NOT NULL ORDER BY id",
+        )
+        .fetch_all(&self.pool)
+        .await?)
     }
 
     pub async fn create_pairing(

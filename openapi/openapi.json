@@ -570,6 +570,87 @@
         }
       }
     },
+    "/devices/{id}/push-token": {
+      "post": {
+        "tags": [
+          "devices"
+        ],
+        "summary": "Register this device's APNs token so alerts chosen for `push` reach it.",
+        "operationId": "set_push_token",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushToken"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {},
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "devices"
+        ],
+        "summary": "Stop push to this device (turned off in the app).",
+        "operationId": "delete_push_token",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/events": {
       "get": {
         "tags": [
@@ -2027,6 +2108,26 @@
           }
         }
       }
+    },
+    "/widget": {
+      "get": {
+        "tags": [
+          "overview"
+        ],
+        "summary": "Everything the iPhone widgets show, in one call.",
+        "operationId": "widget",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WidgetSummary"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3073,7 +3174,8 @@
           "name",
           "platform",
           "created_at",
-          "last_seen_at"
+          "last_seen_at",
+          "push"
         ],
         "properties": {
           "created_at": {
@@ -3093,6 +3195,17 @@
           },
           "platform": {
             "type": "string"
+          },
+          "push": {
+            "type": "boolean",
+            "description": "An APNs token is registered (iOS push)."
+          },
+          "push_env": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`sandbox` or `production` when `push` is set."
           },
           "user_id": {
             "type": "integer",
@@ -5583,6 +5696,25 @@
           }
         }
       },
+      "PushToken": {
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "environment": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`sandbox` (Xcode debug build) or `production` (TestFlight, ad hoc). Default: the\nserver's `[apns] environment`."
+          },
+          "token": {
+            "type": "string",
+            "description": "APNs device token, hex as the app gets it from `registerForRemoteNotifications`."
+          }
+        }
+      },
       "QbittorrentData": {
         "type": "object",
         "required": [
@@ -7546,6 +7678,235 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "WidgetDownload": {
+        "type": "object",
+        "required": [
+          "name",
+          "progress",
+          "dl_speed"
+        ],
+        "properties": {
+          "dl_speed": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Bytes per second.",
+            "minimum": 0
+          },
+          "eta_s": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "progress": {
+            "type": "number",
+            "format": "double",
+            "description": "0.0–1.0."
+          }
+        }
+      },
+      "WidgetDownloads": {
+        "type": "object",
+        "required": [
+          "dl_speed",
+          "up_speed",
+          "downloading",
+          "errored",
+          "items"
+        ],
+        "properties": {
+          "dl_speed": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Bytes per second, across qBittorrent instances.",
+            "minimum": 0
+          },
+          "downloading": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "errored": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WidgetDownload"
+            },
+            "description": "Busiest downloads first (at most 4)."
+          },
+          "up_speed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "WidgetService": {
+        "type": "object",
+        "description": "One number per visible service for the small widget (\"Sonarr: 3 in queue\").",
+        "required": [
+          "id",
+          "name",
+          "icon",
+          "health",
+          "headline"
+        ],
+        "properties": {
+          "headline": {
+            "type": "string"
+          },
+          "health": {
+            "$ref": "#/components/schemas/Health"
+          },
+          "icon": {
+            "type": "string",
+            "description": "Phosphor icon name."
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "WidgetStream": {
+        "type": "object",
+        "required": [
+          "user",
+          "title",
+          "paused",
+          "transcoding",
+          "service_name"
+        ],
+        "properties": {
+          "paused": {
+            "type": "boolean"
+          },
+          "progress": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "0.0–1.0."
+          },
+          "service_name": {
+            "type": "string"
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "transcoding": {
+            "type": "boolean"
+          },
+          "user": {
+            "type": "string"
+          }
+        }
+      },
+      "WidgetStreams": {
+        "type": "object",
+        "required": [
+          "count",
+          "transcodes",
+          "items"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WidgetStream"
+            },
+            "description": "At most 4."
+          },
+          "transcodes": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "WidgetSummary": {
+        "type": "object",
+        "required": [
+          "generated_at",
+          "status",
+          "problems",
+          "nodes",
+          "services"
+        ],
+        "properties": {
+          "downloads": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WidgetDownloads",
+                "description": "`null` without a visible qBittorrent."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NodeSummary"
+            }
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Problem"
+            },
+            "description": "Worst first."
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WidgetService"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusSummary"
+          },
+          "streams": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WidgetStreams",
+                "description": "`null` without a visible Jellyfin or Navidrome."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },

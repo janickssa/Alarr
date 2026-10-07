@@ -496,7 +496,50 @@ async fn pairing_issues_a_revocable_device_token() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(me["auth"], "device");
 
+    // The iPhone registers its APNs token for itself; the owner's session can't do it for it.
     let id = done["device"]["id"].as_i64().unwrap();
+    let push = format!("/api/v1/devices/{id}/push-token");
+    let body = json!({"token": "A1B2".repeat(16), "environment": "sandbox"});
+    let (status, _, _) = app
+        .call("POST", &push, Some(&owner), Some(body.clone()))
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let (status, _, _) = app
+        .call(
+            "POST",
+            &push,
+            Some(&token),
+            Some(json!({"token": "not hex"})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _, _) = app.call("POST", &push, Some(&token), Some(body)).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, devices, _) = app.call("GET", "/api/v1/devices", Some(&owner), None).await;
+    let d = devices
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|d| d["id"] == id)
+        .unwrap();
+    assert_eq!(
+        (d["push"].as_bool(), d["push_env"].as_str()),
+        (Some(true), Some("sandbox"))
+    );
+    let targets = app.state.db.push_targets().await.unwrap();
+    assert_eq!(targets[0].token, "a1b2".repeat(16), "stored lower-case");
+    let (status, _, _) = app.call("DELETE", &push, Some(&token), None).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert!(app.state.db.push_targets().await.unwrap().is_empty());
+
+    // The widget summary works with a device token.
+    let (status, w, _) = app.call("GET", "/api/v1/widget", Some(&token), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(w["status"]["total"].as_u64().unwrap() > 0);
+    assert!(w["downloads"]["dl_speed"].as_u64().is_some(), "{w}");
+    assert!(w["streams"]["count"].as_u64().is_some(), "{w}");
+    assert!(!w["services"].as_array().unwrap().is_empty());
+
     let (status, _, _) = app
         .call(
             "DELETE",
