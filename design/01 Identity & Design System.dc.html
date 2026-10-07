@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/nocturne-1a631895-c413-4e2c-b774-e29b701f5465/styles.css">
+<script src="_ds/nocturne-1a631895-c413-4e2c-b774-e29b701f5465/_ds_bundle.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style>
+body{margin:0;background:#0e0f18}
+a{color:var(--color-accent)}a:hover{color:var(--color-accent-300)}
+.dv-turn{padding:40px 44px 48px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 8px}
+.dv-tid{font:500 10px 'JetBrains Mono',monospace;padding:3px 7px;background:var(--color-accent-800);color:var(--color-accent-100);border-radius:4px;text-decoration:none}
+.dv-tname{font:500 15px/1.2 Inter,sans-serif;color:var(--color-text)}
+.dv-opts{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:500 10.5px 'JetBrains Mono',monospace;padding:3px 7px;background:var(--color-neutral-800);color:var(--color-neutral-100);border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 12px/1.3 Inter,sans-serif;color:var(--color-neutral-400)}
+.dv-card{background:var(--color-bg);border-radius:12px;box-shadow:0 0 0 1px #2c2f3c;overflow:hidden}
+.dv-opt:target .dv-oid{background:var(--color-accent);color:var(--color-bg)}
+.dv-next{margin:28px 0 0;font:13px/1.5 Inter,sans-serif;color:var(--color-neutral-400)}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Batch 1 · Identity &amp; design system</span></div>
+<p style="margin:0 0 28px;font-size:13px;color:var(--color-neutral-400);max-width:720px">Built on Nocturne in dark mode. Health colours are the only saturated values in the UI. Service accents are kept at low chroma, so they never read as a status.</p>
+<div class="dv-opts">
+
+<!-- 1a NAME -->
+<div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Name &amp; logo, three proposals</div>
+<div class="dv-card" style="width:760px;padding:28px;display:flex;flex-direction:column;gap:20px">
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+<div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:24px 20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 0 0 1px var(--color-accent-700)">
+<div style="display:flex;justify-content:space-between;align-items:center"><svg width="48" height="48" viewBox="0 0 48 48" fill="none"><path d="M24 10 L11 34 L37 34 Z" stroke="#b5abfc" stroke-width="2" stroke-linejoin="round" opacity=".55"></path><circle cx="24" cy="10" r="5" fill="#232532" stroke="#d2cefd" stroke-width="2.2"></circle><circle cx="11" cy="34" r="5" fill="#232532" stroke="#d2cefd" stroke-width="2.2"></circle><circle cx="37" cy="34" r="5" fill="#232532" stroke="#d2cefd" stroke-width="2.2"></circle><circle cx="24" cy="26" r="3" fill="#9184d9"></circle></svg><span class="tag tag-accent">Recommended</span></div>
+<div style="font-size:26px;font-weight:500;letter-spacing:-0.02em">Quorum</div>
+<p style="margin:0;font-size:13px;color:var(--color-neutral-400);text-wrap:pretty">A Proxmox word meaning the cluster agrees it is healthy. Short, technical and calm. The mark is three nodes holding one core.</p>
+</div>
+<div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:24px 20px;display:flex;flex-direction:column;gap:14px">
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none"><path d="M9 22 L24 10 L39 22 V38 H9 Z" stroke="#d2cefd" stroke-width="2.2" stroke-linejoin="round"></path><path d="M24 25 C27 28 27 31 24 34 C21 31 21 28 24 25 Z" fill="#9184d9"></path></svg>
+<div style="font-size:26px;font-weight:500;letter-spacing:-0.02em">Hearth</div>
+<p style="margin:0;font-size:13px;color:var(--color-neutral-400);text-wrap:pretty">Warmer and friendlier for the household. "Home" as a place, with a small flame for "running". It reads less technical.</p>
+</div>
+<div style="background:var(--color-surface);border-radius:var(--radius-lg);padding:24px 20px;display:flex;flex-direction:column;gap:14px">
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none"><path d="M18 11 h12" stroke="#d2cefd" stroke-width="2.2" stroke-linecap="round"></path><rect x="13" y="15" width="22" height="24" rx="6" stroke="#d2cefd" stroke-width="2.2"></rect><rect x="22" y="21" width="4" height="12" rx="2" fill="#9184d9"></rect></svg>
+<div style="font-size:26px;font-weight:500;letter-spacing:-0.02em">Lantern</div>
+<p style="margin:0;font-size:13px;color:var(--color-neutral-400);text-wrap:pretty">A light you carry off the network and back in over the VPN. It matches the glow-not-flood accent, and the name is broader than homelab.</p>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:24px;padding-top:4px">
+<div style="display:flex;align-items:center;gap:10px"><svg width="28" height="28" viewBox="0 0 48 48" fill="none"><path d="M24 10 L11 34 L37 34 Z" stroke="#b5abfc" stroke-width="2.4" stroke-linejoin="round" opacity=".55"></path><circle cx="24" cy="10" r="5" fill="#161826" stroke="#d2cefd" stroke-width="2.6"></circle><circle cx="11" cy="34" r="5" fill="#161826" stroke="#d2cefd" stroke-width="2.6"></circle><circle cx="37" cy="34" r="5" fill="#161826" stroke="#d2cefd" stroke-width="2.6"></circle><circle cx="24" cy="26" r="3.4" fill="#9184d9"></circle></svg><span style="font-size:18px;font-weight:500;letter-spacing:-0.015em">Quorum</span></div>
+<span style="font-size:12px;color:var(--color-neutral-500)">Lockup used in the sidebar, login and splash. The rest of this board uses Quorum.</span>
+</div>
+</div></div>
+
+<!-- 1b COLOR -->
+<div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Colour: ground, health, service accents</div>
+<div class="dv-card" style="width:760px;padding:28px;display:flex;flex-direction:column;gap:26px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<h6 style="color:var(--color-neutral-400);margin:0">Ground &amp; surfaces (Nocturne)</h6>
+<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px">
+<sc-for list="{{ grounds }}" as="g" hint-placeholder-count="5"><div style="display:flex;flex-direction:column;gap:6px"><div style="height:52px;border-radius:8px;background:{{ g.v }};box-shadow:0 0 0 1px #3f424d"></div><div style="font-size:12px">{{ g.n }}</div><div style="font:11px 'JetBrains Mono',monospace;color:var(--color-neutral-500)">{{ g.t }}</div></div></sc-for>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<h6 style="color:var(--color-neutral-400);margin:0">Health: reserved, always with an icon and a label</h6>
+<div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px">
+<sc-for list="{{ health }}" as="h" hint-placeholder-count="6"><div style="display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:8px;background:{{ h.fill }}"><i class="ph-fill {{ h.icon }}" style="font-size:22px;color:{{ h.fg }}"></i><div style="font-size:13px;font-weight:500;color:{{ h.fg }}">{{ h.label }}</div><div style="font:10px/1.4 'JetBrains Mono',monospace;color:var(--color-neutral-300)">{{ h.code }}</div></div></sc-for>
+</div>
+<div style="font-size:12px;color:var(--color-neutral-500)">Foreground L 0.72–0.83 at chroma 0.11–0.16. Tinted fill L 0.30–0.32. Text on fill passes AA (≥ 6:1).</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<h6 style="color:var(--color-neutral-400);margin:0">Service accents: chroma ≤ 0.075, hues kept clear of health</h6>
+<div style="display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:8px">
+<sc-for list="{{ accents }}" as="a" hint-placeholder-count="10"><div style="display:flex;flex-direction:column;gap:6px"><div style="height:40px;border-radius:8px;background:{{ a.tile }};display:grid;place-items:center"><div style="width:16px;height:16px;border-radius:5px;background:{{ a.ink }}"></div></div><div style="font-size:12px">{{ a.n }}</div><div style="font:10px 'JetBrains Mono',monospace;color:var(--color-neutral-500)">h {{ a.h }}</div></div></sc-for>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<h6 style="color:var(--color-neutral-400);margin:0">Module catalogue: icon (Phosphor) + accent</h6>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 16px">
+<sc-for list="{{ modules }}" as="m" hint-placeholder-count="24"><div style="display:flex;align-items:center;gap:10px;min-height:36px"><div style="width:30px;height:30px;flex:none;border-radius:8px;background:{{ m.tile }};display:grid;place-items:center"><i class="ph {{ m.icon }}" style="font-size:17px;color:{{ m.ink }}"></i></div><div style="min-width:0;display:flex;flex-direction:column"><span style="font-size:13px;line-height:1.2">{{ m.name }}</span><span style="font:10.5px 'JetBrains Mono',monospace;color:var(--color-neutral-500)">{{ m.ct }} · {{ m.level }}</span></div></div></sc-for>
+</div>
+<div style="font-size:12px;color:var(--color-neutral-500)">Every icon tile is also a logo slot: a dropped-in logo replaces the glyph and keeps the tinted tile. Multiple instances share an accent and get a suffix chip (e.g. "public").</div>
+</div>
+</div></div>
+
+<!-- 1c TYPE -->
+<div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Type, units &amp; formatting</div>
+<div class="dv-card" style="width:520px;padding:28px;display:flex;flex-direction:column;gap:18px">
+<sc-for list="{{ typeScale }}" as="t" hint-placeholder-count="8"><div style="display:grid;grid-template-columns:110px minmax(0,1fr);gap:16px;align-items:baseline"><div style="font:10.5px/1.4 'JetBrains Mono',monospace;color:var(--color-neutral-500)">{{ t.spec }}</div><div style="font-family:{{ t.ff }};font-size:{{ t.size }};font-weight:{{ t.w }};letter-spacing:{{ t.ls }};line-height:1.2">{{ t.sample }}</div></div></sc-for>
+<div style="height:1px;background:linear-gradient(to right,transparent,var(--color-divider) 48px,var(--color-divider) calc(100% - 48px),transparent)"></div>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 20px;font-size:13px">
+<sc-for list="{{ formats }}" as="f" hint-placeholder-count="8"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;color:var(--color-neutral-500)">{{ f.k }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px">{{ f.v }}</span></div></sc-for>
+</div>
+<div style="font-size:12px;color:var(--color-neutral-500);text-wrap:pretty">Native iOS uses SF Pro / SF Mono at the same roles and supports Dynamic Type. Web uses Inter / JetBrains Mono with tabular figures for every number that updates live.</div>
+</div></div>
+
+<!-- 1d SPACING -->
+<div class="dv-opt" id="1d"><div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Spacing, radius, elevation, density</div>
+<div class="dv-card" style="width:520px;padding:28px;display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:flex-end;gap:14px">
+<sc-for list="{{ spaces }}" as="s" hint-placeholder-count="6"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:{{ s.px }};height:{{ s.px }};background:var(--color-accent-700);border-radius:2px"></div><span style="font:10px 'JetBrains Mono',monospace;color:var(--color-neutral-500)">{{ s.n }}</span></div></sc-for>
+</div>
+<div style="display:flex;gap:14px">
+<div style="flex:1;height:64px;border-radius:4px;background:var(--color-surface);display:grid;place-items:center;font-size:11px;color:var(--color-neutral-400)">sm 4 · chips</div>
+<div style="flex:1;height:64px;border-radius:8px;background:var(--color-surface);display:grid;place-items:center;font-size:11px;color:var(--color-neutral-400)">md 8 · cards</div>
+<div style="flex:1;height:64px;border-radius:14px;background:var(--color-surface);display:grid;place-items:center;font-size:11px;color:var(--color-neutral-400)">lg 14 · sheets</div>
+</div>
+<div style="display:flex;gap:14px">
+<div style="flex:1;height:64px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-sm);display:grid;place-items:center;font-size:11px;color:var(--color-neutral-400)">sm · cards</div>
+<div style="flex:1;height:64px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-md);display:grid;place-items:center;font-size:11px;color:var(--color-neutral-400)">md · menus, panel</div>
+<div style="flex:1;height:64px;border-radius:8px;background:var(--color-surface);box-shadow:var(--shadow-lg);display:grid;place-items:center;font-size:11px;color:var(--color-neutral-400)">lg · sheets, dialogs</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:11px;color:var(--color-neutral-500)">Comfortable · mobile · 56 pt rows</span>
+<div style="background:var(--color-surface);border-radius:8px;padding:0 12px;height:56px;display:flex;align-items:center;gap:10px"><i class="ph-fill ph-check-circle" style="color:oklch(0.78 0.13 155);font-size:18px"></i><span style="font-size:15px;flex:1">sonarr</span><span style="font:12px 'JetBrains Mono',monospace;color:var(--color-neutral-400)">CT 123</span></div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:11px;color:var(--color-neutral-500)">Compact · desktop · 36 px rows</span>
+<div style="background:var(--color-surface);border-radius:8px;padding:0 10px;height:36px;display:flex;align-items:center;gap:8px"><i class="ph-fill ph-check-circle" style="color:oklch(0.78 0.13 155);font-size:14px"></i><span style="font-size:13px;flex:1">sonarr</span><span style="font:11.5px 'JetBrains Mono',monospace;color:var(--color-neutral-400)">CT 123</span></div></div>
+</div>
+<div style="font-size:12px;color:var(--color-neutral-500);text-wrap:pretty">Mobile: 16 px page margins, 12 px card gaps, 44 pt minimum hit targets. Desktop: 24 px gutters, 16 px gaps, 3–4 column grid at 1280 px and above.</div>
+</div></div>
+
+<!-- 1e STATUS & DATA -->
+<div class="dv-opt" id="1e"><div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>Status, stat tiles, resource bars, charts</div>
+<div class="dv-card" style="width:760px;padding:28px;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:10px"><h6 style="color:var(--color-neutral-400);margin:0">Status dot &amp; badge</h6>
+<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+<sc-for list="{{ health }}" as="h" hint-placeholder-count="6"><span style="display:inline-flex;align-items:center;gap:6px;padding:3px 9px 3px 7px;border-radius:6px;background:{{ h.fill }};color:{{ h.fg }};font-size:12px;font-weight:500"><i class="ph-fill {{ h.icon }}" style="font-size:14px"></i>{{ h.label }}</span></sc-for>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center;font-size:13px">
+<sc-for list="{{ health }}" as="h" hint-placeholder-count="6"><span style="display:inline-flex;align-items:center;gap:7px"><span style="width:8px;height:8px;border-radius:50%;background:{{ h.fg }};box-shadow:0 0 0 3px {{ h.fill }}"></span>{{ h.short }}</span></sc-for>
+</div>
+<div style="font-size:12px;color:var(--color-neutral-500)">The dot is only used next to a text label (in rows and tables). Standalone status always uses the badge or a filled icon.</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">
+<sc-for list="{{ stats }}" as="s" hint-placeholder-count="4"><div style="background:var(--color-surface);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:4px"><span style="font-size:11px;color:var(--color-neutral-400)">{{ s.label }}</span><div style="display:flex;align-items:baseline;gap:4px"><span style="font-size:26px;font-weight:500;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">{{ s.v }}</span><span style="font-size:13px;color:var(--color-neutral-400)">{{ s.u }}</span></div><span style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:var(--color-neutral-400)"><i class="ph {{ s.ti }}" style="font-size:12px"></i>{{ s.trend }}</span></div></sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px"><h6 style="color:var(--color-neutral-400);margin:0">Resource bar: thresholds at 80 % and 90 %</h6>
+<sc-for list="{{ bars }}" as="b" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;gap:5px"><div style="display:flex;justify-content:space-between;font-size:12.5px"><span style="display:inline-flex;align-items:center;gap:6px">{{ b.label }}<sc-if value="{{ b.flag }}" hint-placeholder-val="{{ false }}"><i class="ph-fill {{ b.flagIcon }}" style="color:{{ b.color }};font-size:13px"></i></sc-if></span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--color-neutral-300)">{{ b.val }}</span></div><div style="position:relative;height:6px;border-radius:3px;background:var(--color-neutral-800)"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ b.pct }};border-radius:3px;background:{{ b.color }}"></div><div style="position:absolute;left:80%;top:-2px;bottom:-2px;width:1px;background:var(--color-neutral-600)"></div><div style="position:absolute;left:90%;top:-2px;bottom:-2px;width:1px;background:var(--color-neutral-600)"></div></div></div></sc-for>
+<div style="font-size:12px;color:var(--color-neutral-500)">Below 80 % the fill is neutral-300, so it stays quiet. At 80–89 % it turns amber with a warning icon, and at 90 % or more red with an error icon. The ticks mark both thresholds.</div>
+</div>
+<div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:20px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:12px"><h6 style="color:var(--color-neutral-400);margin:0">Sparkline</h6>
+<div style="background:var(--color-surface);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="color:var(--color-neutral-400)">CPU · 24 h</span><span style="font-family:'JetBrains Mono',monospace">18 %</span></div><svg width="176" height="34" viewBox="0 0 176 34"><path d="{{ sparkArea }}" fill="#9184d9" opacity=".14"></path><path d="{{ sparkLine }}" stroke="#b5abfc" stroke-width="1.5" fill="none" stroke-linejoin="round"></path></svg></div>
+<h6 style="color:var(--color-neutral-400);margin:0">Uptime · 24 h strip</h6>
+<div style="display:flex;gap:2px;height:20px"><sc-for list="{{ uptime }}" as="u" hint-placeholder-count="48"><div style="flex:1;border-radius:1.5px;background:{{ u }}"></div></sc-for></div>
+<div style="display:flex;justify-content:space-between;font:10px 'JetBrains Mono',monospace;color:var(--color-neutral-500)"><span>24 h ago</span><span>99.3 %</span><span>now</span></div>
+</div>
+<div style="background:var(--color-surface);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:500">Network · pve-01</span>
+<div class="seg" style="font-size:12px"><label class="seg-opt" style="padding:4px 10px;font-size:12px"><input type="radio" name="rng">1 h</label><label class="seg-opt" style="padding:4px 10px;font-size:12px"><input type="radio" name="rng" checked>24 h</label><label class="seg-opt" style="padding:4px 10px;font-size:12px"><input type="radio" name="rng">7 d</label></div></div>
+<div style="display:flex;gap:16px;font-size:11.5px;color:var(--color-neutral-400)"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:2px;background:#b5abfc"></span>In 42.6 MB/s</span><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:0;border-top:2px dashed #9397ab"></span>Out 6.1 MB/s</span></div>
+<svg width="100%" height="120" viewBox="0 0 480 120" preserveAspectRatio="none"><g stroke="#3f424d" stroke-width="1"><line x1="0" y1="20" x2="480" y2="20"></line><line x1="0" y1="60" x2="480" y2="60"></line><line x1="0" y1="100" x2="480" y2="100"></line></g><path d="{{ chartArea }}" fill="#9184d9" opacity=".12"></path><path d="{{ chartIn }}" stroke="#b5abfc" stroke-width="1.6" fill="none" vector-effect="non-scaling-stroke"></path><path d="{{ chartOut }}" stroke="#9397ab" stroke-width="1.4" stroke-dasharray="4 3" fill="none" vector-effect="non-scaling-stroke"></path></svg>
+<div style="display:flex;justify-content:space-between;font:10px 'JetBrains Mono',monospace;color:var(--color-neutral-500)"><span>08:00</span><span>14:00</span><span>20:00</span><span>02:00</span><span>now</span></div>
+</div>
+</div>
+</div></div>
+
+<!-- 1f CARDS -->
+<div class="dv-opt" id="1f"><div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a>Service card: compact, standard, large, health-check</div>
+<div class="dv-card" style="width:760px;padding:28px;display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;flex-direction:column;gap:6px"><h6 style="color:var(--color-neutral-400);margin:0">Compact · list row</h6>
+<div style="background:var(--color-surface);border-radius:8px;display:flex;flex-direction:column">
+<sc-for list="{{ compactRows }}" as="r" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:12px;padding:0 14px;min-height:52px"><div style="width:30px;height:30px;flex:none;border-radius:8px;background:{{ r.tile }};display:grid;place-items:center"><i class="ph {{ r.icon }}" style="font-size:17px;color:{{ r.ink }}"></i></div><div style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-size:14px">{{ r.name }}</span><span style="font-size:12px;color:var(--color-neutral-400)">{{ r.sub }}</span></div><span style="display:inline-flex;align-items:center;gap:5px;padding:2px 8px 2px 6px;border-radius:6px;background:{{ r.hfill }};color:{{ r.hfg }};font-size:11.5px;font-weight:500"><i class="ph-fill {{ r.hicon }}" style="font-size:13px"></i>{{ r.hlabel }}</span><i class="ph ph-caret-right" style="color:var(--color-neutral-500)"></i></div></sc-for>
+</div></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:6px"><h6 style="color:var(--color-neutral-400);margin:0">Standard · Home grid</h6>
+<div style="background:var(--color-surface);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:8px;background:oklch(0.33 0.045 305);display:grid;place-items:center"><i class="ph ph-film-strip" style="font-size:17px;color:oklch(0.84 0.07 305)"></i></div><span style="font-size:14px;flex:1">Jellyfin</span><i class="ph-fill ph-check-circle" style="color:oklch(0.78 0.13 155);font-size:16px" title="Healthy"></i></div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:24px;font-weight:500;letter-spacing:-0.02em">2 streams</span><span style="font-size:12.5px;color:var(--color-neutral-400)">1 transcode · 38 Mbit/s</span></div>
+<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--color-neutral-500)"><span style="font-family:'JetBrains Mono',monospace">CT 108</span><span>Updated 12 s ago</span></div>
+</div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><h6 style="color:var(--color-neutral-400);margin:0">Standard · needs attention</h6>
+<div style="background:var(--color-surface);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 0 1px oklch(0.55 0.1 80)">
+<div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:8px;background:oklch(0.33 0.045 222);display:grid;place-items:center"><i class="ph ph-television-simple" style="font-size:17px;color:oklch(0.84 0.07 222)"></i></div><span style="font-size:14px;flex:1">Sonarr</span><span style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px 2px 5px;border-radius:6px;background:oklch(0.32 0.055 80);color:oklch(0.83 0.13 80);font-size:11px;font-weight:500"><i class="ph-fill ph-warning" style="font-size:12px"></i>Warning</span></div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:24px;font-weight:500;letter-spacing:-0.02em">3 in queue</span><span style="font-size:12.5px;color:oklch(0.83 0.13 80)">Indexer unavailable · 6 h</span></div>
+<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--color-neutral-500)"><span style="font-family:'JetBrains Mono',monospace">CT 123</span><span>Updated 8 s ago</span></div>
+</div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><h6 style="color:var(--color-neutral-400);margin:0">Health-check</h6>
+<div style="background:var(--color-surface);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:8px;background:oklch(0.33 0.045 115);display:grid;place-items:center"><i class="ph ph-books" style="font-size:17px;color:oklch(0.84 0.07 115)"></i></div><span style="font-size:14px;flex:1">BookStack</span><i class="ph-fill ph-check-circle" style="color:oklch(0.78 0.13 155);font-size:16px"></i></div>
+<div style="display:flex;align-items:baseline;gap:4px"><span style="font-size:24px;font-weight:500;letter-spacing:-0.02em">42</span><span style="font-size:13px;color:var(--color-neutral-400)">ms</span><span style="font-size:12px;color:var(--color-neutral-500);margin-left:auto">99.9 % · 7 d</span></div>
+<button class="btn btn-secondary" style="justify-content:center;font-size:13px"><i class="ph ph-arrow-square-out"></i>Open</button>
+</div></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px"><h6 style="color:var(--color-neutral-400);margin:0">Large · with mini chart</h6>
+<div style="background:var(--color-surface);border-radius:8px;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:20px;align-items:center">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:8px;background:oklch(0.33 0.045 190);display:grid;place-items:center"><i class="ph ph-arrows-down-up" style="font-size:17px;color:oklch(0.84 0.07 190)"></i></div><span style="font-size:14px">qBittorrent</span><span style="display:inline-flex;align-items:center;gap:4px;padding:2px 7px 2px 5px;border-radius:6px;background:oklch(0.31 0.05 240);color:oklch(0.77 0.11 240);font-size:11px;font-weight:500"><i class="ph ph-circle-notch" style="font-size:12px"></i>4 downloading</span></div>
+<div style="display:flex;gap:24px"><div style="display:flex;flex-direction:column"><span style="font-size:11px;color:var(--color-neutral-400)">Down</span><span style="font-size:22px;font-weight:500;font-variant-numeric:tabular-nums">38.2 <span style="font-size:13px;color:var(--color-neutral-400)">MB/s</span></span></div><div style="display:flex;flex-direction:column"><span style="font-size:11px;color:var(--color-neutral-400)">Up</span><span style="font-size:22px;font-weight:500;font-variant-numeric:tabular-nums">2.4 <span style="font-size:13px;color:var(--color-neutral-400)">MB/s</span></span></div><div style="display:flex;flex-direction:column"><span style="font-size:11px;color:var(--color-neutral-400)">Free</span><span style="font-size:22px;font-weight:500;font-variant-numeric:tabular-nums">1.8 <span style="font-size:13px;color:var(--color-neutral-400)">TB</span></span></div></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px"><svg width="260" height="64" viewBox="0 0 176 34" preserveAspectRatio="none"><path d="{{ sparkArea2 }}" fill="#9184d9" opacity=".14"></path><path d="{{ sparkLine2 }}" stroke="#b5abfc" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"></path></svg><span style="font:10px 'JetBrains Mono',monospace;color:var(--color-neutral-500)">Last 10 min</span></div>
+</div></div>
+</div></div>
+
+<!-- 1g MEDIA -->
+<div class="dv-opt" id="1g"><div class="dv-olabel"><a class="dv-oid" href="#1g">1g</a>Media: poster, now playing, queue row, request tracker</div>
+<div class="dv-card" style="width:760px;padding:28px;display:flex;flex-direction:column;gap:24px">
+<div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:8px"><h6 style="color:var(--color-neutral-400);margin:0">Poster card</h6>
+<div style="display:flex;gap:10px">
+<sc-for list="{{ posters }}" as="p" hint-placeholder-count="3"><div style="width:96px;display:flex;flex-direction:column;gap:6px"><div style="aspect-ratio:2/3;border-radius:8px;background:linear-gradient(170deg,{{ p.c1 }},{{ p.c2 }});position:relative;display:flex;align-items:flex-end;padding:7px;box-shadow:0 0 0 1px #3f424d"><span style="font:9.5px/1.3 'JetBrains Mono',monospace;color:var(--color-neutral-400)">poster</span><sc-if value="{{ p.isNew }}" hint-placeholder-val="{{ false }}"><span class="tag tag-accent" style="position:absolute;top:6px;left:6px;font-size:10px;padding:1px 6px">New</span></sc-if></div><span style="font-size:12.5px;line-height:1.25">{{ p.t }}</span><span style="font-size:11px;color:var(--color-neutral-500)">{{ p.m }}</span></div></sc-for>
+</div></div>
+<div style="display:flex;flex-direction:column;gap:8px"><h6 style="color:var(--color-neutral-400);margin:0">Now playing row</h6>
+<div style="background:var(--color-surface);border-radius:8px;padding:12px;display:flex;gap:12px">
+<div style="width:52px;aspect-ratio:2/3;flex:none;border-radius:6px;background:linear-gradient(170deg,#3b3560,#1d1f2e);box-shadow:0 0 0 1px #3f424d"></div>
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:14px">The Long Orbit · S02E05</span><span class="tag tag-neutral" style="font-size:10.5px;padding:2px 7px">Transcode</span></div>
+<span style="font-size:12px;color:var(--color-neutral-400)">mara · Living room TV · 1080p HEVC → H.264 · 12.4 Mbit/s</span>
+<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:4px;border-radius:2px;background:var(--color-neutral-800)"><div style="width:58%;height:100%;border-radius:2px;background:var(--color-neutral-300)"></div></div><span style="font:11px 'JetBrains Mono',monospace;color:var(--color-neutral-400)">31:12 / 54:00</span></div>
+<span style="font-size:11px;color:var(--color-neutral-500)">Reason: audio codec not supported (TrueHD)</span>
+</div></div>
+<h6 style="color:var(--color-neutral-400);margin:8px 0 0">Torrent / queue row</h6>
+<div style="background:var(--color-surface);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;justify-content:space-between;gap:10px"><span style="font:12.5px 'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Glass.Meridian.2025.2160p.WEB-DL.DDP5.1</span><span style="display:inline-flex;align-items:center;gap:4px;color:oklch(0.77 0.11 240);font-size:11.5px;flex:none"><i class="ph ph-circle-notch"></i>Downloading</span></div>
+<div style="height:4px;border-radius:2px;background:var(--color-neutral-800)"><div style="width:62%;height:100%;border-radius:2px;background:oklch(0.77 0.11 240)"></div></div>
+<div style="display:flex;gap:14px;font:11.5px 'JetBrains Mono',monospace;color:var(--color-neutral-400)"><span>62 %</span><span>11.4 / 18.4 GB</span><span>↓ 24.1 MB/s</span><span>ETA 5 min</span><span style="margin-left:auto">radarr</span></div>
+</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px"><h6 style="color:var(--color-neutral-400);margin:0">Request tracker stepper</h6>
+<sc-for list="{{ trackers }}" as="tr" hint-placeholder-count="2"><div style="background:var(--color-surface);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:14px">{{ tr.title }}</span><span style="font-size:11.5px;color:var(--color-neutral-400)">{{ tr.meta }}</span></div>
+<div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px">
+<sc-for list="{{ tr.steps }}" as="st" hint-placeholder-count="6"><div style="display:flex;flex-direction:column;gap:7px"><div style="height:3px;border-radius:2px;background:{{ st.bar }}"></div><div style="display:flex;align-items:center;gap:5px;font-size:12px;color:{{ st.fg }}"><i class="{{ st.icon }}" style="font-size:13px"></i>{{ st.label }}</div><span style="font-size:11px;color:{{ st.subfg }}">{{ st.sub }}</span></div></sc-for>
+</div></div></sc-for>
+</div>
+</div></div>
+
+<!-- 1h ACTIONS -->
+<div class="dv-opt" id="1h"><div class="dv-olabel"><a class="dv-oid" href="#1h">1h</a>Power menu, confirmations, toasts, banners</div>
+<div class="dv-card" style="width:760px;padding:28px;display:flex;flex-direction:column;gap:24px">
+<div style="display:grid;grid-template-columns:200px repeat(2,minmax(0,1fr));gap:16px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:8px"><h6 style="color:var(--color-neutral-400);margin:0">Power menu</h6>
+<div style="background:var(--color-surface);border-radius:8px;box-shadow:var(--shadow-md);padding:4px;display:flex;flex-direction:column">
+<div style="padding:6px 10px;font:11px 'JetBrains Mono',monospace;color:var(--color-neutral-500)">CT 123 · sonarr · running</div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;font-size:13.5px;opacity:.45"><i class="ph ph-play"></i>Start</div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;font-size:13.5px;background:color-mix(in srgb,var(--color-text) 7%,transparent)"><i class="ph ph-power"></i>Shutdown</div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;font-size:13.5px"><i class="ph ph-arrow-clockwise"></i>Reboot</div>
+<div style="height:1px;margin:4px 8px;background:var(--color-divider)"></div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;font-size:13.5px;color:oklch(0.72 0.16 25)"><i class="ph ph-stop"></i>Stop (hard)</div>
+</div></div>
+<div style="display:flex;flex-direction:column;gap:8px"><h6 style="color:var(--color-neutral-400);margin:0">Confirm · normal</h6>
+<div style="background:var(--color-surface);border-radius:14px;box-shadow:var(--shadow-lg);padding:18px;display:flex;flex-direction:column;gap:12px">
+<div style="font-size:18px;font-weight:500">Reboot sonarr?</div>
+<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--color-bg)"><i class="ph ph-cube" style="color:var(--color-neutral-400)"></i><span style="font:12.5px 'JetBrains Mono',monospace">CT 123 · sonarr · pve-02</span></div>
+<p style="margin:0;font-size:13px;color:var(--color-neutral-300);text-wrap:pretty">Sonarr will be offline for about 30 s. Linked: Sonarr (healthy).</p>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-secondary">Cancel</button><button class="btn btn-primary"><i class="ph ph-arrow-clockwise"></i>Reboot</button></div>
+</div></div>
+<div style="display:flex;flex-direction:column;gap:8px"><h6 style="color:var(--color-neutral-400);margin:0">Confirm · destructive</h6>
+<div style="background:var(--color-surface);border-radius:14px;box-shadow:0 0 0 1px oklch(0.5 0.12 25),0 16px 40px rgba(0,0,0,.65);padding:18px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:8px;font-size:18px;font-weight:500"><i class="ph-fill ph-warning-octagon" style="color:oklch(0.72 0.16 25)"></i>Hard stop qbittorrent?</div>
+<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--color-bg)"><i class="ph ph-cube" style="color:var(--color-neutral-400)"></i><span style="font:12.5px 'JetBrains Mono',monospace">CT 120 · qbittorrent · pve-01</span></div>
+<p style="margin:0;font-size:13px;color:var(--color-neutral-300);text-wrap:pretty">This is like pulling the power cord. 4 active downloads may corrupt. Use Shutdown for a clean stop.</p>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-secondary">Shutdown instead</button><button class="btn" style="color:oklch(0.76 0.15 25);border-color:oklch(0.72 0.16 25)"><i class="ph ph-stop"></i>Stop now</button></div>
+</div></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+<sc-for list="{{ toasts }}" as="t" hint-placeholder-count="4"><div style="background:var(--color-surface);border-radius:10px;box-shadow:var(--shadow-md);padding:10px 12px;display:flex;align-items:center;gap:10px"><i class="{{ t.icon }}" style="font-size:18px;color:{{ t.fg }};flex:none"></i><div style="flex:1;min-width:0;display:flex;flex-direction:column"><span style="font-size:13px">{{ t.title }}</span><span style="font-size:11.5px;color:var(--color-neutral-400);font-family:{{ t.ff }}">{{ t.sub }}</span></div><sc-if value="{{ t.action }}" hint-placeholder-val="{{ true }}"><button class="btn btn-ghost" style="font-size:13px;flex:none">{{ t.action }}</button></sc-if></div></sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ banners }}" as="b" hint-placeholder-count="3"><div style="border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;background:{{ b.fill }}"><i class="ph-fill {{ b.icon }}" style="font-size:18px;color:{{ b.fg }};flex:none"></i><span style="flex:1;font-size:13px;color:var(--color-neutral-100)">{{ b.text }}</span><button class="btn btn-secondary" style="font-size:12.5px;padding:4px 10px;flex:none">{{ b.action }}</button></div></sc-for>
+</div>
+<div style="font-size:12px;color:var(--color-neutral-500);text-wrap:pretty">Toasts stack bottom-centre on mobile (above the tab bar) and bottom-right on desktop, with a 5 s timeout. A toast in progress stays until it resolves, then changes to success or error in place.</div>
+</div></div>
+
+<!-- 1i INPUTS & STATES -->
+<div class="dv-opt" id="1i"><div class="dv-olabel"><a class="dv-oid" href="#1i">1i</a>Filters, search, loading, empty, error</div>
+<div class="dv-card" style="width:760px;padding:28px;display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center">
+<div style="position:relative;width:300px"><i class="ph ph-magnifying-glass" style="position:absolute;left:10px;top:10px;color:var(--color-neutral-400)"></i><input class="input" style="padding-left:32px" placeholder="Search services, containers, titles…"><span style="position:absolute;right:8px;top:7px;font:11px 'JetBrains Mono',monospace;padding:2px 6px;border-radius:4px;box-shadow:0 0 0 1px var(--color-divider);color:var(--color-neutral-400)">/</span></div>
+<div class="seg"><label class="seg-opt"><input type="radio" name="f" checked>All <span style="color:var(--color-neutral-500)">24</span></label><label class="seg-opt"><input type="radio" name="f">Downloading <span style="color:var(--color-neutral-500)">4</span></label><label class="seg-opt"><input type="radio" name="f">Seeding <span style="color:var(--color-neutral-500)">17</span></label><label class="seg-opt"><input type="radio" name="f">Errored <span style="color:var(--color-neutral-500)">1</span></label></div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><span class="tag tag-outline">Node: pve-01</span><span class="tag tag-neutral">Type: CT</span><span class="tag tag-neutral">Tag: media</span><button class="btn btn-ghost" style="font-size:12px">Clear</button></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+<div style="background:var(--color-surface);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:8px;background:var(--color-neutral-800)"></div><div style="height:10px;width:80px;border-radius:4px;background:var(--color-neutral-800)"></div></div>
+<div style="height:20px;width:110px;border-radius:5px;background:var(--color-neutral-800)"></div>
+<div style="height:9px;width:140px;border-radius:4px;background:var(--color-neutral-900)"></div>
+<span style="font-size:11px;color:var(--color-neutral-500)">Loading · skeleton with a shimmer of 1.2 s</span>
+</div>
+<div style="background:var(--color-surface);border-radius:8px;padding:18px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+<div style="width:52px;height:52px;border-radius:50%;box-shadow:0 0 0 1px var(--color-neutral-700),0 0 0 8px color-mix(in srgb,var(--color-accent) 6%,transparent);display:grid;place-items:center"><i class="ph ph-tray" style="font-size:24px;color:var(--color-accent-300)"></i></div>
+<span style="font-size:14px">Nothing downloading</span><span style="font-size:12px;color:var(--color-neutral-400)">17 torrents seeding</span>
+<button class="btn btn-ghost" style="font-size:12.5px">Show seeding</button>
+</div>
+<div style="background:var(--color-surface);border-radius:8px;padding:18px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+<div style="width:52px;height:52px;border-radius:50%;background:oklch(0.31 0.07 25);display:grid;place-items:center"><i class="ph-fill ph-plugs" style="font-size:24px;color:oklch(0.72 0.16 25)"></i></div>
+<span style="font-size:14px">Can't reach Radarr</span><span style="font:11.5px 'JetBrains Mono',monospace;color:var(--color-neutral-400)">10.0.20.124:7878 · timeout 5 s</span>
+<div style="display:flex;gap:6px"><button class="btn btn-primary" style="font-size:12.5px;padding:4px 10px">Retry</button><button class="btn btn-secondary" style="font-size:12.5px;padding:4px 10px">Power menu</button></div>
+</div>
+</div>
+</div></div>
+
+<!-- 1j ICONS -->
+<div class="dv-opt" id="1j"><div class="dv-olabel"><a class="dv-oid" href="#1j">1j</a>App icon, PWA icons (incl. maskable), splash</div>
+<div class="dv-card" style="width:760px;padding:28px;display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:28px">
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap">
+<sc-for list="{{ iconSizes }}" as="ic" hint-placeholder-count="6"><div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:{{ ic.d }};height:{{ ic.d }};border-radius:{{ ic.r }};background:radial-gradient(120% 90% at 30% 15%,#353b80 0%,#262a60 40%,#161826 100%);box-shadow:inset 0 0 0 1px rgba(181,171,252,.18);display:grid;place-items:center"><svg width="{{ ic.m }}" height="{{ ic.m }}" viewBox="0 0 48 48" fill="none" style="filter:drop-shadow(0 0 6px rgba(181,171,252,.45))"><path d="M24 10 L11 34 L37 34 Z" stroke="#b5abfc" stroke-width="2.2" stroke-linejoin="round" opacity=".6"></path><circle cx="24" cy="10" r="5" fill="#262a60" stroke="#e7e5fe" stroke-width="2.4"></circle><circle cx="11" cy="34" r="5" fill="#262a60" stroke="#e7e5fe" stroke-width="2.4"></circle><circle cx="37" cy="34" r="5" fill="#262a60" stroke="#e7e5fe" stroke-width="2.4"></circle><circle cx="24" cy="26" r="3.4" fill="#b5abfc"></circle></svg></div><span style="font:10.5px 'JetBrains Mono',monospace;color:var(--color-neutral-500)">{{ ic.label }}</span></div></sc-for>
+</div>
+<div style="display:flex;gap:22px;align-items:flex-start">
+<div style="display:flex;flex-direction:column;gap:8px;align-items:center"><div style="width:140px;height:140px;position:relative;background:radial-gradient(120% 90% at 30% 15%,#353b80 0%,#262a60 40%,#161826 100%);display:grid;place-items:center"><svg width="56" height="56" viewBox="0 0 48 48" fill="none"><path d="M24 10 L11 34 L37 34 Z" stroke="#b5abfc" stroke-width="2.2" stroke-linejoin="round" opacity=".6"></path><circle cx="24" cy="10" r="5" fill="#262a60" stroke="#e7e5fe" stroke-width="2.4"></circle><circle cx="11" cy="34" r="5" fill="#262a60" stroke="#e7e5fe" stroke-width="2.4"></circle><circle cx="37" cy="34" r="5" fill="#262a60" stroke="#e7e5fe" stroke-width="2.4"></circle><circle cx="24" cy="26" r="3.4" fill="#b5abfc"></circle></svg><div style="position:absolute;inset:14px;border-radius:50%;border:1px dashed rgba(233,233,237,.4)"></div></div><span style="font:10.5px 'JetBrains Mono',monospace;color:var(--color-neutral-500)">maskable 512 · safe zone 80 %</span></div>
+<div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--color-neutral-300)">
+<span style="font-size:13px;color:var(--color-text)">Export set</span>
+<span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.7;color:var(--color-neutral-400)">ios/AppIcon 1024 (single size, Xcode 15+)<br>pwa/icon-512.png, icon-192.png (any)<br>pwa/maskable-512.png, maskable-192.png<br>apple-touch-icon 180 · favicon 32 / 16 + svg<br>theme_color #161826 · background_color #161826</span>
+<span style="color:var(--color-neutral-500);font-size:12px">The mark fills 46 % of the tile and stays inside the maskable safe zone on every Android shape.</span>
+</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;align-items:center">
+<div style="width:195px;height:422px;border-radius:28px;background:radial-gradient(60% 40% at 50% 44%,#262a60 0%,#161826 70%);box-shadow:0 0 0 1px #3f424d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;position:relative">
+<svg width="56" height="56" viewBox="0 0 48 48" fill="none" style="filter:drop-shadow(0 0 10px rgba(181,171,252,.5))"><path d="M24 10 L11 34 L37 34 Z" stroke="#b5abfc" stroke-width="2.2" stroke-linejoin="round" opacity=".6"></path><circle cx="24" cy="10" r="5" fill="#1e2142" stroke="#e7e5fe" stroke-width="2.4"></circle><circle cx="11" cy="34" r="5" fill="#1e2142" stroke="#e7e5fe" stroke-width="2.4"></circle><circle cx="37" cy="34" r="5" fill="#1e2142" stroke="#e7e5fe" stroke-width="2.4"></circle><circle cx="24" cy="26" r="3.4" fill="#b5abfc"></circle></svg>
+<span style="font-size:17px;font-weight:500;letter-spacing:-0.015em">Quorum</span>
+<span style="position:absolute;bottom:26px;font:9.5px 'JetBrains Mono',monospace;color:var(--color-neutral-500)">Connecting to quorum.home…</span>
+</div>
+<span style="font:10.5px 'JetBrains Mono',monospace;color:var(--color-neutral-500)">Splash · 390 × 844 @ 50 %</span>
+</div>
+</div></div>
+
+</div>
+<p class="dv-next">Next batches: 2 desktop web · 3 native iOS + widgets · 4 PWA iPhone/Android · 5 opt-in variants, states, interaction notes. You could also say: "go with Hearth instead", "warmer accents" or "tighten the badge style".</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const acc = h => h === 'slate'
+      ? { tile: 'oklch(0.32 0.015 265)', ink: 'oklch(0.84 0.02 265)' }
+      : { tile: `oklch(0.33 0.045 ${h})`, ink: `oklch(0.84 0.07 ${h})` };
+    const H = {
+      healthy: { label: 'Healthy', short: 'Healthy', icon: 'ph-check-circle', fg: 'oklch(0.78 0.13 155)', fill: 'oklch(0.30 0.05 155)', code: 'oklch .78 .13 155' },
+      warning: { label: 'Warning', short: 'Warning', icon: 'ph-warning', fg: 'oklch(0.83 0.13 80)', fill: 'oklch(0.32 0.055 80)', code: 'oklch .83 .13 80' },
+      down: { label: 'Down', short: 'Down / error', icon: 'ph-x-circle', fg: 'oklch(0.72 0.16 25)', fill: 'oklch(0.31 0.07 25)', code: 'oklch .72 .16 25' },
+      progress: { label: 'In progress', short: 'In progress', icon: 'ph-circle-notch', fg: 'oklch(0.77 0.11 240)', fill: 'oklch(0.31 0.05 240)', code: 'oklch .77 .11 240' },
+      disabled: { label: 'Disabled', short: 'Disabled', icon: 'ph-minus-circle', fg: '#9397ab', fill: '#2f313a', code: 'neutral-500' },
+      unknown: { label: 'Unknown', short: 'Unknown', icon: 'ph-question', fg: '#9397ab', fill: '#2f313a', code: 'neutral-500' }
+    };
+    const accentList = [['Rose', 10], ['Clay', 45], ['Sand', 75], ['Moss', 115], ['Teal', 190], ['Steel', 222], ['Iris', 268], ['Orchid', 305], ['Mauve', 335], ['Slate', 'slate']]
+      .map(([n, h]) => ({ n, h: h === 'slate' ? '265 · c .015' : h, ...acc(h) }));
+    const M = [
+      ['Proxmox cluster', 'host', 'Full', 'ph-hard-drives', 45], ['Jellyfin', 'CT 108', 'Full', 'ph-film-strip', 305], ['Jellyfin (public)', 'CT 105', 'Full', 'ph-film-strip', 305],
+      ['Seerr', 'CT 126', 'Full', 'ph-ticket', 268], ['Sonarr', 'CT 123', 'Full', 'ph-television-simple', 222], ['Radarr', 'CT 124', 'Full', 'ph-film-slate', 75],
+      ['Prowlarr', 'CT 125', 'Full', 'ph-binoculars', 335], ['Bazarr', 'CT 127', 'Full', 'ph-subtitles', 115], ['qBittorrent', 'CT 120', 'Full', 'ph-arrows-down-up', 190],
+      ['Navidrome', 'CT 119', 'Full', 'ph-music-notes', 10], ['Podgrab', 'CT 118', 'Health', 'ph-microphone', 45], ['Technitium DNS', 'CT 112', 'Full', 'ph-funnel', 190],
+      ['Nginx Proxy Manager', 'CT 115', 'Read-only', 'ph-arrows-split', 75], ['Authentik', 'CT 121', 'Read-only', 'ph-fingerprint', 10], ['WireGuard', 'CT 102', 'Read-only', 'ph-plugs-connected', 222],
+      ['Vaultwarden', 'CT 114', 'Health', 'ph-vault', 268], ['Nextcloud', 'CT 113', 'Read-only', 'ph-cloud', 222], ['lxc-updater', 'CT 104', 'Read-only', 'ph-arrows-clockwise', 45],
+      ['apt-cacher-ng', 'CT 103', 'Health', 'ph-package', 75], ['smb-share', 'CT 111', 'Health', 'ph-folder-simple', 115], ['BookStack', 'CT 117', 'Health', 'ph-books', 115],
+      ['draw.io', 'CT 116', 'Health', 'ph-flow-arrow', 75], ['Kiwix', 'CT 122', 'Health', 'ph-book-open-text', 190], ['MkDocs docs', 'CT 128', 'Health', 'ph-file-text', 268],
+      ['Custom service', 'any', 'Health', 'ph-puzzle-piece', 'slate']
+    ].map(([name, ct, level, icon, h]) => ({ name, ct, level, icon, ...acc(h) }));
+
+    const series = (n, base, amp, seed) => Array.from({ length: n }, (_, i) => base + amp * (Math.sin(i * 0.55 + seed) * 0.5 + Math.sin(i * 1.7 + seed * 2) * 0.3 + Math.cos(i * 0.21) * 0.2));
+    const path = (arr, w, h, max) => arr.map((v, i) => `${i ? 'L' : 'M'}${(i / (arr.length - 1) * w).toFixed(1)} ${(h - v / max * h).toFixed(1)}`).join(' ');
+    const area = (arr, w, h, max) => path(arr, w, h, max) + ` L${w} ${h} L0 ${h} Z`;
+    const s1 = series(32, 16, 10, 1), s2 = series(40, 22, 12, 3);
+    const cin = series(60, 55, 40, 0.4), cout = series(60, 18, 10, 2);
+
+    const stepDefs = ['Requested', 'Approved', 'Grabbed', 'Downloading', 'Imported', 'Available'];
+    const mkSteps = (done, cur, curKind, subs) => stepDefs.map((label, i) => {
+      if (i < done) return { label, bar: '#cfd3e5', fg: 'var(--color-text)', icon: 'ph-fill ph-check-circle', sub: subs[i] || '', subfg: 'var(--color-neutral-500)' };
+      if (i === cur) {
+        const c = curKind === 'warn' ? H.warning : H.progress;
+        return { label, bar: c.fg, fg: c.fg, icon: curKind === 'warn' ? 'ph-fill ph-warning' : 'ph ph-circle-notch', sub: subs[i] || '', subfg: c.fg };
+      }
+      return { label, bar: '#3f424d', fg: 'var(--color-neutral-500)', icon: 'ph ph-circle', sub: '', subfg: 'var(--color-neutral-500)' };
+    });
+
+    return {
+      grounds: [{ n: 'Ground', v: '#161826', t: '--color-bg' }, { n: 'Surface', v: '#232532', t: '--color-surface' }, { n: 'Raised', v: '#292b31', t: 'neutral-900' }, { n: 'Border', v: '#3f424d', t: 'neutral-800' }, { n: 'Accent', v: '#9184d9', t: '--color-accent' }],
+      health: Object.values(H),
+      accents: accentList,
+      modules: M,
+      typeScale: [
+        { spec: 'Large title · 32/500', ff: 'Inter', size: '32px', w: 500, ls: '-0.02em', sample: 'All 18 healthy' },
+        { spec: 'Title · 22/500', ff: 'Inter', size: '22px', w: 500, ls: '-0.015em', sample: 'Proxmox cluster' },
+        { spec: 'Stat · 26/500 tnum', ff: 'Inter', size: '26px', w: 500, ls: '-0.02em', sample: '38.2 MB/s' },
+        { spec: 'Headline · 16/500', ff: 'Inter', size: '16px', w: 500, ls: '0', sample: 'Now playing' },
+        { spec: 'Body · 15/400', ff: 'Inter', size: '15px', w: 400, ls: '0', sample: '3 requests waiting for approval' },
+        { spec: 'Caption · 12/400', ff: 'Inter', size: '12px', w: 400, ls: '0', sample: 'Updated 2 min ago' },
+        { spec: 'Overline · 11/500', ff: 'Inter', size: '11px', w: 500, ls: '0.08em', sample: 'NETWORK AND SECURITY' },
+        { spec: 'Mono · 13/400', ff: "'JetBrains Mono'", size: '13px', w: 400, ls: '0', sample: 'CT 123 · 10.0.20.123 · pve-02' }
+      ],
+      formats: [
+        { k: 'Storage', v: '412 GB · 3.6 TB' }, { k: 'Speed', v: '38.2 MB/s · 12.4 Mbit/s' },
+        { k: 'Temperature', v: '54 °C' }, { k: 'Percent', v: '12 % (space before %)' },
+        { k: 'Date', v: '7 Oct 2026 · 07-10-2026' }, { k: 'Time', v: '14:02 (24 h)' },
+        { k: 'Relative', v: '2 min ago → hover: 7 Oct 2026, 14:02' }, { k: 'Duration', v: 'Up 12 d 4 h · ETA 5 min' }
+      ],
+      spaces: [['1', 2.8], ['2', 5.6], ['3', 8.4], ['4', 11.2], ['6', 16.8], ['8', 22.4]].map(([n, v]) => ({ n: `space-${n}`, px: v * 2 + 'px' })),
+      stats: [
+        { label: 'Download', v: '38.2', u: 'MB/s', ti: 'ph-arrow-up-right', trend: '+12 % vs 1 h' },
+        { label: 'Active streams', v: '2', u: '', ti: 'ph-minus', trend: '1 transcode' },
+        { label: 'DNS blocked', v: '12', u: '%', ti: 'ph-arrow-down-right', trend: '−2 % vs yesterday' },
+        { label: 'Free on /media', v: '1.8', u: 'TB', ti: 'ph-arrow-down-right', trend: '−42 GB today' }
+      ],
+      bars: [
+        { label: 'CPU · 8 cores', val: '42 %', pct: '42%', color: '#cfd3e5', flag: false },
+        { label: 'RAM', val: '27.1 / 32 GB · 85 %', pct: '85%', color: H.warning.fg, flag: true, flagIcon: 'ph-warning' },
+        { label: 'local-zfs', val: '3.4 / 3.6 TB · 94 %', pct: '94%', color: H.down.fg, flag: true, flagIcon: 'ph-x-circle' }
+      ],
+      sparkLine: path(s1, 176, 34, 30), sparkArea: area(s1, 176, 34, 30),
+      sparkLine2: path(s2, 176, 34, 40), sparkArea2: area(s2, 176, 34, 40),
+      chartIn: path(cin, 480, 120, 110), chartArea: area(cin, 480, 120, 110), chartOut: path(cout, 480, 120, 110),
+      uptime: Array.from({ length: 48 }, (_, i) => i === 31 ? H.down.fg : i === 30 || i === 12 ? H.warning.fg : 'oklch(0.62 0.10 155)'),
+      compactRows: [
+        { name: 'Jellyfin', sub: '2 streams · CT 108', icon: 'ph-film-strip', ...acc(305), hfill: H.healthy.fill, hfg: H.healthy.fg, hicon: H.healthy.icon, hlabel: 'Healthy' },
+        { name: 'Radarr', sub: 'Unreachable for 4 min · CT 124', icon: 'ph-film-slate', ...acc(75), hfill: H.down.fill, hfg: H.down.fg, hicon: H.down.icon, hlabel: 'Down' },
+        { name: 'Navidrome', sub: 'Turned off in settings', icon: 'ph-music-notes', ...acc(10), hfill: H.disabled.fill, hfg: H.disabled.fg, hicon: H.disabled.icon, hlabel: 'Disabled' }
+      ],
+      posters: [
+        { t: 'Glass Meridian', m: 'Movie · 2025', c1: '#3b3560', c2: '#1b1d2b', isNew: true },
+        { t: 'Saltwater Kings', m: 'S01 · 8 ep', c1: '#2f4a52', c2: '#1b1d2b', isNew: false },
+        { t: 'Harbor Lights', m: 'Movie · 2024', c1: '#4f3d33', c2: '#1b1d2b', isNew: false }
+      ],
+      trackers: [
+        { title: 'Glass Meridian (2025)', meta: 'requested by leo · 2 h ago', steps: mkSteps(3, 3, 'prog', ['Seerr', 'auto', 'Radarr · 2160p', '62 % · ETA 5 min']) },
+        { title: 'Saltwater Kings · S01', meta: 'requested by mara · 1 d ago', steps: mkSteps(2, 2, 'warn', ['Seerr', 'janick', 'No seeders · 6 h']) }
+      ],
+      toasts: [
+        { icon: 'ph ph-circle-notch', fg: H.progress.fg, title: 'Rebooting sonarr', sub: 'CT 123 · pve-02', ff: "'JetBrains Mono'", action: '' },
+        { icon: 'ph-fill ph-check-circle', fg: H.healthy.fg, title: 'sonarr rebooted in 18 s', sub: 'CT 123 · UPID:pve-02:0003A1F2', ff: "'JetBrains Mono'", action: 'View task' },
+        { icon: 'ph-fill ph-x-circle', fg: H.down.fg, title: 'Start failed: jellyfin-public', sub: "storage 'tank' is not online", ff: "'JetBrains Mono'", action: 'Retry' },
+        { icon: 'ph ph-circle-notch', fg: H.progress.fg, title: 'Scanning Movies library', sub: 'Jellyfin · 34 %', ff: 'Inter', action: 'Undo' }
+      ],
+      banners: [
+        { icon: 'ph-warning', fg: H.warning.fg, fill: H.warning.fill, text: 'Sonarr reports: Indexer Prowlarr has been unavailable for 6 hours', action: 'Open Prowlarr' },
+        { icon: 'ph-pause-circle', fg: H.progress.fg, fill: H.progress.fill, text: 'DNS blocking paused · resumes in 24:13', action: 'Resume now' },
+        { icon: 'ph-wifi-slash', fg: H.down.fg, fill: H.down.fill, text: "Can't reach the backend. Showing data from 14:02. Are you on Tailscale?", action: 'Retry' }
+      ],
+      iconSizes: [
+        { d: '120px', r: '27px', m: '56px', label: '1024 iOS' }, { d: '96px', r: '22px', m: '44px', label: '512 PWA' },
+        { d: '72px', r: '16px', m: '34px', label: '192' }, { d: '60px', r: '13px', m: '28px', label: '180 touch' },
+        { d: '40px', r: '9px', m: '19px', label: '120' }, { d: '24px', r: '5px', m: '13px', label: '32 fav' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

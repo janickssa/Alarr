@@ -1,0 +1,24 @@
+# Rust
+/backend/target/
+/agent/target/
+
+# Web
+node_modules/
+/web/build/
+/web/.svelte-kit/
+
+# Local config and secrets (never commit)
+*.p8
+*.db
+*.db-*
+.env
+.env.*
+!.env.example
+quorum.toml
+!deploy/quorum.example.toml
+
+# OS / editors
+.DS_Store
+Thumbs.db
+*.swp
+.idea/

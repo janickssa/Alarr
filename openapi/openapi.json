@@ -1,0 +1,62 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Quorum API",
+    "description": "Quorum homelab control center API",
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    },
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "paths": {
+    "/info": {
+      "get": {
+        "tags": [
+          "server"
+        ],
+        "summary": "Return the server name and version. Unauthenticated; used for reachability checks.",
+        "operationId": "info",
+        "responses": {
+          "200": {
+            "description": "Server info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ServerInfo": {
+        "type": "object",
+        "description": "Basic information about the running server.",
+        "required": [
+          "name",
+          "version"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Product name."
+          },
+          "version": {
+            "type": "string",
+            "description": "Server version."
+          }
+        }
+      }
+    }
+  }
+}
