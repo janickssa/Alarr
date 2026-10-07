@@ -1,6 +1,7 @@
 //! HTTP API under `/api/v1` and its OpenAPI document.
 
 pub mod activity;
+pub mod alerts;
 pub mod auth;
 pub mod error;
 pub mod events;
@@ -96,6 +97,7 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(media::router())
         .merge(proxmox::router())
         .merge(activity::router())
+        .merge(alerts::router())
         .merge(settings::router())
         .merge(events::router())
 }

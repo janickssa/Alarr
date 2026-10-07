@@ -66,6 +66,195 @@
         }
       }
     },
+    "/alerts": {
+      "get": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Alerts, newest first.",
+        "operationId": "list_alerts",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1–200, default 50.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "Return alerts older than this id (pagination).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "description": "Only unresolved alerts.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Alert"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/mutes": {
+      "get": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Alert types the signed-in user (or this device) muted.",
+        "operationId": "get_alert_mutes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mutes"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Replace the muted alert types for the signed-in user (or this device).",
+        "operationId": "put_alert_mutes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Mutes"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mutes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/settings": {
+      "get": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Per-type alert settings and the channels.",
+        "operationId": "get_alert_settings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertSettingsView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Change per-type settings (owner).",
+        "operationId": "put_alert_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertSettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertSettingsView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid settings"
+          }
+        }
+      }
+    },
+    "/alerts/test": {
+      "post": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Send a test notification on one channel (owner).",
+        "operationId": "test_alert",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestAlert"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestAlertResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/login": {
       "post": {
         "tags": [
@@ -1873,15 +2062,49 @@
           "pending"
         ]
       },
-      "AlertEvent": {
+      "Alert": {
         "type": "object",
         "required": [
+          "id",
+          "alert_type",
+          "key",
+          "severity",
           "title",
-          "message"
+          "message",
+          "created_at",
+          "delivery"
         ],
         "properties": {
+          "alert_type": {
+            "type": "string",
+            "description": "`service_down`, `node_offline`, `disk_full`, `download_failed`,\n`certificate_expiring`, `new_request`."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "delivery": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Delivery"
+            }
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "key": {
+            "type": "string"
+          },
           "message": {
             "type": "string"
+          },
+          "resolved_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           },
           "service_id": {
             "type": [
@@ -1889,10 +2112,106 @@
               "null"
             ]
           },
+          "severity": {
+            "type": "string",
+            "description": "`critical`, `warning` or `info`."
+          },
           "title": {
             "type": "string"
           }
         }
+      },
+      "AlertEvent": {
+        "type": "object",
+        "required": [
+          "alert"
+        ],
+        "properties": {
+          "alert": {
+            "$ref": "#/components/schemas/Alert"
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Service the alert belongs to, if any (used for permission filtering)."
+          }
+        }
+      },
+      "AlertSettingsUpdate": {
+        "type": "object",
+        "required": [
+          "types"
+        ],
+        "properties": {
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TypeSettings"
+            },
+            "description": "Types to change; types not listed keep their settings."
+          }
+        }
+      },
+      "AlertSettingsView": {
+        "type": "object",
+        "required": [
+          "types",
+          "channels",
+          "timezone"
+        ],
+        "properties": {
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelInfo"
+            }
+          },
+          "timezone": {
+            "type": "string",
+            "description": "Quiet hours use this time zone (the server's local time)."
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertTypeView"
+            }
+          }
+        }
+      },
+      "AlertType": {
+        "type": "string",
+        "enum": [
+          "service_down",
+          "node_offline",
+          "disk_full",
+          "download_failed",
+          "certificate_expiring",
+          "new_request"
+        ]
+      },
+      "AlertTypeView": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TypeSettings"
+          },
+          {
+            "type": "object",
+            "required": [
+              "label",
+              "description"
+            ],
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          }
+        ]
       },
       "AppSettings": {
         "type": "object",
@@ -2337,6 +2656,32 @@
           }
         }
       },
+      "ChannelInfo": {
+        "type": "object",
+        "description": "What the settings page shows about a channel.",
+        "required": [
+          "id",
+          "label",
+          "configured",
+          "detail"
+        ],
+        "properties": {
+          "configured": {
+            "type": "boolean"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Where it delivers (e.g. ntfy server and topic), or how to set it up."
+          },
+          "id": {
+            "type": "string",
+            "description": "`ntfy` or `push`."
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
       "CheckType": {
         "type": "string",
         "enum": [
@@ -2613,6 +2958,30 @@
           }
         }
       },
+      "Delivery": {
+        "type": "object",
+        "description": "Result of delivering an alert on one channel.",
+        "required": [
+          "channel",
+          "result"
+        ],
+        "properties": {
+          "channel": {
+            "type": "string",
+            "description": "`ntfy` or `push`."
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "type": "string",
+            "description": "`sent`, `failed`, `quiet_hours`, `not_configured` or `rate_limited`."
+          }
+        }
+      },
       "Device": {
         "type": "object",
         "required": [
@@ -2775,7 +3144,7 @@
           },
           {
             "type": "object",
-            "description": "An alert fired (alerts engine arrives in phase 4).",
+            "description": "An alert fired or was resolved (`alert.resolved_at` set).",
             "required": [
               "data",
               "event"
@@ -2783,7 +3152,7 @@
             "properties": {
               "data": {
                 "$ref": "#/components/schemas/AlertEvent",
-                "description": "An alert fired (alerts engine arrives in phase 4)."
+                "description": "An alert fired or was resolved (`alert.resolved_at` set)."
               },
               "event": {
                 "type": "string",
@@ -4209,6 +4578,21 @@
         ],
         "description": "Module-specific snapshot payload."
       },
+      "Mutes": {
+        "type": "object",
+        "required": [
+          "types"
+        ],
+        "properties": {
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertType"
+            },
+            "description": "Muted alert types. From a paired device these are the device's own mutes; from the\nweb, the user's (which also apply to all their devices)."
+          }
+        }
+      },
       "NavidromeData": {
         "type": "object",
         "required": [
@@ -5243,6 +5627,22 @@
           "retry",
           "start_guest"
         ]
+      },
+      "QuietHours": {
+        "type": "object",
+        "description": "Quiet hours in the server's local time, `HH:MM`. The window may cross midnight.",
+        "required": [
+          "start",
+          "end"
+        ],
+        "properties": {
+          "end": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string"
+          }
+        }
       },
       "RecentEntry": {
         "type": "object",
@@ -6301,6 +6701,33 @@
           }
         }
       },
+      "TestAlert": {
+        "type": "object",
+        "required": [
+          "channel"
+        ],
+        "properties": {
+          "channel": {
+            "type": "string",
+            "description": "`ntfy` or `push`."
+          }
+        }
+      },
+      "TestAlertResult": {
+        "type": "object",
+        "required": [
+          "ok",
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          }
+        }
+      },
       "TimelineBucket": {
         "type": "object",
         "required": [
@@ -6630,6 +7057,40 @@
             ],
             "format": "int32",
             "minimum": 0
+          }
+        }
+      },
+      "TypeSettings": {
+        "type": "object",
+        "description": "Settings for one alert type.",
+        "required": [
+          "alert_type",
+          "enabled",
+          "channels"
+        ],
+        "properties": {
+          "alert_type": {
+            "$ref": "#/components/schemas/AlertType"
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "`ntfy` and/or `push`."
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "quiet_hours": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/QuietHours"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },

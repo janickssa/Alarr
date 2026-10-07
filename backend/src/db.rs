@@ -857,8 +857,245 @@ impl Db {
             .bind(now)
             .execute(&self.pool)
             .await?;
+        // Resolved alerts are kept 30 days.
+        sqlx::query("DELETE FROM alerts WHERE resolved_at IS NOT NULL AND resolved_at <= ?")
+            .bind(now - ALERT_RETENTION_S)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
+
+    // ---- alerts ----
+
+    /// Insert a new active alert. Fails if one is already active for the key.
+    pub async fn insert_alert(&self, a: &NewAlert, at: i64) -> anyhow::Result<Alert> {
+        let row = sqlx::query_as::<_, AlertRow>(
+            "INSERT INTO alerts (alert_type, key, service_id, severity, title, message, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *",
+        )
+        .bind(&a.alert_type)
+        .bind(&a.key)
+        .bind(&a.service_id)
+        .bind(&a.severity)
+        .bind(&a.title)
+        .bind(&a.message)
+        .bind(at)
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(row.into())
+    }
+
+    pub async fn set_alert_delivery(&self, id: i64, delivery: &[Delivery]) -> anyhow::Result<()> {
+        sqlx::query("UPDATE alerts SET delivery = ? WHERE id = ?")
+            .bind(serde_json::to_string(delivery)?)
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn resolve_alert(&self, key: &str, at: i64) -> anyhow::Result<Option<Alert>> {
+        Ok(sqlx::query_as::<_, AlertRow>(
+            "UPDATE alerts SET resolved_at = ? WHERE key = ? AND resolved_at IS NULL RETURNING *",
+        )
+        .bind(at)
+        .bind(key)
+        .fetch_optional(&self.pool)
+        .await?
+        .map(Alert::from))
+    }
+
+    pub async fn active_alerts(&self) -> anyhow::Result<Vec<Alert>> {
+        Ok(
+            sqlx::query_as::<_, AlertRow>("SELECT * FROM alerts WHERE resolved_at IS NULL")
+                .fetch_all(&self.pool)
+                .await?
+                .into_iter()
+                .map(Alert::from)
+                .collect(),
+        )
+    }
+
+    /// True if an alert with this key was ever recorded (for one-shot alerts).
+    pub async fn alert_key_seen(&self, key: &str) -> anyhow::Result<bool> {
+        Ok(
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM alerts WHERE key = ?")
+                .bind(key)
+                .fetch_one(&self.pool)
+                .await?
+                > 0,
+        )
+    }
+
+    pub async fn list_alerts(
+        &self,
+        limit: i64,
+        before_id: Option<i64>,
+        active_only: bool,
+    ) -> anyhow::Result<Vec<Alert>> {
+        Ok(sqlx::query_as::<_, AlertRow>(
+            "SELECT * FROM alerts
+             WHERE (? IS NULL OR id < ?) AND (? = 0 OR resolved_at IS NULL)
+             ORDER BY id DESC LIMIT ?",
+        )
+        .bind(before_id)
+        .bind(before_id)
+        .bind(active_only)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await?
+        .into_iter()
+        .map(Alert::from)
+        .collect())
+    }
+
+    pub async fn alert_settings(&self) -> anyhow::Result<Vec<AlertSettingRow>> {
+        Ok(
+            sqlx::query_as::<_, AlertSettingRow>("SELECT * FROM alert_settings")
+                .fetch_all(&self.pool)
+                .await?,
+        )
+    }
+
+    pub async fn save_alert_setting(&self, s: &AlertSettingRow) -> anyhow::Result<()> {
+        sqlx::query(
+            "INSERT INTO alert_settings (alert_type, enabled, channels, quiet_hours) VALUES (?, ?, ?, ?)
+             ON CONFLICT (alert_type) DO UPDATE SET enabled = excluded.enabled,
+               channels = excluded.channels, quiet_hours = excluded.quiet_hours",
+        )
+        .bind(&s.alert_type)
+        .bind(s.enabled)
+        .bind(&s.channels)
+        .bind(&s.quiet_hours)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    /// Alert types muted by a user (`device_id` None) or by one device (which also gets the
+    /// user's own mutes).
+    pub async fn alert_mutes(
+        &self,
+        user_id: i64,
+        device_id: Option<i64>,
+    ) -> anyhow::Result<Vec<String>> {
+        Ok(sqlx::query_scalar(
+            "SELECT DISTINCT alert_type FROM alert_mutes
+             WHERE user_id = ? AND (device_id IS NULL OR device_id = ?) ORDER BY alert_type",
+        )
+        .bind(user_id)
+        .bind(device_id)
+        .fetch_all(&self.pool)
+        .await?)
+    }
+
+    /// Replace the mutes stored exactly at this level (user-wide or one device).
+    pub async fn set_alert_mutes(
+        &self,
+        user_id: i64,
+        device_id: Option<i64>,
+        types: &[String],
+    ) -> anyhow::Result<()> {
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("DELETE FROM alert_mutes WHERE user_id = ? AND device_id IS ?")
+            .bind(user_id)
+            .bind(device_id)
+            .execute(&mut *tx)
+            .await?;
+        for t in types {
+            sqlx::query(
+                "INSERT INTO alert_mutes (user_id, device_id, alert_type) VALUES (?, ?, ?)",
+            )
+            .bind(user_id)
+            .bind(device_id)
+            .bind(t)
+            .execute(&mut *tx)
+            .await?;
+        }
+        tx.commit().await?;
+        Ok(())
+    }
+}
+
+/// Resolved alerts older than this are deleted by the hourly cleanup.
+pub const ALERT_RETENTION_S: i64 = 30 * 86_400;
+
+/// An alert about to be recorded.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NewAlert {
+    pub alert_type: String,
+    pub key: String,
+    pub service_id: Option<String>,
+    pub severity: String,
+    pub title: String,
+    pub message: String,
+}
+
+/// Result of delivering an alert on one channel.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct Delivery {
+    /// `ntfy` or `push`.
+    pub channel: String,
+    /// `sent`, `failed`, `quiet_hours`, `not_configured` or `rate_limited`.
+    pub result: String,
+    pub detail: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct Alert {
+    pub id: i64,
+    /// `service_down`, `node_offline`, `disk_full`, `download_failed`,
+    /// `certificate_expiring`, `new_request`.
+    pub alert_type: String,
+    pub key: String,
+    pub service_id: Option<String>,
+    /// `critical`, `warning` or `info`.
+    pub severity: String,
+    pub title: String,
+    pub message: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub resolved_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub delivery: Vec<Delivery>,
+}
+
+#[derive(FromRow)]
+struct AlertRow {
+    id: i64,
+    alert_type: String,
+    key: String,
+    service_id: Option<String>,
+    severity: String,
+    title: String,
+    message: String,
+    created_at: i64,
+    resolved_at: Option<i64>,
+    delivery: String,
+}
+
+impl From<AlertRow> for Alert {
+    fn from(r: AlertRow) -> Self {
+        Self {
+            id: r.id,
+            alert_type: r.alert_type,
+            key: r.key,
+            service_id: r.service_id,
+            severity: r.severity,
+            title: r.title,
+            message: r.message,
+            created_at: ts(r.created_at),
+            resolved_at: r.resolved_at.map(ts),
+            delivery: serde_json::from_str(&r.delivery).unwrap_or_default(),
+        }
+    }
+}
+
+/// Stored per-type alert settings; `channels` and `quiet_hours` are JSON.
+#[derive(Debug, Clone, FromRow)]
+pub struct AlertSettingRow {
+    pub alert_type: String,
+    pub enabled: bool,
+    pub channels: String,
+    pub quiet_hours: Option<String>,
 }
 
 #[cfg(test)]

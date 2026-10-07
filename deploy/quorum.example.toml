@@ -10,7 +10,9 @@ database = "/var/lib/quorum/quorum.db"
 # Optional: services imported once on first start (see services.seed.example.toml).
 # seed = "/etc/quorum/services.seed.toml"
 
-# Used from phase 4 (alerts).
+# Alerts to ntfy. If the topic needs an access token, put it in the environment as
+# QUORUM_NTFY_TOKEN (e.g. in /etc/quorum/quorum.env), not here.
+# Quiet hours use this server's local time zone.
 # [ntfy]
 # url = "https://ntfy.example.lan"
 # topic = "quorum"
