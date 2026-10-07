@@ -1437,6 +1437,10 @@ export interface components {
             /** @enum {string} */
             type: "nextcloud";
             value: components["schemas"]["NextcloudData"];
+        } | {
+            /** @enum {string} */
+            type: "wireguard";
+            value: components["schemas"]["WireguardData"];
         };
         NavidromeData: {
             /** Format: int64 */
@@ -1849,7 +1853,7 @@ export interface components {
          *     registry entry in [`build_module`].
          * @enum {string}
          */
-        ServiceKind: "proxmox" | "health_check" | "jellyfin" | "seerr" | "sonarr" | "radarr" | "prowlarr" | "bazarr" | "qbittorrent" | "navidrome" | "technitium" | "nginx_proxy_manager" | "authentik" | "nextcloud";
+        ServiceKind: "proxmox" | "health_check" | "jellyfin" | "seerr" | "sonarr" | "radarr" | "prowlarr" | "bazarr" | "qbittorrent" | "navidrome" | "technitium" | "nginx_proxy_manager" | "authentik" | "nextcloud" | "wireguard";
         ServiceRef: {
             health: components["schemas"]["Health"];
             id: string;
@@ -2217,6 +2221,34 @@ export interface components {
             /** @description `S01E03 · Episode title` for episodes. */
             subtitle?: string | null;
             title: string;
+        };
+        WgInterface: {
+            /** Format: int32 */
+            listen_port?: number | null;
+            name: string;
+            public_key: string;
+        };
+        WgPeer: {
+            allowed_ips: string[];
+            endpoint?: string | null;
+            interface: string;
+            /** Format: date-time */
+            last_handshake?: string | null;
+            /** @description From the agent's names file, when set. */
+            name?: string | null;
+            online: boolean;
+            public_key: string;
+            /** Format: int64 */
+            rx_bytes: number;
+            /** Format: int64 */
+            tx_bytes: number;
+        };
+        WireguardData: {
+            /** @description False when no agent answers: the page shows install steps. */
+            agent_installed: boolean;
+            agent_version?: string | null;
+            interfaces: components["schemas"]["WgInterface"][];
+            peers: components["schemas"]["WgPeer"][];
         };
     };
     responses: never;

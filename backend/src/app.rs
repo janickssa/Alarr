@@ -175,6 +175,7 @@ async fn seed_demo(state: &AppState) -> anyhow::Result<()> {
         ("nginx-proxy-manager", ServiceKind::NginxProxyManager, 115),
         ("authentik", ServiceKind::Authentik, 121),
         ("nextcloud", ServiceKind::Nextcloud, 113),
+        ("wireguard", ServiceKind::Wireguard, 102),
     ] {
         let (settings, secret) = match kind {
             ServiceKind::Qbittorrent

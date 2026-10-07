@@ -555,7 +555,7 @@ async fn overview_health_and_proxmox_reads() {
         .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(overview["nodes"].as_array().unwrap().len(), 3);
-    assert_eq!(overview["status"]["total"], 22);
+    assert_eq!(overview["status"]["total"], 23);
     // Health checks: Podgrab slow, draw.io down. Media: Sonarr indexer warning, Prowlarr
     // failing indexer, qBittorrent errored torrent. Network: a certificate expiring in 9 d.
     assert_eq!(

@@ -200,7 +200,7 @@ pub static CATALOGUE: &[CatalogueEntry] = &[
     entry(
         "wireguard",
         "WireGuard",
-        None,
+        Some(ServiceKind::Wireguard),
         "read-only",
         NetworkSecurity,
         "plugs-connected",

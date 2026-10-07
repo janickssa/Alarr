@@ -26,6 +26,7 @@
 	import SeerrBody from '#lib/components/service/SeerrBody.svelte';
 	import ServiceHeader from '#lib/components/service/ServiceHeader.svelte';
 	import TechnitiumBody from '#lib/components/service/TechnitiumBody.svelte';
+	import WireguardBody from '#lib/components/service/WireguardBody.svelte';
 	import SkeletonCard from '#lib/components/SkeletonCard.svelte';
 	import EmptyState from '#lib/components/EmptyState.svelte';
 	import { refetchOnLive } from '#lib/live.svelte.js';
@@ -135,6 +136,8 @@
 				<AuthentikBody data={data.value} />
 			{:else if data.type === 'nextcloud'}
 				<NextcloudBody data={data.value} />
+			{:else if data.type === 'wireguard'}
+				<WireguardBody data={data.value} />
 			{/if}
 		{/if}
 	{/if}

@@ -4187,6 +4187,24 @@
                 "$ref": "#/components/schemas/NextcloudData"
               }
             }
+          },
+          {
+            "type": "object",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "wireguard"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/WireguardData"
+              }
+            }
           }
         ],
         "description": "Module-specific snapshot payload."
@@ -5587,7 +5605,8 @@
           "technitium",
           "nginx_proxy_manager",
           "authentik",
-          "nextcloud"
+          "nextcloud",
+          "wireguard"
         ]
       },
       "ServiceRef": {
@@ -6790,6 +6809,119 @@
           },
           "title": {
             "type": "string"
+          }
+        }
+      },
+      "WgInterface": {
+        "type": "object",
+        "required": [
+          "name",
+          "public_key"
+        ],
+        "properties": {
+          "listen_port": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "public_key": {
+            "type": "string"
+          }
+        }
+      },
+      "WgPeer": {
+        "type": "object",
+        "required": [
+          "interface",
+          "public_key",
+          "allowed_ips",
+          "online",
+          "rx_bytes",
+          "tx_bytes"
+        ],
+        "properties": {
+          "allowed_ips": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "endpoint": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interface": {
+            "type": "string"
+          },
+          "last_handshake": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "From the agent's names file, when set."
+          },
+          "online": {
+            "type": "boolean"
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "rx_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "tx_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "WireguardData": {
+        "type": "object",
+        "required": [
+          "agent_installed",
+          "interfaces",
+          "peers"
+        ],
+        "properties": {
+          "agent_installed": {
+            "type": "boolean",
+            "description": "False when no agent answers: the page shows install steps."
+          },
+          "agent_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interfaces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WgInterface"
+            }
+          },
+          "peers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WgPeer"
+            }
           }
         }
       }
