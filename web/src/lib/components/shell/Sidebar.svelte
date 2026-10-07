@@ -30,11 +30,11 @@
 				match: (p: string) => p.startsWith('/proxmox')
 			},
 			{
-				href: resolve('/services') + '?category=media',
+				href: resolve('/media'),
 				label: 'Media',
 				icon: 'ph-film-strip',
 				show: hasMedia,
-				match: () => false
+				match: (p: string) => p.startsWith('/media')
 			},
 			{
 				href: resolve('/services'),

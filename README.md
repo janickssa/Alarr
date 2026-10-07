@@ -331,9 +331,9 @@ Backend module + web page for each, in this order. Each needs demo data and wire
 - [x] Prowlarr (test all indexers).
 - [x] Bazarr (search missing).
 - [x] Navidrome (scan, now playing).
-- [ ] Media overview endpoint + Media page: now playing, request tracker (match Seerr request → Sonarr/Radarr item → qBittorrent torrent by hash → Jellyfin item), combined calendar, recently added.
-- [ ] Home highlight cards for every media module.
-- [ ] Global search across guests, services, movies, series and torrents.
+- [x] Media overview endpoint + Media page: now playing, request tracker (match Seerr request → Sonarr/Radarr item → qBittorrent torrent by hash → Jellyfin item), combined calendar, recently added.
+- [x] Home highlight cards for every media module.
+- [x] Global search across guests, services, movies, series and torrents.
 
 **Definition of done:** every media page works against real services and in demo mode; library scans, approvals, searches and torrent actions work and are logged.
 

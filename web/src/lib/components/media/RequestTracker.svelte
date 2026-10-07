@@ -5,13 +5,38 @@
 
 	const STEPS = ['Requested', 'Approved', 'Grabbed', 'Downloading', 'Imported', 'Available'];
 
+	type StepState = 'done' | 'current' | 'stuck' | 'todo';
 	let {
 		title,
 		meta,
-		done,
+		done = 0,
 		stuck = false,
-		subs = []
-	}: { title: string; meta?: string; done: number; stuck?: boolean; subs?: string[] } = $props();
+		subs = [],
+		steps
+	}: {
+		title: string;
+		meta?: string;
+		done?: number;
+		stuck?: boolean;
+		subs?: string[];
+		/** Explicit step states (from the API); overrides done/stuck/subs. */
+		steps?: { label: string; state: StepState; detail?: string | null }[];
+	} = $props();
+
+	const items = $derived(
+		steps ??
+			STEPS.map((label, i) => ({
+				label,
+				state: (i < done
+					? 'done'
+					: i === done
+						? stuck
+							? 'stuck'
+							: 'current'
+						: 'todo') as StepState,
+				detail: i <= done ? (subs[i] ?? '') : ''
+			}))
+	);
 </script>
 
 <div class="tracker">
@@ -20,9 +45,12 @@
 		{#if meta}<span class="meta">{meta}</span>{/if}
 	</div>
 	<ol class="steps">
-		{#each STEPS as label, i (label)}
-			{@const state = i < done ? 'done' : i === done ? (stuck ? 'stuck' : 'current') : 'todo'}
-			<li class="step {state}" aria-current={i === done ? 'step' : undefined}>
+		{#each items as step (step.label)}
+			{@const state = step.state}
+			<li
+				class="step {state}"
+				aria-current={state === 'current' || state === 'stuck' ? 'step' : undefined}
+			>
 				<div class="bar"></div>
 				<div class="lbl">
 					<Icon
@@ -35,9 +63,9 @@
 									: 'ph-circle'}
 						fill={state === 'done' || state === 'stuck'}
 						size={13}
-					/>{label}
+					/>{step.label}
 				</div>
-				<span class="sub">{i <= done ? (subs[i] ?? '') : ''}</span>
+				<span class="sub">{step.detail ?? ''}</span>
 			</li>
 		{/each}
 	</ol>
