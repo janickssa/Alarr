@@ -170,7 +170,7 @@ pub static CATALOGUE: &[CatalogueEntry] = &[
     entry(
         "technitium",
         "Technitium DNS",
-        None,
+        Some(ServiceKind::Technitium),
         "full",
         NetworkSecurity,
         "funnel",
@@ -180,7 +180,7 @@ pub static CATALOGUE: &[CatalogueEntry] = &[
     entry(
         "nginx-proxy-manager",
         "Nginx Proxy Manager",
-        None,
+        Some(ServiceKind::NginxProxyManager),
         "read-only",
         NetworkSecurity,
         "arrows-split",
@@ -190,7 +190,7 @@ pub static CATALOGUE: &[CatalogueEntry] = &[
     entry(
         "authentik",
         "Authentik",
-        None,
+        Some(ServiceKind::Authentik),
         "read-only",
         NetworkSecurity,
         "fingerprint",
@@ -223,7 +223,7 @@ pub static CATALOGUE: &[CatalogueEntry] = &[
     entry(
         "nextcloud",
         "Nextcloud",
-        None,
+        Some(ServiceKind::Nextcloud),
         "read-only",
         Apps,
         "cloud",

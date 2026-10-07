@@ -171,11 +171,16 @@ async fn seed_demo(state: &AppState) -> anyhow::Result<()> {
         ("bazarr", ServiceKind::Bazarr, 127),
         ("qbittorrent", ServiceKind::Qbittorrent, 120),
         ("navidrome", ServiceKind::Navidrome, 119),
+        ("technitium", ServiceKind::Technitium, 112),
+        ("nginx-proxy-manager", ServiceKind::NginxProxyManager, 115),
+        ("authentik", ServiceKind::Authentik, 121),
+        ("nextcloud", ServiceKind::Nextcloud, 113),
     ] {
         let (settings, secret) = match kind {
-            ServiceKind::Qbittorrent | ServiceKind::Navidrome => {
-                (json!({"username": "demo"}), "password")
-            }
+            ServiceKind::Qbittorrent
+            | ServiceKind::Navidrome
+            | ServiceKind::NginxProxyManager
+            | ServiceKind::Nextcloud => (json!({"username": "demo"}), "password"),
             _ => (json!({}), "api_key"),
         };
         rows.push(add(

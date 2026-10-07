@@ -780,6 +780,29 @@ export interface components {
         };
         /** @enum {string} */
         ArrFlavor: "sonarr" | "radarr";
+        AuthEvent: {
+            /** @description `login`, `login_failed`, `logout`, `authorize_application`, … */
+            action: string;
+            app?: string | null;
+            /** Format: date-time */
+            at: string;
+            client_ip?: string | null;
+            user?: string | null;
+        };
+        AuthentikData: {
+            events: components["schemas"]["AuthEvent"][];
+            /** Format: int64 */
+            failed_24h: number;
+            /** Format: int64 */
+            logins_24h: number;
+            /** @description True when more than [`MAX_PAGES`] pages of logins happened and the count is a floor. */
+            logins_capped: boolean;
+            outposts: components["schemas"]["Outpost"][];
+            /** Format: int64 */
+            sessions?: number | null;
+            /** @description Newer Authentik release, when the server reports it is outdated. */
+            update_available?: string | null;
+        };
         BackendInfo: {
             demo: boolean;
             name: string;
@@ -849,6 +872,26 @@ export interface components {
         };
         /** @enum {string} */
         Category: "infrastructure" | "media" | "network_security" | "apps";
+        Certificate: {
+            /**
+             * Format: int64
+             * @description Whole days left; negative when expired.
+             */
+            days_left?: number | null;
+            domains: string[];
+            /** Format: date-time */
+            expires_at?: string | null;
+            /**
+             * Format: int32
+             * @description Number of proxy hosts using it.
+             */
+            hosts: number;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** @description `letsencrypt` or `other`. */
+            provider: string;
+        };
         /** @enum {string} */
         CheckType: "http" | "tcp";
         ClusterInfo: {
@@ -941,6 +984,14 @@ export interface components {
             /** Format: int64 */
             free: number;
             path: string;
+            /** Format: int64 */
+            total: number;
+        };
+        DnsPoint: {
+            /** Format: date-time */
+            at: string;
+            /** Format: int64 */
+            blocked: number;
             /** Format: int64 */
             total: number;
         };
@@ -1369,6 +1420,23 @@ export interface components {
             /** @enum {string} */
             type: "navidrome";
             value: components["schemas"]["NavidromeData"];
+        } | {
+            /** @enum {string} */
+            type: "technitium";
+            value: components["schemas"]["TechnitiumData"];
+        } | {
+            /** @enum {string} */
+            type: "npm";
+            /** @description Nginx Proxy Manager. */
+            value: components["schemas"]["NpmData"];
+        } | {
+            /** @enum {string} */
+            type: "authentik";
+            value: components["schemas"]["AuthentikData"];
+        } | {
+            /** @enum {string} */
+            type: "nextcloud";
+            value: components["schemas"]["NextcloudData"];
         };
         NavidromeData: {
             /** Format: int64 */
@@ -1381,6 +1449,47 @@ export interface components {
              * @description Songs in the library (from the scan status).
              */
             songs?: number | null;
+        };
+        NextcloudData: {
+            /** Format: int64 */
+            active_1h: number;
+            /** Format: int64 */
+            active_24h: number;
+            /** Format: int64 */
+            active_5m: number;
+            /** Format: int64 */
+            app_updates: number;
+            /** Format: int64 */
+            apps_installed?: number | null;
+            /** @description Load averages (1, 5, 15 min). */
+            cpu_load: number[];
+            database?: string | null;
+            /** Format: int64 */
+            database_size?: number | null;
+            /** Format: int64 */
+            files: number;
+            /**
+             * Format: int64
+             * @description Free space in the data directory, bytes.
+             */
+            free_space?: number | null;
+            /** Format: int64 */
+            mem_free?: number | null;
+            /**
+             * Format: int64
+             * @description Bytes.
+             */
+            mem_total?: number | null;
+            /** Format: int64 */
+            php_memory_limit?: number | null;
+            php_version?: string | null;
+            /** Format: int64 */
+            shares: number;
+            /** @description Newer Nextcloud version available (from Nextcloud's own update check). */
+            update_available?: string | null;
+            /** Format: int64 */
+            users: number;
+            webserver?: string | null;
         };
         Node: {
             /** Format: int64 */
@@ -1473,6 +1582,22 @@ export interface components {
             transcode_reason?: string | null;
             user: string;
         };
+        NpmData: {
+            certificates: components["schemas"]["Certificate"][];
+            hosts: components["schemas"]["ProxyHost"][];
+        };
+        Outpost: {
+            healthy: boolean;
+            id: string;
+            /** @description `proxy`, `ldap`, `radius`, `rac` */
+            kind: string;
+            /** Format: date-time */
+            last_seen?: string | null;
+            managed: boolean;
+            name: string;
+            outdated: boolean;
+            version?: string | null;
+        };
         Overview: {
             /** @description Enabled, visible services in Home order, without hidden ones. */
             highlights: components["schemas"]["Highlight"][];
@@ -1542,6 +1667,20 @@ export interface components {
             fingerprint?: string | null;
             /** @description API token id, e.g. `quorum@pve!quorum`. */
             token_id: string;
+        };
+        ProxyHost: {
+            /** Format: int64 */
+            certificate_id?: number | null;
+            domains: string[];
+            enabled: boolean;
+            error?: string | null;
+            /** @description `http://10.0.20.108:8096` */
+            forward: string;
+            /** Format: int64 */
+            id: number;
+            /** @description Nginx accepted the host's config (`meta.nginx_online`), when reported. */
+            online?: boolean | null;
+            ssl_forced: boolean;
         };
         QbittorrentData: {
             /** @description Alternative ("turtle") speed limits on. */
@@ -1710,7 +1849,7 @@ export interface components {
          *     registry entry in [`build_module`].
          * @enum {string}
          */
-        ServiceKind: "proxmox" | "health_check" | "jellyfin" | "seerr" | "sonarr" | "radarr" | "prowlarr" | "bazarr" | "qbittorrent" | "navidrome";
+        ServiceKind: "proxmox" | "health_check" | "jellyfin" | "seerr" | "sonarr" | "radarr" | "prowlarr" | "bazarr" | "qbittorrent" | "navidrome" | "technitium" | "nginx_proxy_manager" | "authentik" | "nextcloud";
         ServiceRef: {
             health: components["schemas"]["Health"];
             id: string;
@@ -1897,6 +2036,29 @@ export interface components {
         };
         /** @enum {string} */
         TaskState: "running" | "ok" | "error";
+        TechnitiumData: {
+            /** Format: int64 */
+            block_list_zones: number;
+            /** Format: int64 */
+            blocked: number;
+            blocking_enabled: boolean;
+            /** Format: int64 */
+            cached: number;
+            /** @description Queries per interval over the last 24 h. */
+            chart: components["schemas"]["DnsPoint"][];
+            /** Format: int64 */
+            clients: number;
+            /**
+             * Format: date-time
+             * @description Set while blocking is paused; it resumes by itself at this time.
+             */
+            paused_until?: string | null;
+            top_blocked: components["schemas"]["TopEntry"][];
+            top_clients: components["schemas"]["TopEntry"][];
+            top_domains: components["schemas"]["TopEntry"][];
+            /** Format: int64 */
+            total_queries: number;
+        };
         TimelineBucket: {
             /** @description Worst state seen in the hour; `unknown` without samples. */
             health: components["schemas"]["Health"];
@@ -1907,6 +2069,14 @@ export interface components {
              * @description Uptime in the hour, percent.
              */
             uptime?: number | null;
+        };
+        TopEntry: {
+            /** @description Client host name from reverse lookup, when known. */
+            domain?: string | null;
+            /** Format: int64 */
+            hits: number;
+            /** @description Domain name, or client IP for top clients. */
+            name: string;
         };
         Torrent: {
             /** Format: date-time */
