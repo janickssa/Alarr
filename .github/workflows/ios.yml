@@ -1,0 +1,63 @@
+name: iOS
+
+# Only when the iPhone code or the API it is generated from changes (macOS minutes are
+# billed at 10x on private repositories).
+on:
+  push:
+    branches: [main]
+    paths: ["ios/**", "openapi/openapi.json", ".github/workflows/ios.yml"]
+  pull_request:
+    paths: ["ios/**", "openapi/openapi.json", ".github/workflows/ios.yml"]
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    name: iOS (QuorumKit tests, app build)
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use the newest Xcode on the runner
+        run: |
+          XCODE="$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+          swift --version
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ios/QuorumKit/.build
+            ~/Library/Caches/org.swift.swiftpm
+          key: spm-${{ runner.os }}-${{ hashFiles('ios/QuorumKit/Package.swift', 'ios/QuorumKit/Package.resolved') }}
+      - name: Build and test QuorumKit (generates the API client)
+        working-directory: ios/QuorumKit
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee ../../swift-test.log
+      - name: Generated API surface (for reference in the log)
+        if: always()
+        working-directory: ios/QuorumKit
+        run: |
+          f="$(find .build -path '*OpenAPIGenerator*' -name 'Types.swift' | head -1)"
+          echo "file: $f"
+          [ -n "$f" ] && grep -nE '^\s*(public )?(struct|enum|indirect enum|case [a-zA-Z_]+\(|case [a-zA-Z_]+$|var [a-zA-Z_]+: |func [a-zA-Z_]+\()' "$f" | grep -vE 'CodingKeys|init\(from|encode\(to' | sed -E 's/^ +//' || true
+      - name: Generate the Xcode project
+        if: hashFiles('ios/project.yml') != ''
+        working-directory: ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Build the app and widgets (simulator, unsigned)
+        if: hashFiles('ios/project.yml') != ''
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild -project Quorum.xcodeproj -scheme Quorum \
+            -destination 'generic/platform=iOS Simulator' \
+            -skipPackagePluginValidation -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO build 2>&1 | tee ../xcodebuild.log | grep -E 'error:|warning: unre|BUILD (SUCCEEDED|FAILED)' || true
+          grep -q 'BUILD SUCCEEDED' ../xcodebuild.log
