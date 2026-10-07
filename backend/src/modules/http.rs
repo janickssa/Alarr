@@ -152,6 +152,19 @@ pub fn fmt_bytes(value: u64) -> String {
     }
 }
 
+/// `12345` → `12,345`.
+pub fn fmt_count(n: u64) -> String {
+    let s = n.to_string();
+    let mut out = String::new();
+    for (i, c) in s.chars().enumerate() {
+        if i > 0 && (s.len() - i).is_multiple_of(3) {
+            out.push(',');
+        }
+        out.push(c);
+    }
+    out
+}
+
 /// "38.2 MB/s"
 pub fn fmt_rate(bytes_per_second: u64) -> String {
     format!("{}/s", fmt_bytes(bytes_per_second))
@@ -178,5 +191,7 @@ mod tests {
         assert_eq!(fmt_rate(40_055_603), "38.2 MB/s");
         assert_eq!(fmt_bitrate(38_400_000), "38 Mbit/s");
         assert_eq!(fmt_bitrate(2_500_000), "2.5 Mbit/s");
+        assert_eq!(fmt_count(1_234_567), "1,234,567");
+        assert_eq!(fmt_count(999), "999");
     }
 }

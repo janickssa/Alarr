@@ -51,7 +51,8 @@ impl NavidromeData {
             } else {
                 "Idle".into()
             },
-            self.songs.map(|s| format!("{s} songs")),
+            self.songs
+                .map(|s| format!("{} songs", super::http::fmt_count(s))),
         )
     }
 }
@@ -260,7 +261,7 @@ mod tests {
         assert_eq!(d.now_playing[0].title, "Midnight Ferry");
         assert_eq!(
             d.headline(),
-            ("1 playing".into(), Some("12345 songs".into()))
+            ("1 playing".into(), Some("12,345 songs".into()))
         );
     }
 

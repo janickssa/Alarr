@@ -18,7 +18,7 @@ use serde::Serialize;
 use serde_json::Value;
 use utoipa::ToSchema;
 
-use super::http::{ServiceHttp, validate_http};
+use super::http::{ServiceHttp, fmt_count as group, validate_http};
 use super::{
     ActionDescriptor, ActionResult, ConnectionTest, Health, InstanceConfig, ModuleData,
     ModuleError, PollOutcome, ServiceKind, ServiceModule, describe_error,
@@ -98,19 +98,6 @@ impl TechnitiumData {
 fn minutes_left(until: DateTime<Utc>) -> String {
     let secs = (until - Utc::now()).num_seconds().max(0);
     format!("{} min", (secs + 59) / 60)
-}
-
-/// `12345` → `12,345`.
-fn group(n: u64) -> String {
-    let s = n.to_string();
-    let mut out = String::new();
-    for (i, c) in s.chars().enumerate() {
-        if i > 0 && (s.len() - i).is_multiple_of(3) {
-            out.push(',');
-        }
-        out.push(c);
-    }
-    out
 }
 
 pub fn validate(cfg: &InstanceConfig) -> Result<(), String> {
@@ -547,11 +534,5 @@ mod tests {
             Err(ModuleError::InvalidArgs(_))
         ));
         m.run_action("resume_blocking", json!({})).await.unwrap();
-    }
-
-    #[test]
-    fn groups_digits() {
-        assert_eq!(group(1234567), "1,234,567");
-        assert_eq!(group(999), "999");
     }
 }
