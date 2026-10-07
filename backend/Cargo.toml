@@ -12,21 +12,47 @@ name = "quorum-server"
 path = "src/main.rs"
 
 [dependencies]
+anyhow = "1"
+argon2 = "0.5"
+async-trait = "0.1"
 axum = "0.8"
+base64 = "0.22"
+chacha20poly1305 = "0.10"
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
+futures-util = "0.3"
+hex = "0.4"
+mime_guess = "2"
+rand = "0.8"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+rust-embed = "8"
+rustls = { version = "0.23", default-features = false, features = ["logging", "ring", "std", "tls12"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "signal"] }
+sha2 = "0.10"
+sqlx = { version = "0.8", default-features = false, features = ["macros", "migrate", "runtime-tokio", "sqlite"] }
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+toml = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-utoipa = { version = "6", features = ["axum_extras"] }
+utoipa = { version = "6", features = ["axum_extras", "chrono"] }
 utoipa-axum = "0.3"
 
 [dev-dependencies]
-tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
+rcgen = "0.13"
+tower = { version = "0.5", features = ["util"] }
+wiremock = "0.6"
 
 [lints.rust]
 unsafe_code = "forbid"
 
 [lints.clippy]
 all = { level = "warn", priority = -1 }
+
+# Password hashing is slow unoptimised; keep debug builds and tests fast.
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3
