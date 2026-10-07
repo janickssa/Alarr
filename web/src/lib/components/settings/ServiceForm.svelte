@@ -35,6 +35,10 @@
 	// Proxmox
 	let tokenId = $state((s0.token_id as string) ?? 'quorum@pve!quorum');
 	let tokenSecret = $state('');
+	// API-key and username/password services
+	let apiKey = $state('');
+	let username = $state((s0.username as string) ?? '');
+	let password = $state('');
 	let fingerprint = $state((s0.fingerprint as string) ?? '');
 	// Health check
 	let check = $state<'http' | 'tcp'>((s0.check as 'http' | 'tcp') ?? 'http');
@@ -53,6 +57,31 @@
 	let deleteOpen = $state(false);
 
 	const secretSet = $derived(existing?.secrets?.token_secret?.set ?? false);
+	const apiKeySet = $derived(existing?.secrets?.api_key?.set ?? false);
+	const passwordSet = $derived(existing?.secrets?.password?.set ?? false);
+	const API_KEY_KINDS = ['jellyfin', 'seerr', 'sonarr', 'radarr', 'prowlarr', 'bazarr'];
+	const PASSWORD_KINDS = ['qbittorrent', 'navidrome'];
+	const usesApiKey = API_KEY_KINDS.includes(kind);
+	const usesPassword = PASSWORD_KINDS.includes(kind);
+	const isModule = usesApiKey || usesPassword;
+	const KEY_HINT: Record<string, string> = {
+		jellyfin: 'Dashboard → API Keys → +.',
+		seerr: 'Settings → General → API Key.',
+		sonarr: 'Settings → General → Security → API Key.',
+		radarr: 'Settings → General → Security → API Key.',
+		prowlarr: 'Settings → General → Security → API Key.',
+		bazarr: 'Settings → General → Security → API Key.'
+	};
+	const URL_HINT: Record<string, string> = {
+		jellyfin: 'http://10.0.20.108:8096',
+		seerr: 'http://10.0.20.126:5055',
+		sonarr: 'http://10.0.20.123:8989',
+		radarr: 'http://10.0.20.124:7878',
+		prowlarr: 'http://10.0.20.125:9696',
+		bazarr: 'http://10.0.20.127:6767',
+		qbittorrent: 'http://10.0.20.120:8080',
+		navidrome: 'http://10.0.20.119:4533'
+	};
 
 	onMount(async () => {
 		if (session.proxmox) {
@@ -67,6 +96,11 @@
 	const num = (v: string) => (v.trim() === '' ? null : Number(v));
 
 	function settings(): Record<string, unknown> {
+		if (isModule)
+			return {
+				tls_fingerprint: tlsFingerprint.trim() || null,
+				...(usesPassword ? { username: username.trim() || null } : {})
+			};
 		if (kind === 'proxmox')
 			return { token_id: tokenId.trim(), fingerprint: fingerprint.trim() || null };
 		return check === 'http'
@@ -88,7 +122,10 @@
 	}
 
 	function secrets(): Record<string, string> | undefined {
-		return kind === 'proxmox' && tokenSecret ? { token_secret: tokenSecret } : undefined;
+		if (kind === 'proxmox' && tokenSecret) return { token_secret: tokenSecret };
+		if (usesApiKey && apiKey) return { api_key: apiKey.trim() };
+		if (usesPassword && password) return { password };
+		return undefined;
 	}
 
 	function createBody() {
@@ -182,7 +219,11 @@
 		<div>
 			<h1 class="page-title">{existing ? existing.name : `Add ${entry.name}`}</h1>
 			<span class="caption muted"
-				>{kind === 'proxmox' ? 'Proxmox VE API' : 'Health check'} · {entry.level}</span
+				>{kind === 'proxmox'
+					? 'Proxmox VE API'
+					: kind === 'health_check'
+						? 'Health check'
+						: `${entry.name} API`} · {entry.level}</span
 			>
 		</div>
 	</div>
@@ -220,7 +261,9 @@
 					class="input mono"
 					required
 					bind:value={baseUrl}
-					placeholder={kind === 'proxmox' ? 'https://10.0.20.11:8006' : 'https://vault.example.lan'}
+					placeholder={kind === 'proxmox'
+						? 'https://10.0.20.11:8006'
+						: (URL_HINT[kind] ?? 'https://vault.example.lan')}
 				/>
 				<span class="hint"
 					>{kind === 'proxmox'
@@ -269,6 +312,66 @@
 						>openssl x509 -in /etc/pve/local/pve-ssl.pem -noout -fingerprint -sha256</span
 					>
 				</span>
+			</div>
+		</section>
+	{:else if isModule}
+		<section class="card">
+			<h2 class="overline">{usesApiKey ? 'API key' : 'Sign-in'}</h2>
+			{#if usesApiKey}
+				<div class="field">
+					<label for="key">API key</label>
+					<input
+						id="key"
+						class="input mono"
+						type="password"
+						autocomplete="off"
+						required={!apiKeySet}
+						bind:value={apiKey}
+						placeholder={apiKeySet ? '•••• (set, leave empty to keep)' : ''}
+					/>
+					<span class="hint"
+						>In {entry.name}: {KEY_HINT[kind]} Stored encrypted. Never shown again.</span
+					>
+				</div>
+			{:else}
+				<div class="cols">
+					<div class="field">
+						<label for="user">Username</label>
+						<input
+							id="user"
+							class="input"
+							autocomplete="off"
+							required={kind === 'navidrome'}
+							bind:value={username}
+						/>
+					</div>
+					<div class="field">
+						<label for="pw">Password</label>
+						<input
+							id="pw"
+							class="input"
+							type="password"
+							autocomplete="off"
+							required={kind === 'navidrome' && !passwordSet}
+							bind:value={password}
+							placeholder={passwordSet ? '•••• (set, leave empty to keep)' : ''}
+						/>
+					</div>
+				</div>
+				<span class="hint">
+					{kind === 'qbittorrent'
+						? 'Leave empty if qBittorrent skips authentication for this address (Web UI → Bypass authentication for clients in whitelisted IP subnets).'
+						: 'A Navidrome user; used with the Subsonic API token scheme.'}
+				</span>
+			{/if}
+			<div class="field">
+				<label for="mfp">Certificate fingerprint (optional)</label>
+				<input
+					id="mfp"
+					class="input mono"
+					bind:value={tlsFingerprint}
+					placeholder="Only for self-signed HTTPS"
+				/>
 			</div>
 		</section>
 	{:else}

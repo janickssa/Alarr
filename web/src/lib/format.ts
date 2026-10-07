@@ -115,3 +115,33 @@ export function relative(value: string | Date | null | undefined, now: Date = ne
 export function guestId(type: string, vmid: number): string {
 	return `${type === 'lxc' ? 'CT' : 'VM'} ${vmid}`;
 }
+
+/** "31:12" or "1:02:03" (media positions). */
+export function clock(seconds: number | null | undefined): string {
+	if (seconds == null || seconds < 0) return '–';
+	const s = Math.floor(seconds);
+	const h = Math.floor(s / 3600);
+	const m = Math.floor((s % 3600) / 60);
+	const sec = String(s % 60).padStart(2, '0');
+	return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
+}
+
+/** "12.4 Mbit/s" from bits per second. */
+export function bitrate(bitsPerSecond: number | null | undefined): string {
+	if (bitsPerSecond == null) return '–';
+	const mbit = bitsPerSecond / 1_000_000;
+	return `${mbit >= 10 ? mbit.toFixed(0) : mbit.toFixed(1)} Mbit/s`;
+}
+
+/** Stable placeholder poster colours from a title. */
+export function posterColors(title: string): [string, string] {
+	const palette = ['#3b3560', '#2f4a52', '#4f3d33', '#3a4a33', '#4a3346', '#33404f'];
+	let h = 0;
+	for (const c of title) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+	return [palette[h % palette.length], '#1b1d2b'];
+}
+
+/** Whole number with digit grouping: `12,345`. */
+export function count(value: number | null | undefined): string {
+	return value == null ? '–' : Math.round(value).toLocaleString('en-GB');
+}

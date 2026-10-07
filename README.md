@@ -324,13 +324,13 @@ Top-level navigation on every surface: **Home · Proxmox · Media · Services ·
 
 Backend module + web page for each, in this order. Each needs demo data and wiremock tests.
 
-- [ ] qBittorrent (API version detection, alt speed toggle, delete with/without files).
-- [ ] Sonarr and Radarr (shared code where the APIs match).
-- [ ] Jellyfin (multi-instance: `jellyfin` and `jellyfin-pub`), library scan per library and all.
-- [ ] Seerr (approve/decline).
-- [ ] Prowlarr (test all indexers).
-- [ ] Bazarr (search missing).
-- [ ] Navidrome (scan, now playing).
+- [x] qBittorrent (API version detection, alt speed toggle, delete with/without files).
+- [x] Sonarr and Radarr (shared code where the APIs match).
+- [x] Jellyfin (multi-instance: `jellyfin` and `jellyfin-pub`), library scan per library and all.
+- [x] Seerr (approve/decline).
+- [x] Prowlarr (test all indexers).
+- [x] Bazarr (search missing).
+- [x] Navidrome (scan, now playing).
 - [ ] Media overview endpoint + Media page: now playing, request tracker (match Seerr request → Sonarr/Radarr item → qBittorrent torrent by hash → Jellyfin item), combined calendar, recently added.
 - [ ] Home highlight cards for every media module.
 - [ ] Global search across guests, services, movies, series and torrents.
