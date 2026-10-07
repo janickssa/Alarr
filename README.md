@@ -278,12 +278,12 @@ Top-level navigation on every surface: **Home · Proxmox · Media · Services ·
 
 ### Phase 0 – Repository and tooling
 
-- [ ] Create the folder layout above; unzip the design export into `design/` unchanged.
-- [ ] `backend/`: cargo project `quorum-server`, `rustfmt.toml`, clippy set to deny warnings in CI.
-- [ ] `web/`: SvelteKit + TypeScript + `adapter-static`, ESLint + Prettier.
-- [ ] GitHub Actions: backend (`fmt --check`, `clippy`, `test`), web (`lint`, `check`, `build`), and a job that regenerates `openapi/openapi.json` and fails if it differs from the committed file.
-- [ ] `.gitignore`, `.editorconfig`, `LICENSE` (owner to choose; default MIT), `CONTRIBUTING.md` pointing to this README.
-- [ ] Add the "Decisions log" section entries for anything decided here.
+- [x] Create the folder layout above; unzip the design export into `design/` unchanged.
+- [x] `backend/`: cargo project `quorum-server`, `rustfmt.toml`, clippy set to deny warnings in CI.
+- [x] `web/`: SvelteKit + TypeScript + `adapter-static`, ESLint + Prettier.
+- [x] GitHub Actions: backend (`fmt --check`, `clippy`, `test`), web (`lint`, `check`, `build`), and a job that regenerates `openapi/openapi.json` and fails if it differs from the committed file.
+- [x] `.gitignore`, `.editorconfig`, `LICENSE` (owner to choose; default MIT), `CONTRIBUTING.md` pointing to this README.
+- [x] Add the "Decisions log" section entries for anything decided here.
 
 **Definition of done:** CI is green on an empty-but-building backend and web app.
 
@@ -404,3 +404,12 @@ Same web codebase; this phase makes it a first-class mobile app.
 | 2026-10-07 | Access over Tailscale/WireGuard only, auth still required | Defence in depth |
 | 2026-10-07 | Fonts and icons self-hosted | Must work without internet |
 | 2026-10-07 | Notifications via both ntfy and APNs | Owner has a paid Apple Developer account; ntfy also covers Android |
+| 2026-10-07 | Product name kept in one constant per codebase (`APP_NAME` in `backend/src/lib.rs` and `web/src/lib/index.ts`) | Cheap rename if "Quorum" changes |
+| 2026-10-07 | Licence: MIT | README default; owner can change it |
+| 2026-10-07 | Backend on Rust edition 2024, MSRV 1.88; `utoipa` 6 + `utoipa-axum` 0.3 + `axum` 0.8 | Current stable releases that work together |
+| 2026-10-07 | Clippy: `clippy::all` as warnings in `Cargo.toml`, CI runs with `-D warnings` | Local builds stay usable; CI denies every warning |
+| 2026-10-07 | `quorum-server openapi` prints the spec to stdout; CI redirects it to `openapi/openapi.json` and fails on a diff | Simplest form; no file paths baked into the binary |
+| 2026-10-07 | Phase 0 API has only `GET /api/v1/info` (name + version, unauthenticated) and `/api/v1/openapi.json` | Gives the OpenAPI CI job something real to check; reachability probe for clients later |
+| 2026-10-07 | Bind address in phase 0 via `QUORUM_BIND` (default `127.0.0.1:8080`) | Placeholder until TOML config lands in phase 1 |
+| 2026-10-07 | Web scaffolded with `sv create` (SvelteKit 3, Svelte 5 runes, Vite 8, TypeScript, ESLint + Prettier); `adapter-static` with `fallback: 'index.html'`, `ssr = false` | SPA served by the Rust binary, as specified |
+| 2026-10-07 | CI on GitHub Actions: Node 22, stable Rust, `--locked` cargo builds | Reproducible builds from the committed lockfiles |
