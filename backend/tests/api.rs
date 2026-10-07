@@ -1,29 +1,600 @@
+//! API tests: auth, permissions, the confirm flag, pairing, services and secrets.
+
+use std::time::Duration;
+
+use axum::Router;
 use axum::body::Body;
-use axum::http::{Request, StatusCode};
+use axum::http::{Request, StatusCode, header};
 use http_body_util::BodyExt;
+use quorum_server::config::Config;
+use quorum_server::state::AppState;
+use serde_json::{Value, json};
 use tower::ServiceExt;
 
-async fn get_json(uri: &str) -> (StatusCode, serde_json::Value) {
-    let response = quorum_server::api::router()
-        .oneshot(Request::get(uri).body(Body::empty()).unwrap())
-        .await
+struct App {
+    state: AppState,
+    router: Router,
+}
+
+impl App {
+    /// Demo-mode app: fake modules, users demo/demo (owner) and guest/guest.
+    async fn demo() -> Self {
+        let state = quorum_server::app::build(Config::parse("").unwrap(), true)
+            .await
+            .unwrap();
+        // Wait for the first Proxmox poll.
+        for _ in 0..100 {
+            if state.cache.get("proxmox").is_some() {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+        Self::from_state(state)
+    }
+
+    fn from_state(state: AppState) -> Self {
+        Self {
+            router: quorum_server::api::router(state.clone()),
+            state,
+        }
+    }
+
+    async fn call(
+        &self,
+        method: &str,
+        uri: &str,
+        auth: Option<&str>,
+        body: Option<Value>,
+    ) -> (StatusCode, Value, Option<String>) {
+        let mut req = Request::builder().method(method).uri(uri);
+        if let Some(a) = auth {
+            req = if a.starts_with("qd_") {
+                req.header(header::AUTHORIZATION, format!("Bearer {a}"))
+            } else {
+                req.header(header::COOKIE, a)
+            };
+        }
+        let req = match body {
+            Some(b) => req
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(b.to_string())),
+            None => req.body(Body::empty()),
+        }
         .unwrap();
-    let status = response.status();
-    let bytes = response.into_body().collect().await.unwrap().to_bytes();
-    (status, serde_json::from_slice(&bytes).unwrap())
+        let response = self.router.clone().oneshot(req).await.unwrap();
+        let status = response.status();
+        let cookie = response
+            .headers()
+            .get(header::SET_COOKIE)
+            .map(|v| v.to_str().unwrap().split(';').next().unwrap().to_owned());
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let value = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
+        (status, value, cookie)
+    }
+
+    async fn login(&self, user: &str, password: &str) -> String {
+        let (status, _, cookie) = self
+            .call(
+                "POST",
+                "/api/v1/auth/login",
+                None,
+                Some(json!({"username": user, "password": password})),
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "login {user}");
+        cookie.expect("session cookie")
+    }
 }
 
 #[tokio::test]
-async fn info_returns_name_and_version() {
-    let (status, body) = get_json("/api/v1/info").await;
+async fn public_endpoints_and_auth_required() {
+    let app = App::demo().await;
+    let (status, body, _) = app.call("GET", "/api/v1/info", None, None).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["name"], quorum_server::APP_NAME);
-    assert_eq!(body["version"], quorum_server::VERSION);
+    assert_eq!(body["demo"], true);
+
+    let (status, body, _) = app.call("GET", "/api/v1/openapi.json", None, None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body["paths"]["/proxmox/guests/{vmid}/power"]["post"].is_object());
+
+    for path in [
+        "/api/v1/overview",
+        "/api/v1/services",
+        "/api/v1/proxmox/guests",
+        "/api/v1/events",
+    ] {
+        let (status, body, _) = app.call("GET", path, None, None).await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED, "{path}");
+        assert_eq!(body["error"], "unauthorized");
+    }
+    let (status, _, _) = app
+        .call(
+            "GET",
+            "/api/v1/overview",
+            Some("quorum_session=qs_forged"),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let (status, _, _) = app.call("GET", "/api/v1/nope", None, None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
 }
 
 #[tokio::test]
-async fn openapi_is_served_and_lists_info() {
-    let (status, body) = get_json("/api/v1/openapi.json").await;
+async fn login_logout_and_rate_limit() {
+    let app = App::demo().await;
+    let (status, _, _) = app
+        .call(
+            "POST",
+            "/api/v1/auth/login",
+            None,
+            Some(json!({"username": "demo", "password": "wrong"})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    let cookie = app.login("demo", "demo").await;
+    let (status, me, _) = app
+        .call("GET", "/api/v1/auth/me", Some(&cookie), None)
+        .await;
     assert_eq!(status, StatusCode::OK);
-    assert!(body["paths"]["/info"]["get"].is_object());
+    assert_eq!(me["user"]["role"], "owner");
+    assert_eq!(me["auth"], "session");
+
+    let (status, _, cleared) = app
+        .call("POST", "/api/v1/auth/logout", Some(&cookie), None)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert_eq!(cleared.as_deref(), Some("quorum_session="));
+    let (status, _, _) = app
+        .call("GET", "/api/v1/auth/me", Some(&cookie), None)
+        .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    // 2 attempts used above; the limit is 10 per 5 minutes.
+    let mut last = StatusCode::OK;
+    for _ in 0..9 {
+        last = app
+            .call(
+                "POST",
+                "/api/v1/auth/login",
+                None,
+                Some(json!({"username": "demo", "password": "x"})),
+            )
+            .await
+            .0;
+    }
+    assert_eq!(last, StatusCode::TOO_MANY_REQUESTS);
+}
+
+#[tokio::test]
+async fn destructive_power_actions_need_confirm_and_are_logged() {
+    let app = App::demo().await;
+    let cookie = app.login("demo", "demo").await;
+
+    let (status, body, _) = app
+        .call(
+            "POST",
+            "/api/v1/proxmox/guests/123/power",
+            Some(&cookie),
+            Some(json!({"action": "reboot"})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(body["error"], "confirm_required");
+
+    let (status, body, _) = app
+        .call(
+            "POST",
+            "/api/v1/proxmox/guests/123/power",
+            Some(&cookie),
+            Some(json!({"action": "reboot", "confirm": true})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body["node"], "pve-02");
+    assert!(body["upid"].as_str().unwrap().starts_with("UPID:pve-02:"));
+
+    let (_, log, _) = app
+        .call("GET", "/api/v1/activity", Some(&cookie), None)
+        .await;
+    let entry = log
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|e| e["action"] == "guest.power.reboot")
+        .expect("power action logged");
+    assert_eq!(entry["target"], "guest:123");
+    assert_eq!(entry["username"], "demo");
+    assert_eq!(entry["result"], "pending");
+
+    // Starting a running guest is refused by Proxmox and logged as an error.
+    let (status, _, _) = app
+        .call(
+            "POST",
+            "/api/v1/proxmox/guests/108/power",
+            Some(&cookie),
+            Some(json!({"action": "start"})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_GATEWAY);
+
+    let (status, task, _) = app
+        .call(
+            "GET",
+            &format!("/api/v1/proxmox/tasks/{}", body["upid"].as_str().unwrap()),
+            Some(&cookie),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(task["kind"], "vzreboot");
+}
+
+#[tokio::test]
+async fn guests_only_see_allowed_services_and_cannot_act() {
+    let app = App::demo().await;
+    let cookie = app.login("guest", "guest").await;
+
+    let (_, services, _) = app
+        .call("GET", "/api/v1/services", Some(&cookie), None)
+        .await;
+    let mut ids: Vec<&str> = services
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|s| s["id"].as_str().unwrap())
+        .collect();
+    ids.sort();
+    assert_eq!(ids, ["bookstack", "proxmox", "vaultwarden"]);
+
+    let (status, _, _) = app
+        .call("GET", "/api/v1/services/podgrab", Some(&cookie), None)
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    let (status, _, _) = app
+        .call(
+            "GET",
+            "/api/v1/services/podgrab/snapshot",
+            Some(&cookie),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    let (status, guests, _) = app
+        .call("GET", "/api/v1/proxmox/guests", Some(&cookie), None)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(guests.as_array().unwrap().len() > 20);
+
+    let (status, _, _) = app
+        .call(
+            "POST",
+            "/api/v1/proxmox/guests/123/power",
+            Some(&cookie),
+            Some(json!({"action": "start"})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let (status, _, _) = app
+        .call(
+            "POST",
+            "/api/v1/services/vaultwarden/actions/refresh",
+            Some(&cookie),
+            Some(json!({})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+
+    for (method, path) in [
+        ("GET", "/api/v1/users"),
+        ("POST", "/api/v1/pairing/start"),
+        ("PUT", "/api/v1/settings"),
+    ] {
+        let (status, _, _) = app.call(method, path, Some(&cookie), Some(json!({}))).await;
+        assert_eq!(status, StatusCode::FORBIDDEN, "{method} {path}");
+    }
+
+    let (_, overview, _) = app
+        .call("GET", "/api/v1/overview", Some(&cookie), None)
+        .await;
+    assert_eq!(overview["highlights"].as_array().unwrap().len(), 3);
+}
+
+#[tokio::test]
+async fn members_can_act_but_not_manage() {
+    let app = App::demo().await;
+    let owner = app.login("demo", "demo").await;
+    let (status, _, _) = app
+        .call(
+            "POST",
+            "/api/v1/users",
+            Some(&owner),
+            Some(json!({"username": "mara", "password": "longenough", "role": "member"})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let member = app.login("mara", "longenough").await;
+
+    let (status, _, _) = app
+        .call(
+            "POST",
+            "/api/v1/services",
+            Some(&member),
+            Some(json!({"kind": "health_check", "name": "X", "base_url": "http://x"})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let (status, _, _) = app
+        .call(
+            "POST",
+            "/api/v1/proxmox/guests/123/power",
+            Some(&member),
+            Some(json!({"action": "shutdown", "confirm": true})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn service_crud_never_returns_secrets() {
+    let app = App::demo().await;
+    let owner = app.login("demo", "demo").await;
+
+    let (status, body, _) = app
+        .call(
+            "POST",
+            "/api/v1/services",
+            Some(&owner),
+            Some(json!({
+                "kind": "proxmox", "name": "Second cluster", "base_url": "https://pve2.example.lan:8006",
+                "settings": {"token_id": "quorum@pve!quorum"},
+                "secrets": {"token_secret": "super-secret-value"}
+            })),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{body}");
+    assert_eq!(body["id"], "second-cluster");
+    assert_eq!(body["secrets"]["token_secret"]["set"], true);
+    assert_eq!(body["secrets"]["token_secret"]["display"], "••••");
+    assert!(!body.to_string().contains("super-secret-value"));
+
+    // Stored encrypted, too.
+    let row = app
+        .state
+        .db
+        .service("second-cluster")
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(!row.secrets["token_secret"].contains("super-secret-value"));
+
+    let (status, _, _) = app
+        .call(
+            "POST",
+            "/api/v1/services",
+            Some(&owner),
+            Some(json!({"kind": "proxmox", "name": "Bad", "base_url": "http://x"})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    let (status, body, _) = app
+        .call(
+            "PATCH",
+            "/api/v1/services/second-cluster",
+            Some(&owner),
+            Some(json!({"name": "Lab cluster", "secrets": {"token_secret": null}})),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::BAD_REQUEST,
+        "secret is required for proxmox: {body}"
+    );
+
+    let (status, body, _) = app
+        .call(
+            "POST",
+            "/api/v1/services/second-cluster/disable",
+            Some(&owner),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["health"], "disabled");
+
+    let (status, _, _) = app
+        .call(
+            "DELETE",
+            "/api/v1/services/second-cluster",
+            Some(&owner),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, log, _) = app
+        .call("GET", "/api/v1/activity", Some(&owner), None)
+        .await;
+    let actions: Vec<&str> = log
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| e["action"].as_str().unwrap())
+        .collect();
+    assert!(actions.contains(&"service.create") && actions.contains(&"service.delete"));
+}
+
+#[tokio::test]
+async fn pairing_issues_a_revocable_device_token() {
+    let app = App::demo().await;
+    let owner = app.login("demo", "demo").await;
+    let (status, started, _) = app
+        .call(
+            "POST",
+            "/api/v1/pairing/start",
+            Some(&owner),
+            Some(json!({})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let code = started["code"].as_str().unwrap();
+    assert!(
+        started["qr_payload"]
+            .as_str()
+            .unwrap()
+            .starts_with("quorum://pair?")
+    );
+
+    let (status, done, _) = app
+        .call(
+            "POST",
+            "/api/v1/pairing/complete",
+            None,
+            Some(json!({"code": code.to_lowercase(), "device_name": "iPhone", "platform": "ios"})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let token = done["token"].as_str().unwrap().to_owned();
+
+    // The code is single-use.
+    let (status, _, _) = app
+        .call(
+            "POST",
+            "/api/v1/pairing/complete",
+            None,
+            Some(json!({"code": code, "device_name": "Other", "platform": "pwa"})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    let (status, me, _) = app.call("GET", "/api/v1/auth/me", Some(&token), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(me["auth"], "device");
+
+    let id = done["device"]["id"].as_i64().unwrap();
+    let (status, _, _) = app
+        .call(
+            "DELETE",
+            &format!("/api/v1/devices/{id}"),
+            Some(&owner),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, _, _) = app.call("GET", "/api/v1/auth/me", Some(&token), None).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn owner_setup_with_one_time_token() {
+    let db = quorum_server::db::Db::in_memory().await.unwrap();
+    let state = AppState::new(
+        Config::parse("").unwrap(),
+        db,
+        quorum_server::crypto::SecretBox::ephemeral(),
+        false,
+    );
+    quorum_server::app::bootstrap_owner(&state).await.unwrap();
+    let token = state.setup_token.lock().unwrap().clone().unwrap();
+    let app = App::from_state(state);
+
+    let (_, status_body, _) = app.call("GET", "/api/v1/auth/setup", None, None).await;
+    assert_eq!(status_body["needs_setup"], true);
+    let req =
+        |t: &str| json!({"setup_token": t, "username": "janick", "password": "correct horse"});
+    let (status, _, _) = app
+        .call("POST", "/api/v1/auth/setup", None, Some(req("WRONG")))
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let (status, me, cookie) = app
+        .call("POST", "/api/v1/auth/setup", None, Some(req(&token)))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(me["user"]["role"], "owner");
+    assert!(cookie.is_some());
+    let (status, _, _) = app
+        .call("POST", "/api/v1/auth/setup", None, Some(req(&token)))
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn overview_health_and_proxmox_reads() {
+    let app = App::demo().await;
+    let owner = app.login("demo", "demo").await;
+    // Let the health checks run once.
+    tokio::time::sleep(Duration::from_millis(200)).await;
+
+    let (status, overview, _) = app
+        .call("GET", "/api/v1/overview", Some(&owner), None)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(overview["nodes"].as_array().unwrap().len(), 3);
+    assert_eq!(overview["status"]["total"], 9);
+    assert_eq!(overview["status"]["message"], "2 problems");
+
+    let (_, health, _) = app.call("GET", "/api/v1/health", Some(&owner), None).await;
+    let entries = health["entries"].as_array().unwrap();
+    assert!(entries.iter().any(|e| e["id"] == "guest:123"));
+    assert_eq!(entries[0]["timeline"].as_array().unwrap().len(), 24);
+
+    let (_, cluster, _) = app
+        .call("GET", "/api/v1/proxmox/cluster", Some(&owner), None)
+        .await;
+    assert_eq!(cluster["cluster"]["quorate"], true);
+    let (_, guest, _) = app
+        .call("GET", "/api/v1/proxmox/guests/114", Some(&owner), None)
+        .await;
+    assert_eq!(guest["linked_services"][0]["id"], "vaultwarden");
+    assert_eq!(guest["last_backup"]["kind"], "vzdump");
+    let (_, tagged, _) = app
+        .call("GET", "/api/v1/proxmox/guests/117", Some(&owner), None)
+        .await;
+    assert_eq!(tagged["guest"]["linked_services"][0], "bookstack");
+    let (status, rrd, _) = app
+        .call(
+            "GET",
+            "/api/v1/proxmox/nodes/pve-01/rrd?range=day",
+            Some(&owner),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(rrd.as_array().unwrap().len(), 70);
+    let (status, _, _) = app
+        .call(
+            "GET",
+            "/api/v1/proxmox/nodes/..%2Fx/rrd",
+            Some(&owner),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn sse_stream_opens_for_signed_in_users() {
+    let app = App::demo().await;
+    let owner = app.login("demo", "demo").await;
+    let req = Request::get("/api/v1/events?watch=proxmox")
+        .header(header::COOKIE, &owner)
+        .body(Body::empty())
+        .unwrap();
+    let response = app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        response.headers()[header::CONTENT_TYPE],
+        "text/event-stream"
+    );
+    let mut body = response.into_body();
+    let frame = tokio::time::timeout(Duration::from_secs(2), body.frame())
+        .await
+        .unwrap()
+        .unwrap()
+        .unwrap();
+    let text = String::from_utf8(frame.into_data().unwrap().to_vec()).unwrap();
+    assert!(text.starts_with("event: snapshot"), "{text}");
 }
