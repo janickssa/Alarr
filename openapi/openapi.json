@@ -21,7 +21,7 @@
           "activity"
         ],
         "summary": "Who did what, when, to what, and the result. Newest first. Guests see their own entries.",
-        "operationId": "list",
+        "operationId": "list_activity",
         "parameters": [
           {
             "name": "limit",
@@ -876,7 +876,7 @@
           "services"
         ],
         "summary": "Services you can see, with live health.",
-        "operationId": "list",
+        "operationId": "list_services",
         "responses": {
           "200": {
             "content": {

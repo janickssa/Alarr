@@ -321,7 +321,7 @@ async fn get_catalogue(_user: CurrentUser) -> Json<&'static [CatalogueEntry]> {
 }
 
 /// Services you can see, with live health.
-#[utoipa::path(get, path = "/services", tag = "services",
+#[utoipa::path(get, path = "/services", tag = "services", operation_id = "list_services",
     responses((status = 200, body = Vec<ServiceView>)))]
 async fn list(
     State(state): State<AppState>,
