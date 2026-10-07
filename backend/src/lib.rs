@@ -1,6 +1,18 @@
-//! Quorum server library: HTTP API, OpenAPI document and (later) pollers and modules.
+//! Quorum server library: config, storage, auth, service modules, pollers and the HTTP API.
 
 pub mod api;
+pub mod app;
+pub mod auth;
+pub mod config;
+pub mod crypto;
+pub mod db;
+pub mod events;
+pub mod modules;
+pub mod poller;
+pub mod services;
+pub mod state;
+pub mod tls;
+pub mod web;
 
 /// Product name. Kept in one place so a rename is cheap.
 pub const APP_NAME: &str = "Quorum";

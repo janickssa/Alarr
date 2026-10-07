@@ -1,0 +1,23 @@
+# Optional: services imported once, when the database has no services yet.
+# Fields match POST /api/v1/services. Secrets are encrypted on import; delete this file after.
+
+[[service]]
+kind = "proxmox"
+preset = "proxmox"
+name = "Proxmox cluster"
+base_url = "https://10.0.20.11:8006"
+settings = { token_id = "quorum@pve!quorum", fingerprint = "AB:CD:…:EF" }
+secrets = { token_secret = "00000000-0000-0000-0000-000000000000" }
+
+[[service]]
+kind = "health_check"
+preset = "vaultwarden"
+name = "Vaultwarden"
+base_url = "https://vault.example.lan"
+linked_vmid = 114
+
+[[service]]
+kind = "health_check"
+preset = "smb-share"
+name = "smb-share"
+settings = { check = "tcp", address = "10.0.20.111:445" }

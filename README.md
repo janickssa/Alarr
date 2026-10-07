@@ -289,20 +289,20 @@ Top-level navigation on every surface: **Home · Proxmox · Media · Services ·
 
 ### Phase 1 – Backend core
 
-- [ ] Config loading (TOML + env), structured logging with `tracing` (secrets redacted).
-- [ ] SQLite with `sqlx` migrations: users, sessions, devices, service instances (encrypted secrets), activity log, alert settings, uptime samples (keep 7 d at 1 min resolution, then downsample).
-- [ ] Auth: owner bootstrap on first start (one-time setup token printed to the log), argon2 passwords, cookie sessions for web, device tokens for PWA/iOS, roles and per-module visibility for guests.
-- [ ] Pairing flow: owner starts pairing → code + QR payload → device completes → device token. List and revoke devices.
-- [ ] `ServiceModule` trait, module registry, multi-instance support, per-instance poller tasks with fast mode and backoff, in-memory snapshot cache.
-- [ ] SSE endpoint broadcasting snapshot/health/action/alert events, filtered by the user's permissions.
-- [ ] Generic **health-check module** (HTTP status / TCP connect, response time, uptime history).
-- [ ] **Proxmox module**: cluster status, nodes, storage, guests, RRD data, guest detail, tasks, power actions with confirm flag, fingerprint pinning, linked-service mapping (by config and by Proxmox tag `svc-<service-id>`).
-- [ ] Endpoints: auth, pairing, devices, services CRUD + test + enable/disable, overview, health, proxmox, activity, settings.
-- [ ] OpenAPI generation with `utoipa`, served at `/api/v1/openapi.json` and written to `openapi/openapi.json` by a `cargo run -- openapi` subcommand.
-- [ ] `--demo` mode with fake Proxmox data and fake health checks.
-- [ ] Serve the web build embedded with `rust-embed` (SPA fallback to `index.html`).
-- [ ] Tests: unit tests per module with `wiremock` fixtures, API tests for auth/permissions and the confirm flag on destructive actions.
-- [ ] `deploy/`: Dockerfile (multi-stage, static binary), systemd unit, LXC install script, `quorum.example.toml`, and a short doc showing how to create the Proxmox role and token:
+- [x] Config loading (TOML + env), structured logging with `tracing` (secrets redacted).
+- [x] SQLite with `sqlx` migrations: users, sessions, devices, service instances (encrypted secrets), activity log, alert settings, uptime samples (keep 7 d at 1 min resolution, then downsample).
+- [x] Auth: owner bootstrap on first start (one-time setup token printed to the log), argon2 passwords, cookie sessions for web, device tokens for PWA/iOS, roles and per-module visibility for guests.
+- [x] Pairing flow: owner starts pairing → code + QR payload → device completes → device token. List and revoke devices.
+- [x] `ServiceModule` trait, module registry, multi-instance support, per-instance poller tasks with fast mode and backoff, in-memory snapshot cache.
+- [x] SSE endpoint broadcasting snapshot/health/action/alert events, filtered by the user's permissions.
+- [x] Generic **health-check module** (HTTP status / TCP connect, response time, uptime history).
+- [x] **Proxmox module**: cluster status, nodes, storage, guests, RRD data, guest detail, tasks, power actions with confirm flag, fingerprint pinning, linked-service mapping (by config and by Proxmox tag `svc-<service-id>`).
+- [x] Endpoints: auth, pairing, devices, services CRUD + test + enable/disable, overview, health, proxmox, activity, settings.
+- [x] OpenAPI generation with `utoipa`, served at `/api/v1/openapi.json` and written to `openapi/openapi.json` by a `cargo run -- openapi` subcommand.
+- [x] `--demo` mode with fake Proxmox data and fake health checks.
+- [x] Serve the web build embedded with `rust-embed` (SPA fallback to `index.html`).
+- [x] Tests: unit tests per module with `wiremock` fixtures, API tests for auth/permissions and the confirm flag on destructive actions.
+- [x] `deploy/`: Dockerfile (multi-stage, static binary), systemd unit, LXC install script, `quorum.example.toml`, and a short doc showing how to create the Proxmox role and token:
       `pveum role add QuorumRole -privs "VM.Audit Sys.Audit Datastore.Audit VM.PowerMgmt"`.
 
 **Definition of done:** in demo mode and against a real Proxmox, the API returns cluster, node, guest and health data; power actions work and are logged; SSE pushes changes; OpenAPI file is committed.
@@ -413,3 +413,24 @@ Same web codebase; this phase makes it a first-class mobile app.
 | 2026-10-07 | Bind address in phase 0 via `QUORUM_BIND` (default `127.0.0.1:8080`) | Placeholder until TOML config lands in phase 1 |
 | 2026-10-07 | Web scaffolded with `sv create` (SvelteKit 3, Svelte 5 runes, Vite 8, TypeScript, ESLint + Prettier); `adapter-static` with `fallback: 'index.html'`, `ssr = false` | SPA served by the Rust binary, as specified |
 | 2026-10-07 | CI on GitHub Actions: Node 22, stable Rust, `--locked` cargo builds | Reproducible builds from the committed lockfiles |
+| 2026-10-07 | Web sessions: random token in an `HttpOnly; SameSite=Strict` cookie (`Secure` when `public_url` is https), 30-day sliding expiry, only its SHA-256 stored. No separate CSRF token: SameSite=Strict plus JSON bodies cover it | Simple, standard for a same-origin SPA. Easy to add a CSRF header later |
+| 2026-10-07 | Device tokens: `Authorization: Bearer qd_…`, 256-bit random, SHA-256 stored, no expiry, revocable from Devices | Matches iOS Keychain storage; revocation instead of rotation |
+| 2026-10-07 | Pairing: 8-character code (`XXXX-XXXX`, no 0/O/1/I/L), valid 10 min, single use. QR payload `quorum://pair?server=<public_url>&code=<code>`. Owner may pair a device for another user | Typeable and scannable |
+| 2026-10-07 | Owner bootstrap: while no user exists, a 12-character setup token is logged at WARN on every start; `POST /auth/setup` uses it once | README requirement; survives restarts without storing it |
+| 2026-10-07 | Roles: owner = everything; member = sees all services, runs power and service actions, cannot manage services/users/settings/pairing; guest = only `allowed_services`, actions only with `can_act` (covers power and service actions) | Simplest split matching the README |
+| 2026-10-07 | Rate limits: 10 attempts per 5 min per client IP for login, setup, pairing and password change. The peer address is used; `X-Forwarded-For` is not trusted (direct access over the VPN) | Behind a reverse proxy all clients would share one bucket; revisit if that changes |
+| 2026-10-07 | Service secrets: XChaCha20-Poly1305 under `QUORUM_SECRET_KEY`, with `service/<id>/<name>` as associated data so a ciphertext can't be moved to another slot | Secrets at rest, per README |
+| 2026-10-07 | Self-signed TLS: optional per-service SHA-256 leaf-certificate pin (Proxmox and health checks). Without a pin, normal WebPKI verification. The connection test reports the presented fingerprint (handshake only, no request sent) so the owner can compare and pin it | Never disables verification; makes pinning easy |
+| 2026-10-07 | One Proxmox cluster: `/proxmox/*` uses the first enabled Proxmox service. Multiple Proxmox services can be stored but only the first drives those endpoints | Owner has one cluster; keeps the API simple. Add `?service=` later if needed |
+| 2026-10-07 | Proxmox endpoints checked against the pve-manager API schema in its source (`PVE/API2/Cluster.pm`, `Nodes.pm`); pve.proxmox.com was unreachable from the build environment. Storage comes from `/cluster/resources` (one call for all nodes). Node temperature is not in the API: `temperature_c` is `null` for now | Fewer calls; no invented data |
+| 2026-10-07 | Proxmox health: down when the cluster is not quorate or the API fails; warning when a node is offline or an active storage pool is at ≥ 90 % | Matches the resource-bar thresholds |
+| 2026-10-07 | Destructive Proxmox actions = `shutdown`, `stop`, `reboot` (need `"confirm": true`); `start` doesn't. Power returns the task UPID; the server follows the task and completes the activity entry (`pending` → `ok`/`error`) with an `action` SSE event | README rule; one log entry per action |
+| 2026-10-07 | Fast mode: a client viewing a service (`GET /services/{id}/snapshot`, any `/proxmox/*` read, or `GET /events?watch=a,b`) keeps it in fast mode for 30 s. Backoff when down: 2× the interval, doubling, max 5 min; down is reported on the first failure. Per-instance override: `settings.poll_interval_s` | Polling only speeds up for things on screen |
+| 2026-10-07 | Uptime: worst state per minute (`healthy`/`warning` count as up), for services and Proxmox guests (stopped = down). Minutes kept 7 days, then rolled into hourly rows kept 90 days | README retention; guests on the Health page |
+| 2026-10-07 | Health check defaults: any 2xx/3xx is healthy, slower than 2000 ms is a warning, timeout 5 s. Vaultwarden preset uses `/alive` | Sensible defaults, all configurable |
+| 2026-10-07 | Service ids are slugs (`a-z0-9-`, derived from the name if not given). The module catalogue (icons, accents, categories) lives in the backend and is served at `/services/catalogue` | One source for web and iOS |
+| 2026-10-07 | API additions beyond the first-version list: `GET/POST /auth/setup`, `PUT /auth/password`, `GET /services/catalogue`, `POST /services/test` (unsaved config), `POST/PUT/DELETE /users/{id}`; `refresh` is a built-in service action. `PATCH /services/{id}` merges `settings` and sets/clears individual secrets | Needed by onboarding and the add-service flow |
+| 2026-10-07 | Demo mode: in-memory database, random master key, users `demo`/`demo` (owner) and `guest`/`guest`, a 3-node cluster with the catalogue's containers, 8 health checks (Podgrab slow, draw.io down so problem states show) | Exercises every state without real services |
+| 2026-10-07 | Config defaults when no file exists: bind `127.0.0.1:8080`, database `/var/lib/quorum/quorum.db`. `QUORUM_BIND`, `QUORUM_DATABASE`, `QUORUM_PUBLIC_URL` override the file. Seed file: `[server] seed` or `/etc/quorum/services.seed.toml`, imported once when no services exist | Safe default bind; LXC install sets `0.0.0.0` |
+| 2026-10-07 | Crate versions: `sqlx` 0.8, `reqwest` 0.12 (rustls + ring), `rand` 0.8, `argon2` 0.5, `chacha20poly1305` 0.10 rather than the newest majors | Proven APIs; upgrade together later |
+| 2026-10-07 | Guest detail includes recent Proxmox tasks and the last `vzdump` task (`last_backup`). The phase 4 backup item (Health page) is still open | Came almost free from the task list |

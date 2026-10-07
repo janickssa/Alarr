@@ -1,0 +1,38 @@
+[Unit]
+Description=Quorum homelab control center
+Documentation=https://github.com/janickssa/Alarr
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=quorum
+Group=quorum
+# QUORUM_SECRET_KEY=… (mode 600, owned by root)
+EnvironmentFile=/etc/quorum/quorum.env
+Environment=QUORUM_CONFIG=/etc/quorum/quorum.toml
+ExecStart=/usr/local/bin/quorum-server serve
+Restart=on-failure
+RestartSec=5
+StateDirectory=quorum
+StateDirectoryMode=0750
+
+# Hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+ReadWritePaths=/var/lib/quorum
+
+[Install]
+WantedBy=multi-user.target
