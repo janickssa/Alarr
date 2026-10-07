@@ -2,7 +2,6 @@
 	import '#lib/styles/fonts.js';
 	import '#lib/styles/tokens.css';
 	import '#lib/styles/base.css';
-	import favicon from '#lib/assets/favicon.svg';
 	import { afterNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -12,6 +11,7 @@
 	import { api } from '#lib/api/client.js';
 	import Banner from '#lib/components/Banner.svelte';
 	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
+	import Icon from '#lib/components/Icon.svelte';
 	import Logo from '#lib/components/Logo.svelte';
 	import Header from '#lib/components/shell/Header.svelte';
 	import Sidebar from '#lib/components/shell/Sidebar.svelte';
@@ -55,8 +55,18 @@
 	let ready = $state(false);
 	let searchInput: HTMLInputElement | undefined = $state();
 
+	/** True when the first request failed at the network level (no VPN, server down). */
+	let offline = $state(false);
+
 	async function boot() {
+		offline = false;
 		const me = await session.loadMe().catch(() => null);
+		if (!me && !connection.reachable) {
+			// Don't send the user to sign-in when the server just can't be reached.
+			offline = true;
+			ready = true;
+			return;
+		}
 		if (!me) {
 			ready = true;
 			if (!isPublic) {
@@ -133,7 +143,6 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
 	<title>{APP_NAME}</title>
 </svelte:head>
 
@@ -143,6 +152,22 @@
 
 {#if isPublic}
 	{@render children()}
+{:else if offline}
+	<div class="splash" role="alert">
+		<Logo size={56} />
+		<h1 class="off-title">Can't reach Quorum</h1>
+		<p class="off-text">
+			<span class="mono">{page.url.host}</span> isn't answering. Are you on Tailscale (or your VPN)? Is
+			the server running?
+		</p>
+		<button
+			class="btn btn-primary"
+			onclick={() => {
+				ready = false;
+				void boot();
+			}}><Icon name="ph-arrow-clockwise" />Try again</button
+		>
+	</div>
 {:else if !ready || !session.me}
 	<div class="splash">
 		<Logo size={56} />
@@ -208,6 +233,16 @@
 		justify-content: center;
 		gap: 18px;
 		background: radial-gradient(60% 40% at 50% 44%, #262a60 0%, #161826 70%);
+	}
+	.off-title {
+		font: var(--text-title);
+	}
+	.off-text {
+		max-width: 320px;
+		text-align: center;
+		color: var(--color-neutral-300);
+		font-size: 14px;
+		margin: 0 16px;
 	}
 	.skip {
 		position: absolute;
