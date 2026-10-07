@@ -3,6 +3,7 @@
 pub mod activity;
 pub mod alerts;
 pub mod auth;
+pub mod automation;
 pub mod error;
 pub mod events;
 pub mod media;
@@ -98,6 +99,7 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(proxmox::router())
         .merge(activity::router())
         .merge(alerts::router())
+        .merge(automation::router())
         .merge(settings::router())
         .merge(events::router())
 }

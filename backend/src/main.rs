@@ -53,6 +53,7 @@ async fn serve(demo: bool) -> anyhow::Result<()> {
     let state = quorum_server::app::build(config, demo).await?;
     quorum_server::app::spawn_maintenance(state.clone());
     quorum_server::alerts::spawn(state.clone());
+    quorum_server::automation::spawn(state.clone());
 
     let listener = tokio::net::TcpListener::bind(bind).await?;
     tracing::info!(%bind, version = quorum_server::VERSION, demo, "{} server listening", quorum_server::APP_NAME);

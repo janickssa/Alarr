@@ -29,6 +29,8 @@ pub struct AppStateInner {
     pub started_at: DateTime<Utc>,
     /// Notification channels for alerts (ntfy, push).
     pub channels: Vec<Arc<dyn NotificationChannel>>,
+    /// qBittorrent auto-throttle state (see `automation`).
+    pub throttle: tokio::sync::Mutex<crate::automation::Throttle>,
 }
 
 #[derive(Clone)]
@@ -57,6 +59,7 @@ impl AppState {
         let channels = crate::alerts::channels::from_config(&config);
         Self(Arc::new(AppStateInner {
             channels,
+            throttle: Default::default(),
             config,
             db,
             secrets,

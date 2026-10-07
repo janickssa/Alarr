@@ -464,6 +464,57 @@
         ]
       }
     },
+    "/automation/throttle": {
+      "get": {
+        "tags": [
+          "automation"
+        ],
+        "summary": "Auto-throttle settings and whether it is throttling now.",
+        "operationId": "get_throttle",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThrottleStatus"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "automation"
+        ],
+        "summary": "Change auto-throttle (owner).",
+        "operationId": "put_throttle",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThrottleSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThrottleStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown qBittorrent service"
+          }
+        }
+      }
+    },
     "/devices": {
       "get": {
         "tags": [
@@ -6727,6 +6778,54 @@
             "type": "boolean"
           }
         }
+      },
+      "ThrottleSettings": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "only_remote": {
+            "type": "boolean",
+            "description": "Count only streams from outside the LAN (Jellyfin's \"remote\" sessions).",
+            "default": false
+          },
+          "qbittorrent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "qBittorrent service to throttle; the first one when unset.",
+            "default": null
+          }
+        }
+      },
+      "ThrottleStatus": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ThrottleSettings"
+          },
+          {
+            "type": "object",
+            "required": [
+              "engaged",
+              "streams"
+            ],
+            "properties": {
+              "engaged": {
+                "type": "boolean",
+                "description": "The limits are on because of auto-throttle right now."
+              },
+              "streams": {
+                "type": "integer",
+                "description": "Streams counted right now (after the remote-only filter).",
+                "minimum": 0
+              }
+            }
+          }
+        ],
+        "description": "Current status for the qBittorrent page."
       },
       "TimelineBucket": {
         "type": "object",

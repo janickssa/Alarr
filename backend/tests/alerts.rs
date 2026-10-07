@@ -324,3 +324,75 @@ async fn settings_mutes_and_test_send() {
             .any(|e| e["action"] == "alerts.settings")
     );
 }
+
+#[tokio::test]
+async fn auto_throttle_turns_alt_speed_on_while_streaming() {
+    use quorum_server::automation::{Throttle, tick};
+    use quorum_server::modules::ModuleData;
+
+    let ntfy = MockServer::start().await;
+    let (state, router) = app(&ntfy).await;
+    let owner = login(&router, "demo").await;
+    let guest = login(&router, "guest").await;
+
+    let body = json!({"enabled": true, "only_remote": true, "qbittorrent_id": null});
+    let (status, _, _) = call(
+        &router,
+        "PUT",
+        "/api/v1/automation/throttle",
+        Some(&guest),
+        Some(body.clone()),
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let (status, _, _) = call(
+        &router,
+        "PUT",
+        "/api/v1/automation/throttle",
+        Some(&owner),
+        Some(json!({"enabled": true, "qbittorrent_id": "sonarr"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, s, _) = call(
+        &router,
+        "PUT",
+        "/api/v1/automation/throttle",
+        Some(&owner),
+        Some(body),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    // Demo Jellyfin: one local and one remote stream.
+    assert_eq!(
+        (
+            s["enabled"].clone(),
+            s["streams"].clone(),
+            s["engaged"].clone()
+        ),
+        (json!(true), json!(1), json!(false))
+    );
+
+    let t0 = Utc::now();
+    let mut throttle = Throttle::default();
+    tick(&state, &mut throttle, t0).await.unwrap();
+    assert!(!throttle.engaged);
+    tick(&state, &mut throttle, t0 + chrono::Duration::seconds(25))
+        .await
+        .unwrap();
+    assert!(throttle.engaged);
+    let qbt = state.supervisor.module("qbittorrent").unwrap();
+    let ModuleData::Qbittorrent(d) = qbt.poll().await.unwrap().data else {
+        panic!()
+    };
+    assert!(d.alt_speed);
+    let (_, activity, _) = call(&router, "GET", "/api/v1/activity", Some(&owner), None).await;
+    let on = activity
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|e| e["action"] == "automation.throttle.on")
+        .expect("logged");
+    assert_eq!(on["detail"], "1 remote stream on Jellyfin");
+    assert_eq!(on["result"], "ok");
+}

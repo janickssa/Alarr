@@ -4,6 +4,7 @@ pub mod alerts;
 pub mod api;
 pub mod app;
 pub mod auth;
+pub mod automation;
 pub mod config;
 pub mod crypto;
 pub mod db;
