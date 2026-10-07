@@ -15,6 +15,372 @@
     }
   ],
   "paths": {
+    "/activity": {
+      "get": {
+        "tags": [
+          "activity"
+        ],
+        "summary": "Who did what, when, to what, and the result. Newest first. Guests see their own entries.",
+        "operationId": "list",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1–200, default 50.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "Return entries older than this id (pagination).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Sign in with username and password. Sets an HttpOnly session cookie.",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Signed in; session cookie set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {}
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "End the current web session.",
+        "operationId": "logout",
+        "responses": {
+          "204": {
+            "description": "Signed out; cookie cleared"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "The signed-in user.",
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/password": {
+      "put": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Change your own password. Signs out your other web sessions.",
+        "operationId": "change_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {},
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/setup": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Whether the owner account still has to be created.",
+        "operationId": "setup_status",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupStatus"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {}
+        ]
+      },
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Create the owner account with the one-time setup token. Signs the owner in.",
+        "operationId": "setup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Owner created; session cookie set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Wrong setup token or already set up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {}
+        ]
+      }
+    },
+    "/devices": {
+      "get": {
+        "tags": [
+          "devices"
+        ],
+        "summary": "Paired devices: all for the owner, your own for everyone else.",
+        "operationId": "list_devices",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Device"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/{id}": {
+      "delete": {
+        "tags": [
+          "devices"
+        ],
+        "summary": "Revoke a device. The owner can revoke any device; others only their own.",
+        "operationId": "delete_device",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Live updates. Sends the current snapshot of every visible service on connect, then\n`snapshot`, `health`, `action` and `alert` events (see the `Event` schema), filtered by\nwhat the user may see.",
+        "operationId": "events",
+        "parameters": [
+          {
+            "name": "watch",
+            "in": "query",
+            "description": "Comma-separated service ids the client is showing; they are polled in fast mode\nwhile the stream is open.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE stream of `Event`s",
+            "content": {
+              "text/event-stream": {}
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "overview"
+        ],
+        "summary": "Every service and guest with status, response time, uptime and a 24 h timeline.",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/info": {
       "get": {
         "tags": [
@@ -33,20 +399,3009 @@
               }
             }
           }
+        },
+        "security": [
+          {}
+        ]
+      }
+    },
+    "/overview": {
+      "get": {
+        "tags": [
+          "overview"
+        ],
+        "summary": "Everything Home needs in one call.",
+        "operationId": "overview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Overview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pairing/complete": {
+      "post": {
+        "tags": [
+          "pairing"
+        ],
+        "summary": "Redeem a pairing code for a device token. No session needed; rate limited.",
+        "operationId": "complete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompletePairing"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingCompleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unknown or expired code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {}
+        ]
+      }
+    },
+    "/pairing/start": {
+      "post": {
+        "tags": [
+          "pairing"
+        ],
+        "summary": "Start pairing a device. Owner only.",
+        "operationId": "start",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartPairing"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingStarted"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxmox/cluster": {
+      "get": {
+        "tags": [
+          "proxmox"
+        ],
+        "summary": "Cluster overview: quorum, nodes, storage pools and guest counts.",
+        "operationId": "cluster",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClusterOverview"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxmox/guests": {
+      "get": {
+        "tags": [
+          "proxmox"
+        ],
+        "summary": "All VMs and containers, with linked services.",
+        "operationId": "guests",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Guest"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxmox/guests/{vmid}": {
+      "get": {
+        "tags": [
+          "proxmox"
+        ],
+        "summary": "One guest with live status, linked services and recent tasks.",
+        "operationId": "guest",
+        "parameters": [
+          {
+            "name": "vmid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuestDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxmox/guests/{vmid}/power": {
+      "post": {
+        "tags": [
+          "proxmox"
+        ],
+        "summary": "Start, shut down, stop (hard) or reboot a guest. Returns the Proxmox task.",
+        "operationId": "power",
+        "parameters": [
+          {
+            "name": "vmid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PowerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PowerStarted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "confirm_required, or a template",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxmox refused the action",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxmox/guests/{vmid}/rrd": {
+      "get": {
+        "tags": [
+          "proxmox"
+        ],
+        "summary": "Guest graphs (RRD averages).",
+        "operationId": "guest_rrd",
+        "parameters": [
+          {
+            "name": "vmid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "description": "`hour` (default), `day` or `week`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/RrdRange"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RrdPoint"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxmox/nodes": {
+      "get": {
+        "tags": [
+          "proxmox"
+        ],
+        "summary": "Nodes with CPU, memory, disk, load and uptime.",
+        "operationId": "nodes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Node"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxmox/nodes/{node}/rrd": {
+      "get": {
+        "tags": [
+          "proxmox"
+        ],
+        "summary": "Node graphs (RRD averages).",
+        "operationId": "node_rrd",
+        "parameters": [
+          {
+            "name": "node",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "description": "`hour` (default), `day` or `week`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/RrdRange"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RrdPoint"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxmox/storage": {
+      "get": {
+        "tags": [
+          "proxmox"
+        ],
+        "summary": "Storage pools per node.",
+        "operationId": "storage",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/StoragePool"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxmox/tasks/{upid}": {
+      "get": {
+        "tags": [
+          "proxmox"
+        ],
+        "summary": "Status of a Proxmox task (e.g. from a power action).",
+        "operationId": "task",
+        "parameters": [
+          {
+            "name": "upid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services": {
+      "get": {
+        "tags": [
+          "services"
+        ],
+        "summary": "Services you can see, with live health.",
+        "operationId": "list",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "services"
+        ],
+        "summary": "Add a service. Owner only. Starts polling when enabled.",
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateService"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceView"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/catalogue": {
+      "get": {
+        "tags": [
+          "services"
+        ],
+        "summary": "The module catalogue (icons, accents, categories, available kinds).",
+        "operationId": "get_catalogue",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogueEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/test": {
+      "post": {
+        "tags": [
+          "services"
+        ],
+        "summary": "Test a configuration before saving it. Owner only.",
+        "operationId": "test_unsaved",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateService"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/{id}": {
+      "get": {
+        "tags": [
+          "services"
+        ],
+        "summary": "One service.",
+        "operationId": "get_one",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceView"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "services"
+        ],
+        "summary": "Remove a service. Owner only.",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "services"
+        ],
+        "summary": "Change a service. Owner only. The poller restarts with the new config.",
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateService"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceView"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/{id}/actions/{action}": {
+      "post": {
+        "tags": [
+          "services"
+        ],
+        "summary": "Run a module action (e.g. `scan_library`). `refresh` (poll now) works for every service.",
+        "operationId": "run_action",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown action or confirm required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/{id}/disable": {
+      "post": {
+        "tags": [
+          "services"
+        ],
+        "summary": "Disable a service: stop polling and hide it from Home. Owner only.",
+        "operationId": "disable",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/{id}/enable": {
+      "post": {
+        "tags": [
+          "services"
+        ],
+        "summary": "Enable a service and start polling it. Owner only.",
+        "operationId": "enable",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/{id}/snapshot": {
+      "get": {
+        "tags": [
+          "services"
+        ],
+        "summary": "The cached snapshot (health + module data). Viewing it switches the poller to fast mode.",
+        "operationId": "snapshot",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceSnapshot"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/{id}/test": {
+      "post": {
+        "tags": [
+          "services"
+        ],
+        "summary": "Test a saved service, optionally with unsaved changes applied. Owner only.",
+        "operationId": "test_saved",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateService"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionTest"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "App settings and backend info.",
+        "operationId": "get_settings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Replace the app settings. Owner only.",
+        "operationId": "put_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "All users. Owner only.",
+        "operationId": "list_users",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Add a user. Owner only.",
+        "operationId": "create_user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUser"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "put": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Change a user's role, guest access or password. Owner only.",
+        "operationId": "update_user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUser"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Remove a user, their sessions and devices. Owner only; not yourself.",
+        "operationId": "delete_user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
         }
       }
     }
   },
   "components": {
     "schemas": {
+      "ActionEvent": {
+        "type": "object",
+        "required": [
+          "entry"
+        ],
+        "properties": {
+          "entry": {
+            "$ref": "#/components/schemas/ActivityEntry"
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Service the action belongs to, if any (used for permission filtering)."
+          }
+        }
+      },
+      "ActionRequest": {
+        "type": "object",
+        "properties": {
+          "args": {
+            "type": "object"
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Required for destructive actions."
+          }
+        }
+      },
+      "ActionResult": {
+        "type": "object",
+        "required": [
+          "ok",
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "task": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Proxmox task id when the action started a task."
+          }
+        }
+      },
+      "ActivityEntry": {
+        "type": "object",
+        "required": [
+          "id",
+          "at",
+          "action",
+          "target",
+          "result"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Machine-readable action, e.g. `guest.power.reboot`, `service.create`, `auth.login`."
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "result": {
+            "$ref": "#/components/schemas/ActivityResult"
+          },
+          "target": {
+            "type": "string",
+            "description": "What it acted on, e.g. `guest:123`, `service:sonarr`."
+          },
+          "user_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ActivityResult": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "error",
+          "pending"
+        ]
+      },
+      "AlertEvent": {
+        "type": "object",
+        "required": [
+          "title",
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "AppSettings": {
+        "type": "object",
+        "description": "Settings shared by every client.",
+        "properties": {
+          "home_hidden": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Service ids hidden from Home.",
+            "default": []
+          },
+          "home_order": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Service ids in Home card order; services not listed follow in their default order.",
+            "default": []
+          }
+        }
+      },
+      "BackendInfo": {
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "demo",
+          "started_at",
+          "pollers"
+        ],
+        "properties": {
+          "demo": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pollers": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Services with a running poller.",
+            "minimum": 0
+          },
+          "public_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "CatalogueEntry": {
+        "type": "object",
+        "required": [
+          "preset",
+          "name",
+          "level",
+          "category",
+          "icon",
+          "accent_hue",
+          "accent_chroma"
+        ],
+        "properties": {
+          "accent_chroma": {
+            "type": "number",
+            "format": "float",
+            "description": "OKLCH chroma of the accent tile (only differs for the neutral custom accent)."
+          },
+          "accent_hue": {
+            "type": "integer",
+            "format": "int32",
+            "description": "OKLCH hue of the service accent.",
+            "minimum": 0
+          },
+          "category": {
+            "$ref": "#/components/schemas/Category"
+          },
+          "demo_vmid": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Container id in the owner's current setup (demo/seed data only).",
+            "minimum": 0
+          },
+          "health_path": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Path appended to the base URL for health checks."
+          },
+          "icon": {
+            "type": "string",
+            "description": "Phosphor icon name."
+          },
+          "kind": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ServiceKind",
+                "description": "Module kind used for this preset. `None` = module not implemented yet."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "level": {
+            "type": "string",
+            "description": "Integration level from the design catalogue (full, read-only, health)."
+          },
+          "name": {
+            "type": "string"
+          },
+          "preset": {
+            "type": "string",
+            "description": "Preset id, stored on service instances created from this entry."
+          }
+        }
+      },
+      "Category": {
+        "type": "string",
+        "enum": [
+          "infrastructure",
+          "media",
+          "network_security",
+          "apps"
+        ]
+      },
+      "CheckType": {
+        "type": "string",
+        "enum": [
+          "http",
+          "tcp"
+        ]
+      },
+      "ClusterInfo": {
+        "type": "object",
+        "required": [
+          "quorate",
+          "nodes_online",
+          "nodes_total"
+        ],
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cluster name; `None` for a standalone node."
+          },
+          "nodes_online": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "nodes_total": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "pve_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quorate": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ClusterOverview": {
+        "type": "object",
+        "required": [
+          "service_id",
+          "health",
+          "updated_at",
+          "cluster",
+          "nodes",
+          "storage",
+          "guests"
+        ],
+        "properties": {
+          "cluster": {
+            "$ref": "#/components/schemas/ClusterInfo"
+          },
+          "guests": {
+            "$ref": "#/components/schemas/GuestCounts"
+          },
+          "health": {
+            "$ref": "#/components/schemas/Health"
+          },
+          "health_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Node"
+            }
+          },
+          "service_id": {
+            "type": "string"
+          },
+          "storage": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoragePool"
+            }
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CompletePairing": {
+        "type": "object",
+        "required": [
+          "code",
+          "device_name",
+          "platform"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "device_name": {
+            "type": "string",
+            "description": "e.g. \"Janick's iPhone\"."
+          },
+          "platform": {
+            "type": "string",
+            "description": "`ios`, `pwa` or `other`."
+          }
+        }
+      },
+      "ConnectionTest": {
+        "type": "object",
+        "description": "Result of testing a (possibly unsaved) service configuration.",
+        "required": [
+          "ok",
+          "message",
+          "warnings"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "presented_fingerprint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "SHA-256 fingerprint of the certificate the server presented, when it was not trusted.\nShown to the owner so they can pin it after checking it on the host."
+          },
+          "response_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreateService": {
+        "type": "object",
+        "required": [
+          "kind",
+          "name"
+        ],
+        "properties": {
+          "base_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Category"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Slug (`a-z`, `0-9`, `-`). Default: derived from the name."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ServiceKind"
+          },
+          "linked_vmid": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "preset": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Catalogue preset (icon, accent, category, defaults)."
+          },
+          "secrets": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Secret values by name (e.g. `token_secret`). Stored encrypted, never returned.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "settings": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Module settings (`ProxmoxSettings`, `HealthCheckSettings`)."
+          },
+          "sort_order": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "CreateUser": {
+        "type": "object",
+        "required": [
+          "username",
+          "password",
+          "role"
+        ],
+        "properties": {
+          "allowed_services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Guests only: service ids they may see."
+          },
+          "can_act": {
+            "type": "boolean",
+            "description": "Guests only: may run power and service actions."
+          },
+          "password": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "Device": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "name",
+          "platform",
+          "created_at",
+          "last_seen_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "last_seen_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ErrorBody": {
+        "type": "object",
+        "required": [
+          "error",
+          "message"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Machine-readable code, e.g. `unauthorized`, `confirm_required`."
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Event": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "A service's cached snapshot changed (sent after every poll).",
+            "required": [
+              "data",
+              "event"
+            ],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/ServiceSnapshot",
+                "description": "A service's cached snapshot changed (sent after every poll)."
+              },
+              "event": {
+                "type": "string",
+                "enum": [
+                  "snapshot"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A service's health changed.",
+            "required": [
+              "data",
+              "event"
+            ],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/HealthChange",
+                "description": "A service's health changed."
+              },
+              "event": {
+                "type": "string",
+                "enum": [
+                  "health"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A user action started or finished (mirrors the activity log).",
+            "required": [
+              "data",
+              "event"
+            ],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/ActionEvent",
+                "description": "A user action started or finished (mirrors the activity log)."
+              },
+              "event": {
+                "type": "string",
+                "enum": [
+                  "action"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "An alert fired (alerts engine arrives in phase 4).",
+            "required": [
+              "data",
+              "event"
+            ],
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/AlertEvent",
+                "description": "An alert fired (alerts engine arrives in phase 4)."
+              },
+              "event": {
+                "type": "string",
+                "enum": [
+                  "alert"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "An event on `GET /api/v1/events`. The SSE event name is the `event` field;\nthe SSE data is the JSON of `data`."
+      },
+      "Guest": {
+        "type": "object",
+        "required": [
+          "vmid",
+          "name",
+          "node",
+          "guest_type",
+          "status",
+          "tags",
+          "template",
+          "linked_services"
+        ],
+        "properties": {
+          "cpu_count": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "cpu_usage": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "CPU usage, 0.0–1.0 of the guest's cores."
+          },
+          "disk_total": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "disk_used": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "guest_type": {
+            "$ref": "#/components/schemas/GuestType"
+          },
+          "ha_state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "linked_services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Quorum services linked to this guest (by service config or `svc-<id>` tag)."
+          },
+          "lock": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mem_total": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "mem_used": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Bytes.",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "net_in": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Total bytes received/sent since start.",
+            "minimum": 0
+          },
+          "net_out": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "node": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GuestStatus"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "template": {
+            "type": "boolean"
+          },
+          "uptime_s": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "vmid": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "GuestCounts": {
+        "type": "object",
+        "required": [
+          "total",
+          "running",
+          "stopped"
+        ],
+        "properties": {
+          "running": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "stopped": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "GuestDetail": {
+        "type": "object",
+        "required": [
+          "guest",
+          "ha_managed",
+          "linked_services",
+          "recent_tasks"
+        ],
+        "properties": {
+          "guest": {
+            "$ref": "#/components/schemas/Guest"
+          },
+          "ha_managed": {
+            "type": "boolean"
+          },
+          "last_backup": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Task",
+                "description": "Latest finished backup (`vzdump`) task."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "linked_services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceRef"
+            }
+          },
+          "qmp_status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "QEMU guest state (`running`, `paused`, …) from the live status."
+          },
+          "recent_tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            },
+            "description": "Latest tasks for this guest (power actions, backups), newest first."
+          }
+        }
+      },
+      "GuestStatus": {
+        "type": "string",
+        "enum": [
+          "running",
+          "stopped",
+          "paused",
+          "unknown"
+        ]
+      },
+      "GuestType": {
+        "type": "string",
+        "enum": [
+          "qemu",
+          "lxc"
+        ]
+      },
+      "Health": {
+        "type": "string",
+        "enum": [
+          "healthy",
+          "warning",
+          "down",
+          "in_progress",
+          "disabled",
+          "unknown"
+        ]
+      },
+      "HealthChange": {
+        "type": "object",
+        "required": [
+          "service_id",
+          "health"
+        ],
+        "properties": {
+          "health": {
+            "$ref": "#/components/schemas/Health"
+          },
+          "previous": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Health"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "service_id": {
+            "type": "string"
+          }
+        }
+      },
+      "HealthCheckData": {
+        "type": "object",
+        "required": [
+          "check",
+          "target"
+        ],
+        "properties": {
+          "check": {
+            "$ref": "#/components/schemas/CheckType"
+          },
+          "status_code": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "HTTP status code of the last response.",
+            "minimum": 0
+          },
+          "target": {
+            "type": "string",
+            "description": "URL or `host:port` that was checked."
+          }
+        }
+      },
+      "HealthCheckSettings": {
+        "type": "object",
+        "description": "Settings of a health-check instance (the `settings` object of the service).",
+        "properties": {
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "TCP: `host:port` to connect to.",
+            "default": null
+          },
+          "check": {
+            "$ref": "#/components/schemas/CheckType",
+            "default": "http"
+          },
+          "expected_status": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "HTTP: expected status code. Default: any 2xx or 3xx.",
+            "default": null,
+            "minimum": 0
+          },
+          "path": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "HTTP: path appended to the base URL (default `/`).",
+            "default": null
+          },
+          "slow_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Responses slower than this are reported as a warning (default 2000 ms).",
+            "default": null,
+            "minimum": 0
+          },
+          "timeout_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Timeout in milliseconds (default 5000).",
+            "default": null,
+            "minimum": 0
+          },
+          "tls_fingerprint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "SHA-256 fingerprint to pin for a self-signed HTTPS certificate.",
+            "default": null
+          }
+        }
+      },
+      "HealthEntry": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "health",
+          "timeline",
+          "warnings"
+        ],
+        "properties": {
+          "guest_type": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuestType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "health": {
+            "$ref": "#/components/schemas/Health"
+          },
+          "health_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "description": "`svc:<id>` or `guest:<vmid>`."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/HealthEntryKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "response_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimelineBucket"
+            },
+            "description": "24 hourly buckets, oldest first."
+          },
+          "uptime_24h": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Percent, one decimal."
+          },
+          "uptime_7d": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "vmid": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "e.g. \"disk at 92 %\"."
+          }
+        }
+      },
+      "HealthEntryKind": {
+        "type": "string",
+        "enum": [
+          "service",
+          "guest"
+        ]
+      },
+      "HealthReport": {
+        "type": "object",
+        "required": [
+          "generated_at",
+          "entries"
+        ],
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HealthEntry"
+            }
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Highlight": {
+        "type": "object",
+        "description": "One card on Home.",
+        "required": [
+          "service",
+          "headline"
+        ],
+        "properties": {
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Second line, e.g. \"CPU 18 % · RAM 58 %\" or \"99.9 % · 7 d\"."
+          },
+          "headline": {
+            "type": "string",
+            "description": "Main line, e.g. \"3 nodes · 24 guests running\" or \"42 ms\"."
+          },
+          "service": {
+            "$ref": "#/components/schemas/ServiceView"
+          }
+        }
+      },
+      "IntegrationLevel": {
+        "type": "string",
+        "enum": [
+          "full",
+          "read_only",
+          "health_check"
+        ]
+      },
+      "LinkedGuest": {
+        "type": "object",
+        "required": [
+          "vmid",
+          "guest_type",
+          "name",
+          "node",
+          "status"
+        ],
+        "properties": {
+          "guest_type": {
+            "$ref": "#/components/schemas/GuestType"
+          },
+          "name": {
+            "type": "string"
+          },
+          "node": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GuestStatus"
+          },
+          "vmid": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "password": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "Me": {
+        "type": "object",
+        "required": [
+          "user",
+          "auth"
+        ],
+        "properties": {
+          "auth": {
+            "type": "string",
+            "description": "`session` (web cookie) or `device` (bearer token)."
+          },
+          "device_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      },
+      "ModuleData": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "none"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "proxmox"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/ProxmoxData"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "health_check"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/HealthCheckData"
+              }
+            }
+          }
+        ],
+        "description": "Module-specific snapshot payload."
+      },
+      "Node": {
+        "type": "object",
+        "required": [
+          "name",
+          "online"
+        ],
+        "properties": {
+          "cpu_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "cpu_model": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cpu_usage": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "CPU usage, 0.0–1.0."
+          },
+          "disk_total": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "disk_used": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Root filesystem, bytes.",
+            "minimum": 0
+          },
+          "ip": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kernel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "load_avg": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "number",
+              "format": "double"
+            },
+            "description": "1, 5 and 15 minute load averages."
+          },
+          "mem_total": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "mem_used": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Bytes.",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "online": {
+            "type": "boolean"
+          },
+          "pve_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "temperature_c": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Not exposed by the Proxmox API; filled by a future sensor source."
+          },
+          "uptime_s": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "NodeSummary": {
+        "type": "object",
+        "required": [
+          "name",
+          "online",
+          "guests_running"
+        ],
+        "properties": {
+          "cpu_usage": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "0.0–1.0."
+          },
+          "guests_running": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "mem_total": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "mem_used": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "online": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Overview": {
+        "type": "object",
+        "required": [
+          "status",
+          "problems",
+          "nodes",
+          "highlights"
+        ],
+        "properties": {
+          "highlights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Highlight"
+            },
+            "description": "Enabled, visible services in Home order, without hidden ones."
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NodeSummary"
+            },
+            "description": "Proxmox node strip (empty without a visible Proxmox service)."
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusSummary"
+          }
+        }
+      },
+      "PairingCompleted": {
+        "type": "object",
+        "required": [
+          "token",
+          "device"
+        ],
+        "properties": {
+          "device": {
+            "$ref": "#/components/schemas/Device"
+          },
+          "token": {
+            "type": "string",
+            "description": "Bearer token for `Authorization: Bearer …`. Shown once; store it in the Keychain."
+          }
+        }
+      },
+      "PairingStarted": {
+        "type": "object",
+        "required": [
+          "code",
+          "expires_at",
+          "qr_payload"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Code to type on the device, formatted `XXXX-XXXX`."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "qr_payload": {
+            "type": "string",
+            "description": "Content for the QR code: `quorum://pair?server=<public url>&code=<code>`."
+          }
+        }
+      },
+      "PasswordChange": {
+        "type": "object",
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "properties": {
+          "current_password": {
+            "type": "string"
+          },
+          "new_password": {
+            "type": "string"
+          }
+        }
+      },
+      "PowerAction": {
+        "type": "string",
+        "enum": [
+          "start",
+          "shutdown",
+          "stop",
+          "reboot"
+        ]
+      },
+      "PowerRequest": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/PowerAction"
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Must be `true` for `shutdown`, `stop` and `reboot`."
+          }
+        }
+      },
+      "PowerStarted": {
+        "type": "object",
+        "required": [
+          "upid",
+          "node",
+          "activity_id"
+        ],
+        "properties": {
+          "activity_id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Activity log entry; an `action` event follows when the task finishes."
+          },
+          "node": {
+            "type": "string"
+          },
+          "upid": {
+            "type": "string"
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "required": [
+          "title",
+          "health"
+        ],
+        "properties": {
+          "health": {
+            "$ref": "#/components/schemas/Health"
+          },
+          "quick_action": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/QuickAction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "vmid": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "ProxmoxData": {
+        "type": "object",
+        "required": [
+          "cluster",
+          "nodes",
+          "guests",
+          "storage"
+        ],
+        "properties": {
+          "cluster": {
+            "$ref": "#/components/schemas/ClusterInfo"
+          },
+          "guests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Guest"
+            }
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Node"
+            }
+          },
+          "storage": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StoragePool"
+            }
+          }
+        }
+      },
+      "ProxmoxSettings": {
+        "type": "object",
+        "description": "Settings of a Proxmox instance (the `settings` object of the service).\nThe token secret is stored as the encrypted secret `token_secret`.",
+        "required": [
+          "token_id"
+        ],
+        "properties": {
+          "fingerprint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "SHA-256 fingerprint of the Proxmox certificate to pin (self-signed certificates)."
+          },
+          "token_id": {
+            "type": "string",
+            "description": "API token id, e.g. `quorum@pve!quorum`."
+          }
+        }
+      },
+      "QuickAction": {
+        "type": "object",
+        "required": [
+          "kind",
+          "label"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/QuickActionKind"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "QuickActionKind": {
+        "type": "string",
+        "enum": [
+          "retry",
+          "start_guest"
+        ]
+      },
+      "Role": {
+        "type": "string",
+        "enum": [
+          "owner",
+          "member",
+          "guest"
+        ]
+      },
+      "RrdPoint": {
+        "type": "object",
+        "description": "One RRD sample. Units: CPU 0.0–1.0, memory/disk in bytes, network/disk IO in bytes per second.",
+        "required": [
+          "time"
+        ],
+        "properties": {
+          "cpu": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "disk_read": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "disk_total": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "disk_used": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "disk_write": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "io_wait": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "load_avg": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "mem_total": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "mem_used": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "net_in": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "net_out": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SecretStatus": {
+        "type": "object",
+        "description": "Whether a secret is stored. The value itself is never returned by the API.",
+        "required": [
+          "set"
+        ],
+        "properties": {
+          "display": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`\"••••\"` when set."
+          },
+          "set": {
+            "type": "boolean"
+          }
+        }
+      },
       "ServerInfo": {
         "type": "object",
         "description": "Basic information about the running server.",
         "required": [
           "name",
-          "version"
+          "version",
+          "demo"
         ],
         "properties": {
+          "demo": {
+            "type": "boolean",
+            "description": "True when running with `--demo` (fake data)."
+          },
           "name": {
             "type": "string",
             "description": "Product name."
@@ -56,7 +3411,638 @@
             "description": "Server version."
           }
         }
+      },
+      "ServiceKind": {
+        "type": "string",
+        "description": "Kind of service module. Adding a service = adding a variant, a module file and a\nregistry entry in [`build_module`].",
+        "enum": [
+          "proxmox",
+          "health_check"
+        ]
+      },
+      "ServiceRef": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "health"
+        ],
+        "properties": {
+          "health": {
+            "$ref": "#/components/schemas/Health"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ServiceSnapshot": {
+        "type": "object",
+        "description": "Cached state of one service instance: a common header plus module-specific data.",
+        "required": [
+          "service_id",
+          "kind",
+          "health",
+          "updated_at",
+          "stale",
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ModuleData"
+          },
+          "health": {
+            "$ref": "#/components/schemas/Health"
+          },
+          "health_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Short human-readable reason when not healthy."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ServiceKind"
+          },
+          "response_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "service_id": {
+            "type": "string"
+          },
+          "stale": {
+            "type": "boolean",
+            "description": "True when the last poll failed and `data` is from an earlier successful poll."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ServiceView": {
+        "type": "object",
+        "description": "A service as returned by the API: config (without secret values) plus live health.",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "category",
+          "icon",
+          "accent_hue",
+          "accent_chroma",
+          "level",
+          "enabled",
+          "sort_order",
+          "settings",
+          "secrets",
+          "health"
+        ],
+        "properties": {
+          "accent_chroma": {
+            "type": "number",
+            "format": "float"
+          },
+          "accent_hue": {
+            "type": "integer",
+            "format": "int32",
+            "description": "OKLCH hue of the service accent.",
+            "minimum": 0
+          },
+          "base_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category": {
+            "$ref": "#/components/schemas/Category"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "health": {
+            "$ref": "#/components/schemas/Health"
+          },
+          "health_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "icon": {
+            "type": "string",
+            "description": "Phosphor icon name."
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ServiceKind"
+          },
+          "level": {
+            "$ref": "#/components/schemas/IntegrationLevel"
+          },
+          "linked_guest": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LinkedGuest",
+                "description": "The linked guest (by config or `svc-<id>` tag), if Proxmox knows it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "linked_vmid": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Container/VM explicitly linked in the service config.",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "preset": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "response_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "secrets": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SecretStatus"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "settings": {
+            "type": "object",
+            "description": "Module settings (see `ProxmoxSettings`, `HealthCheckSettings`)."
+          },
+          "sort_order": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SettingsResponse": {
+        "type": "object",
+        "required": [
+          "settings",
+          "backend"
+        ],
+        "properties": {
+          "backend": {
+            "$ref": "#/components/schemas/BackendInfo"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/AppSettings"
+          }
+        }
+      },
+      "SetupRequest": {
+        "type": "object",
+        "required": [
+          "setup_token",
+          "username",
+          "password"
+        ],
+        "properties": {
+          "password": {
+            "type": "string"
+          },
+          "setup_token": {
+            "type": "string",
+            "description": "The one-time token printed in the server log on first start."
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "SetupStatus": {
+        "type": "object",
+        "required": [
+          "needs_setup",
+          "demo"
+        ],
+        "properties": {
+          "demo": {
+            "type": "boolean"
+          },
+          "needs_setup": {
+            "type": "boolean",
+            "description": "True until the owner account exists."
+          }
+        }
+      },
+      "StartPairing": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "User the device will belong to (default: the owner starting the pairing)."
+          }
+        }
+      },
+      "StatusSummary": {
+        "type": "object",
+        "required": [
+          "total",
+          "healthy",
+          "warning",
+          "down",
+          "unknown",
+          "message"
+        ],
+        "properties": {
+          "down": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "healthy": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "message": {
+            "type": "string",
+            "description": "\"All 18 services healthy\" or \"2 problems\"."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Enabled services you can see.",
+            "minimum": 0
+          },
+          "unknown": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "warning": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "StoragePool": {
+        "type": "object",
+        "required": [
+          "id",
+          "storage",
+          "node",
+          "shared",
+          "active",
+          "content"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "id": {
+            "type": "string",
+            "description": "`<node>/<storage>`."
+          },
+          "node": {
+            "type": "string"
+          },
+          "plugin_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "shared": {
+            "type": "boolean"
+          },
+          "storage": {
+            "type": "string"
+          },
+          "total": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "used": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Bytes.",
+            "minimum": 0
+          }
+        }
+      },
+      "Task": {
+        "type": "object",
+        "required": [
+          "upid",
+          "node",
+          "state"
+        ],
+        "properties": {
+          "ended_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "exit_status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Exit status text (`OK` or the error)."
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Usually the vmid."
+          },
+          "kind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Task type, e.g. `vzstart`, `qmshutdown`, `vzdump`."
+          },
+          "node": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "state": {
+            "$ref": "#/components/schemas/TaskState"
+          },
+          "upid": {
+            "type": "string"
+          },
+          "user": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TaskState": {
+        "type": "string",
+        "enum": [
+          "running",
+          "ok",
+          "error"
+        ]
+      },
+      "TimelineBucket": {
+        "type": "object",
+        "required": [
+          "start",
+          "health"
+        ],
+        "properties": {
+          "health": {
+            "$ref": "#/components/schemas/Health",
+            "description": "Worst state seen in the hour; `unknown` without samples."
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "uptime": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Uptime in the hour, percent."
+          }
+        }
+      },
+      "UpdateService": {
+        "type": "object",
+        "description": "Partial update. Absent fields stay as they are; `null` clears optional fields.",
+        "properties": {
+          "base_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Category"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "linked_vmid": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "secrets": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Set (string) or clear (`null`) individual secrets.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "settings": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Merged into the stored settings; a `null` value removes that key."
+          },
+          "sort_order": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "UpdateUser": {
+        "type": "object",
+        "properties": {
+          "allowed_services": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "can_act": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "password": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Set a new password (signs the user out everywhere on the web)."
+          },
+          "role": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Role"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "role",
+          "allowed_services",
+          "can_act",
+          "created_at"
+        ],
+        "properties": {
+          "allowed_services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Guests only: service ids the guest may see."
+          },
+          "can_act": {
+            "type": "boolean",
+            "description": "Guests only: may run power and service actions on allowed services."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "device": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Device token from /pairing/complete"
+      },
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "quorum_session",
+        "description": "Web session cookie set by /auth/login"
       }
     }
-  }
+  },
+  "security": [
+    {
+      "session": []
+    },
+    {
+      "device": []
+    }
+  ]
 }
