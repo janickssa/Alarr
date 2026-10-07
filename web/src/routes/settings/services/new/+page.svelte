@@ -51,10 +51,9 @@
 	{/each}
 	{#if later.length}
 		<section>
-			<h3 class="overline">Coming in later phases</h3>
+			<h3 class="overline">Not integrated yet</h3>
 			<p class="caption muted">
-				Full integrations for {later.map((c) => c.name).join(', ')}. Until then, add them as a
-				custom health check.
+				{later.map((c) => c.name).join(', ')} has no full integration yet. Add it as a custom health check.
 			</p>
 		</section>
 	{/if}

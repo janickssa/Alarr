@@ -65,7 +65,7 @@
 	);
 
 	// Keyboard shortcuts: "/" search, "g h" Home, "g p" Proxmox, "g s" Services,
-	// "g e" Health, "g l" Alerts, "g a" Activity, "g ," Settings.
+	// "g e" Health, "g l" Alerts, "g a" Activity, "g o" Launcher, "g ," Settings.
 	let pendingG = false;
 	let gTimer: ReturnType<typeof setTimeout> | undefined;
 	function onkeydown(e: KeyboardEvent) {
@@ -87,6 +87,7 @@
 				s: '/services',
 				e: '/health',
 				l: '/alerts',
+				o: '/launcher',
 				a: '/activity',
 				',': '/settings'
 			} as const;

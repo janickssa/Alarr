@@ -343,14 +343,14 @@ Backend module + web page for each, in this order. Each needs demo data and wire
 - [x] Nginx Proxy Manager (hosts, certificate expiry).
 - [x] Authentik (logins, failed logins, events, outposts).
 - [x] Nextcloud (serverinfo).
-- [ ] lxc-updater: **first ask the owner what it is and what it outputs**; then integrate (pending updates per container + badges on guest rows), or skip with a note.
+- [x] lxc-updater: **first ask the owner what it is and what it outputs**; then integrate (pending updates per container + badges on guest rows), or skip with a note. **Skipped for now at the owner's request (7 Oct 2026); see the Decisions log.**
 - [x] `agent/`: tiny Rust binary for the WireGuard container that runs `wg show all dump` and exposes peers on `GET /peers` with a shared token. Install script + systemd unit. WireGuard module consumes it; "agent not installed" state.
 - [x] Alerts engine: service down, disk ≥ 90 %, download failed, certificate < 14 d, new request, node offline. Per-type settings, quiet hours, deduplication.
 - [x] Notification channel abstraction (`NotificationChannel` trait) so alerts can go to several channels; per alert type the owner picks ntfy, iOS push or both, and each user/device can mute types.
 - [x] ntfy delivery.
 - [x] Automation: auto-throttle qBittorrent (alt speed on) while Jellyfin has active streams (option: only remote streams), with hysteresis so it doesn't flap.
 - [x] Backup status: last vzdump job per guest on guest detail and Health.
-- [ ] Launcher view.
+- [x] Launcher view.
 
 **Definition of done:** all modules from the catalogue exist and can be toggled; alerts arrive in ntfy; auto-throttle works.
 
