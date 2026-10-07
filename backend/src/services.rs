@@ -80,7 +80,7 @@ pub struct ServiceView {
     pub enabled: bool,
     pub sort_order: i64,
     /// Module settings (see `ProxmoxSettings`, `HealthCheckSettings`).
-    #[schema(value_type = Object)]
+    #[schema(value_type = std::collections::HashMap<String, serde_json::Value>)]
     pub settings: Value,
     pub secrets: BTreeMap<String, SecretStatus>,
     /// Container/VM explicitly linked in the service config.

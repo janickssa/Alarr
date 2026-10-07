@@ -54,7 +54,7 @@ pub struct CreateService {
     pub enabled: Option<bool>,
     pub category: Option<Category>,
     /// Module settings (`ProxmoxSettings`, `HealthCheckSettings`).
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<std::collections::HashMap<String, serde_json::Value>>)]
     pub settings: Option<Value>,
     /// Secret values by name (e.g. `token_secret`). Stored encrypted, never returned.
     pub secrets: Option<BTreeMap<String, String>>,
@@ -73,7 +73,7 @@ pub struct UpdateService {
     #[schema(value_type = Option<Category>)]
     pub category: Option<Option<Category>>,
     /// Merged into the stored settings; a `null` value removes that key.
-    #[schema(value_type = Option<Object>)]
+    #[schema(value_type = Option<std::collections::HashMap<String, serde_json::Value>>)]
     pub settings: Option<Value>,
     /// Set (string) or clear (`null`) individual secrets.
     #[schema(value_type = Option<BTreeMap<String, String>>)]
@@ -90,7 +90,7 @@ pub struct ActionRequest {
     #[serde(default)]
     pub confirm: bool,
     #[serde(default)]
-    #[schema(value_type = Object)]
+    #[schema(value_type = std::collections::HashMap<String, serde_json::Value>)]
     pub args: Value,
 }
 

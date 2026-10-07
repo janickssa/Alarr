@@ -1628,7 +1628,11 @@
         "type": "object",
         "properties": {
           "args": {
-            "type": "object"
+            "type": "object",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "confirm": {
             "type": "boolean",
@@ -2106,7 +2110,11 @@
               "object",
               "null"
             ],
-            "description": "Module settings (`ProxmoxSettings`, `HealthCheckSettings`)."
+            "description": "Module settings (`ProxmoxSettings`, `HealthCheckSettings`).",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "sort_order": {
             "type": [
@@ -3745,7 +3753,11 @@
           },
           "settings": {
             "type": "object",
-            "description": "Module settings (see `ProxmoxSettings`, `HealthCheckSettings`)."
+            "description": "Module settings (see `ProxmoxSettings`, `HealthCheckSettings`).",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "sort_order": {
             "type": "integer",
@@ -4076,7 +4088,11 @@
               "object",
               "null"
             ],
-            "description": "Merged into the stored settings; a `null` value removes that key."
+            "description": "Merged into the stored settings; a `null` value removes that key.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "sort_order": {
             "type": [
