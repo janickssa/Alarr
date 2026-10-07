@@ -389,6 +389,9 @@
 		color: inherit;
 		background: color-mix(in srgb, var(--color-surface) 92%, var(--color-text));
 	}
+	.node:hover .faint {
+		color: var(--color-neutral-400);
+	}
 	.cards {
 		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 	}

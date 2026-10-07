@@ -93,6 +93,10 @@
 	.tile:hover {
 		background: color-mix(in srgb, var(--color-surface) 92%, var(--color-text));
 	}
+	/* Keep 4.5:1 contrast on the lighter hover background. */
+	.tile:hover .host {
+		color: var(--color-neutral-400);
+	}
 	.name {
 		font-size: 14px;
 	}
