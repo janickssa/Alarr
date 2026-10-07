@@ -1,0 +1,22 @@
+[package]
+name = "quorum-agent"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+license = "MIT"
+description = "Quorum agent for the WireGuard container: exposes peers on GET /peers"
+publish = false
+
+# Standard library only: the agent is a single small binary with nothing to update.
+[dependencies]
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
