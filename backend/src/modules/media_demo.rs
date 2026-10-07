@@ -391,6 +391,24 @@ impl DemoMedia {
     }
 
     pub fn arr(&self, flavor: ArrFlavor) -> (ArrData, Vec<LibraryItem>) {
+        let (mut data, library) = self.arr_base(flavor);
+        // Keep the queue in step with the simulated qBittorrent transfers.
+        let st = self.state.lock().expect("lock");
+        for q in &mut data.queue {
+            let Some(t) = st.torrents.iter().find(|t| {
+                q.download_id
+                    .as_deref()
+                    .is_some_and(|id| id.eq_ignore_ascii_case(&t.hash))
+            }) else {
+                continue;
+            };
+            q.size_left = (q.size as f64 * (1.0 - t.progress)).round() as u64;
+            q.eta = t.eta_s.map(|s| Utc::now() + Duration::seconds(s as i64));
+        }
+        (data, library)
+    }
+
+    fn arr_base(&self, flavor: ArrFlavor) -> (ArrData, Vec<LibraryItem>) {
         let now = Utc::now();
         let lib = |id, title: &str, year, tmdb, tvdb, have, total, size_gb| LibraryItem {
             id,

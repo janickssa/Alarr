@@ -78,7 +78,7 @@ pub static CATALOGUE: &[CatalogueEntry] = &[
         Some(108),
     ),
     entry(
-        "jellyfin-public",
+        "jellyfin-pub",
         "Jellyfin (public)",
         Some(ServiceKind::Jellyfin),
         "full",

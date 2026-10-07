@@ -29,6 +29,8 @@ use crate::state::AppState;
         crate::events::Event,
         crate::modules::proxmox::ProxmoxSettings,
         crate::modules::health_check::HealthCheckSettings,
+        crate::modules::arr::LibraryItem,
+        crate::modules::seerr::SearchResult,
     ))
 )]
 struct ApiDoc;

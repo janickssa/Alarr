@@ -163,7 +163,7 @@ async fn seed_demo(state: &AppState) -> anyhow::Result<()> {
     }
     for (id, kind, ct) in [
         ("jellyfin", ServiceKind::Jellyfin, 108),
-        ("jellyfin-public", ServiceKind::Jellyfin, 105),
+        ("jellyfin-pub", ServiceKind::Jellyfin, 105),
         ("seerr", ServiceKind::Seerr, 126),
         ("sonarr", ServiceKind::Sonarr, 123),
         ("radarr", ServiceKind::Radarr, 124),

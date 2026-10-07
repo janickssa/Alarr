@@ -3415,6 +3415,83 @@
           }
         }
       },
+      "LibraryItem": {
+        "type": "object",
+        "description": "One series or movie (library grid, search, request tracker matching).",
+        "required": [
+          "id",
+          "title",
+          "monitored",
+          "complete",
+          "have",
+          "total",
+          "size"
+        ],
+        "properties": {
+          "complete": {
+            "type": "boolean",
+            "description": "Movies: file present. Series: all aired episodes present."
+          },
+          "have": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Series: episodes with a file / episodes aired. Movies: 0/1."
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "monitored": {
+            "type": "boolean"
+          },
+          "poster": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Poster path on the service (`/MediaCover/…`), proxied by `/services/{id}/image`."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "tmdb_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tvdb_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
       "LinkedGuest": {
         "type": "object",
         "required": [
@@ -4848,6 +4925,52 @@
           "time": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "SearchResult": {
+        "type": "object",
+        "required": [
+          "media_type",
+          "tmdb_id",
+          "title"
+        ],
+        "properties": {
+          "media_status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Media status if already known to Seerr."
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "overview": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "poster_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "tmdb_id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
           }
         }
       },

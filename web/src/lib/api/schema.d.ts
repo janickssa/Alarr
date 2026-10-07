@@ -196,6 +196,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/media/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Everything the Media page needs: now playing across Jellyfin instances and Navidrome,
+         *     the request tracker (Seerr → Sonarr/Radarr → qBittorrent → Jellyfin), the combined
+         *     calendar and recently added items.
+         */
+        get: operations["media_overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search movies (Radarr), series (Sonarr) and torrents (qBittorrent) by title. */
+        get: operations["media_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/overview": {
         parameters: {
             query?: never;
@@ -539,6 +577,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/services/{id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Proxy a poster or cover image from the service (keeps API keys on the server and
+         *     works without internet access).
+         */
+        get: operations["image"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/services/{id}/query/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A module query (read-only), e.g. `library` (Sonarr/Radarr) or `search?q=` (Seerr).
+         *     The response shape depends on the module and query.
+         */
+        get: operations["query"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/services/{id}/snapshot": {
         parameters: {
             query?: never;
@@ -684,6 +762,24 @@ export interface components {
              */
             home_order: string[];
         };
+        ArrData: {
+            /** @description From yesterday to 14 days ahead. */
+            calendar: components["schemas"]["CalendarItem"][];
+            disks: components["schemas"]["Disk"][];
+            flavor: components["schemas"]["ArrFlavor"];
+            health: components["schemas"]["HealthIssue"][];
+            /** Format: int32 */
+            library_count: number;
+            /** Format: int64 */
+            library_size: number;
+            /** @description Newest 20 wanted (missing) items. */
+            missing: components["schemas"]["MissingItem"][];
+            /** Format: int64 */
+            missing_total: number;
+            queue: components["schemas"]["QueueItem"][];
+        };
+        /** @enum {string} */
+        ArrFlavor: "sonarr" | "radarr";
         BackendInfo: {
             demo: boolean;
             name: string;
@@ -696,6 +792,32 @@ export interface components {
             /** Format: date-time */
             started_at: string;
             version: string;
+        };
+        BazarrData: {
+            history: components["schemas"]["SubtitleEvent"][];
+            /** Format: int64 */
+            missing_episodes: number;
+            /** Format: int64 */
+            missing_movies: number;
+            wanted: components["schemas"]["WantedSubtitle"][];
+        };
+        CalendarEntry: {
+            flavor: components["schemas"]["ArrFlavor"];
+            item: components["schemas"]["CalendarItem"];
+            service_id: string;
+        };
+        CalendarItem: {
+            /** Format: date-time */
+            at: string;
+            has_file: boolean;
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            item_id?: number | null;
+            /** @description Radarr: `cinema`, `digital` or `physical`; Sonarr: `airing`. */
+            kind: string;
+            subtitle?: string | null;
+            title: string;
         };
         CatalogueEntry: {
             /**
@@ -814,6 +936,13 @@ export interface components {
             platform: string;
             /** Format: int64 */
             user_id: number;
+        };
+        Disk: {
+            /** Format: int64 */
+            free: number;
+            path: string;
+            /** Format: int64 */
+            total: number;
         };
         ErrorBody: {
             /** @description Machine-readable code, e.g. `unauthorized`, `confirm_required`. */
@@ -991,6 +1120,13 @@ export interface components {
         };
         /** @enum {string} */
         HealthEntryKind: "service" | "guest";
+        HealthIssue: {
+            /** @description `notice`, `warning` or `error`. */
+            level: string;
+            message: string;
+            source: string;
+            wiki_url?: string | null;
+        };
         HealthReport: {
             entries: components["schemas"]["HealthEntry"][];
             /** Format: date-time */
@@ -1026,8 +1162,92 @@ export interface components {
             /** Format: date-time */
             start: string;
         };
+        Indexer: {
+            /** Format: int64 */
+            avg_response_ms?: number | null;
+            /** Format: date-time */
+            disabled_till?: string | null;
+            enabled: boolean;
+            /** Format: int64 */
+            failures_24h: number;
+            /** Format: int64 */
+            grabs_24h: number;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** @description `public`, `semiPrivate` or `private`. */
+            privacy: string;
+            /** @description `torrent` or `usenet`. */
+            protocol: string;
+            /** Format: int64 */
+            queries_24h: number;
+            /** @description `ok`, `failing` or `disabled`. */
+            status: string;
+        };
         /** @enum {string} */
         IntegrationLevel: "full" | "read_only" | "health_check";
+        ItemCounts: {
+            /** Format: int64 */
+            albums: number;
+            /** Format: int64 */
+            episodes: number;
+            /** Format: int64 */
+            movies: number;
+            /** Format: int64 */
+            series: number;
+            /** Format: int64 */
+            songs: number;
+        };
+        JellyfinData: {
+            counts: components["schemas"]["ItemCounts"];
+            libraries: components["schemas"]["Library"][];
+            recent: components["schemas"]["RecentItem"][];
+            server_name: string;
+            streams: components["schemas"]["Stream"][];
+            users: components["schemas"]["JellyfinUser"][];
+        };
+        JellyfinUser: {
+            is_admin: boolean;
+            /** Format: date-time */
+            last_activity?: string | null;
+            name: string;
+        };
+        Library: {
+            /** @description `movies`, `tvshows`, `music`, … */
+            collection_type?: string | null;
+            /** @description Folder item id, used by `scan_library`. */
+            id: string;
+            /** Format: int64 */
+            item_count?: number | null;
+            name: string;
+        };
+        /** @description One series or movie (library grid, search, request tracker matching). */
+        LibraryItem: {
+            /** @description Movies: file present. Series: all aired episodes present. */
+            complete: boolean;
+            /**
+             * Format: int64
+             * @description Series: episodes with a file / episodes aired. Movies: 0/1.
+             */
+            have: number;
+            /** Format: int64 */
+            id: number;
+            monitored: boolean;
+            /** @description Poster path on the service (`/MediaCover/…`), proxied by `/services/{id}/image`. */
+            poster?: string | null;
+            /** Format: int64 */
+            size: number;
+            status?: string | null;
+            title: string;
+            /** Format: int64 */
+            tmdb_id?: number | null;
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            tvdb_id?: number | null;
+            /** Format: int64 */
+            year?: number | null;
+        };
         LinkedGuest: {
             guest_type: components["schemas"]["GuestType"];
             name: string;
@@ -1047,6 +1267,67 @@ export interface components {
             device_id?: number | null;
             user: components["schemas"]["User"];
         };
+        MediaCounts: {
+            /** Format: int32 */
+            downloading: number;
+            /** Format: int32 */
+            pending_requests: number;
+            /** Format: int32 */
+            streams: number;
+            /** Format: int32 */
+            transcodes: number;
+        };
+        MediaOverview: {
+            calendar: components["schemas"]["CalendarEntry"][];
+            counts: components["schemas"]["MediaCounts"];
+            now_playing: components["schemas"]["NowPlayingEntry"][];
+            recently_added: components["schemas"]["RecentEntry"][];
+            requests: components["schemas"]["TrackedRequest"][];
+        };
+        MediaRequest: {
+            /** Format: int64 */
+            id: number;
+            is_4k: boolean;
+            /** @description `unknown`, `pending`, `processing`, `partially_available`, `available`, `deleted`. */
+            media_status: string;
+            /** @description `movie` or `tv`. */
+            media_type: string;
+            /** @description Poster URL (TMDB image CDN), when known. */
+            poster_url?: string | null;
+            /** Format: date-time */
+            requested_at?: string | null;
+            requested_by: string;
+            seasons: number[];
+            /** @description `pending`, `approved` or `declined`. */
+            status: string;
+            title: string;
+            /** Format: int64 */
+            tmdb_id?: number | null;
+            /** Format: int64 */
+            tvdb_id?: number | null;
+            /** Format: int64 */
+            year?: number | null;
+        };
+        MediaSearchResult: {
+            /** @description Movie/series id, or torrent hash. */
+            id: string;
+            /** @description `movie`, `series` or `torrent`. */
+            kind: string;
+            service_id: string;
+            subtitle?: string | null;
+            title: string;
+        };
+        MissingItem: {
+            /** Format: date-time */
+            at?: string | null;
+            /**
+             * Format: int64
+             * @description Episode id (Sonarr) or movie id (Radarr): used by the `search_item` action.
+             */
+            id: number;
+            subtitle?: string | null;
+            title: string;
+        };
         /** @description Module-specific snapshot payload. */
         ModuleData: {
             /** @enum {string} */
@@ -1059,6 +1340,47 @@ export interface components {
             /** @enum {string} */
             type: "health_check";
             value: components["schemas"]["HealthCheckData"];
+        } | {
+            /** @enum {string} */
+            type: "jellyfin";
+            value: components["schemas"]["JellyfinData"];
+        } | {
+            /** @enum {string} */
+            type: "seerr";
+            value: components["schemas"]["SeerrData"];
+        } | {
+            /** @enum {string} */
+            type: "arr";
+            /** @description Sonarr and Radarr. */
+            value: components["schemas"]["ArrData"];
+        } | {
+            /** @enum {string} */
+            type: "prowlarr";
+            value: components["schemas"]["ProwlarrData"];
+        } | {
+            /** @enum {string} */
+            type: "bazarr";
+            value: components["schemas"]["BazarrData"];
+        } | {
+            /** @enum {string} */
+            type: "qbittorrent";
+            value: components["schemas"]["QbittorrentData"];
+        } | {
+            /** @enum {string} */
+            type: "navidrome";
+            value: components["schemas"]["NavidromeData"];
+        };
+        NavidromeData: {
+            /** Format: int64 */
+            folders?: number | null;
+            last_scan?: string | null;
+            now_playing: components["schemas"]["NowPlaying"][];
+            scanning: boolean;
+            /**
+             * Format: int64
+             * @description Songs in the library (from the scan status).
+             */
+            songs?: number | null;
         };
         Node: {
             /** Format: int64 */
@@ -1113,6 +1435,44 @@ export interface components {
             name: string;
             online: boolean;
         };
+        NowPlaying: {
+            album?: string | null;
+            artist?: string | null;
+            /** Format: int64 */
+            duration_s?: number | null;
+            /** Format: int64 */
+            minutes_ago?: number | null;
+            player?: string | null;
+            title: string;
+            user: string;
+        };
+        NowPlayingEntry: {
+            /** @description e.g. "1080p HEVC → H.264 · 12.4 Mbit/s". */
+            detail?: string | null;
+            device?: string | null;
+            /** @description `video` or `music`. */
+            kind: string;
+            paused: boolean;
+            /** @description `DirectPlay`, `DirectStream`, `Transcode` (video). */
+            play_method?: string | null;
+            /** Format: double */
+            position_s?: number | null;
+            /**
+             * Format: double
+             * @description 0.0–1.0.
+             */
+            progress?: number | null;
+            remote: boolean;
+            /** Format: double */
+            runtime_s?: number | null;
+            service_id: string;
+            service_name: string;
+            subtitle?: string | null;
+            title: string;
+            /** @description e.g. "audio codec not supported". */
+            transcode_reason?: string | null;
+            user: string;
+        };
         Overview: {
             /** @description Enabled, visible services in Home order, without hidden ones. */
             highlights: components["schemas"]["Highlight"][];
@@ -1163,6 +1523,10 @@ export interface components {
             /** Format: int32 */
             vmid?: number | null;
         };
+        ProwlarrData: {
+            health: components["schemas"]["HealthIssue"][];
+            indexers: components["schemas"]["Indexer"][];
+        };
         ProxmoxData: {
             cluster: components["schemas"]["ClusterInfo"];
             guests: components["schemas"]["Guest"][];
@@ -1179,12 +1543,94 @@ export interface components {
             /** @description API token id, e.g. `quorum@pve!quorum`. */
             token_id: string;
         };
+        QbittorrentData: {
+            /** @description Alternative ("turtle") speed limits on. */
+            alt_speed: boolean;
+            /** @description WebAPI version, e.g. `2.11.3`. */
+            api_version: string;
+            /** @description `connected`, `firewalled` or `disconnected`. */
+            connection: string;
+            counts: components["schemas"]["TorrentCounts"];
+            /** Format: int64 */
+            dl_speed: number;
+            /**
+             * Format: int64
+             * @description Free space in the default save path, bytes.
+             */
+            free_space?: number | null;
+            /** @description Last 10 minutes of transfer speeds. */
+            history: components["schemas"]["SpeedPoint"][];
+            torrents: components["schemas"]["Torrent"][];
+            /** Format: int64 */
+            up_speed: number;
+        };
+        QueueItem: {
+            download_client?: string | null;
+            /** @description Download client id; the torrent hash for qBittorrent. */
+            download_id?: string | null;
+            /** Format: int64 */
+            episode_id?: number | null;
+            /** Format: date-time */
+            eta?: string | null;
+            /** Format: int64 */
+            id: number;
+            /**
+             * Format: int64
+             * @description Series or movie id in Sonarr/Radarr.
+             */
+            item_id?: number | null;
+            /** @description Warning or error text (first status message or error message). */
+            message?: string | null;
+            protocol?: string | null;
+            /** @description Release name. */
+            release: string;
+            /** Format: int64 */
+            size: number;
+            /** Format: int64 */
+            size_left: number;
+            /** @description `downloading`, `queued`, `paused`, `completed`, `delay`, `warning`, `failed`, … */
+            status: string;
+            /** @description Episode label (`S02E05 · Title`) for Sonarr. */
+            subtitle?: string | null;
+            /** @description Series or movie title. */
+            title: string;
+            /** @description `downloading`, `importPending`, `importing`, `imported`, `failedPending`, … */
+            tracked_state?: string | null;
+            /** @description `ok`, `warning` or `error`. */
+            tracked_status?: string | null;
+        };
         QuickAction: {
             kind: components["schemas"]["QuickActionKind"];
             label: string;
         };
         /** @enum {string} */
         QuickActionKind: "retry" | "start_guest";
+        RecentEntry: {
+            item: components["schemas"]["RecentItem"];
+            service_id: string;
+        };
+        RecentItem: {
+            /** Format: date-time */
+            added_at?: string | null;
+            id: string;
+            item_type: string;
+            name: string;
+            series_name?: string | null;
+            /** Format: int64 */
+            year?: number | null;
+        };
+        RequestCounts: {
+            /** Format: int64 */
+            approved: number;
+            /** Format: int64 */
+            available: number;
+            /** Format: int64 */
+            pending: number;
+            /** Format: int64 */
+            processing: number;
+            /** Format: int64 */
+            total: number;
+        };
         /** @enum {string} */
         Role: "owner" | "member" | "guest";
         /** @description One RRD sample. Units: CPU 0.0–1.0, memory/disk in bytes, network/disk IO in bytes per second. */
@@ -1214,11 +1660,29 @@ export interface components {
             /** Format: date-time */
             time: string;
         };
+        SearchResult: {
+            /** @description Media status if already known to Seerr. */
+            media_status?: string | null;
+            media_type: string;
+            overview?: string | null;
+            poster_url?: string | null;
+            title: string;
+            /** Format: int64 */
+            tmdb_id: number;
+            /** Format: int64 */
+            year?: number | null;
+        };
         /** @description Whether a secret is stored. The value itself is never returned by the API. */
         SecretStatus: {
             /** @description `"••••"` when set. */
             display?: string | null;
             set: boolean;
+        };
+        SeerrData: {
+            counts: components["schemas"]["RequestCounts"];
+            pending: components["schemas"]["MediaRequest"][];
+            /** @description Latest 20 requests of any status. */
+            recent: components["schemas"]["MediaRequest"][];
         };
         /** @description Basic information about the running server. */
         ServerInfo: {
@@ -1246,7 +1710,7 @@ export interface components {
          *     registry entry in [`build_module`].
          * @enum {string}
          */
-        ServiceKind: "proxmox" | "health_check";
+        ServiceKind: "proxmox" | "health_check" | "jellyfin" | "seerr" | "sonarr" | "radarr" | "prowlarr" | "bazarr" | "qbittorrent" | "navidrome";
         ServiceRef: {
             health: components["schemas"]["Health"];
             id: string;
@@ -1325,6 +1789,14 @@ export interface components {
             /** @description True until the owner account exists. */
             needs_setup: boolean;
         };
+        SpeedPoint: {
+            /** Format: date-time */
+            at: string;
+            /** Format: int64 */
+            dl: number;
+            /** Format: int64 */
+            up: number;
+        };
         StartPairing: {
             /**
              * Format: int64
@@ -1349,6 +1821,8 @@ export interface components {
             /** Format: int32 */
             warning: number;
         };
+        /** @enum {string} */
+        StepState: "done" | "current" | "stuck" | "todo";
         StoragePool: {
             active: boolean;
             content: string[];
@@ -1365,6 +1839,45 @@ export interface components {
              * @description Bytes.
              */
             used?: number | null;
+        };
+        Stream: {
+            /**
+             * Format: int64
+             * @description Bits per second (transcode bitrate, or the source bitrate when playing directly).
+             */
+            bitrate?: number | null;
+            client: string;
+            device: string;
+            item_id?: string | null;
+            /** @description `Movie`, `Episode`, `Audio`, … */
+            item_type: string;
+            paused: boolean;
+            /** @description `DirectPlay`, `DirectStream` or `Transcode`. */
+            play_method: string;
+            /** Format: double */
+            position_s?: number | null;
+            /** @description The client is not on a private network. */
+            remote: boolean;
+            /** Format: double */
+            runtime_s?: number | null;
+            session_id: string;
+            /** @description Source video codec and height, e.g. `HEVC 1080p`. */
+            source?: string | null;
+            /** @description `S02E05 · Episode title` for episodes. */
+            subtitle?: string | null;
+            /** @description Movie title or series name. */
+            title: string;
+            transcode?: components["schemas"]["Transcode"] | null;
+            user: string;
+        };
+        SubtitleEvent: {
+            description: string;
+            kind: string;
+            language?: string | null;
+            provider?: string | null;
+            title: string;
+            /** @description As Bazarr formats it (e.g. "2 hours ago"). */
+            when?: string | null;
         };
         Task: {
             /** Format: date-time */
@@ -1394,6 +1907,95 @@ export interface components {
              * @description Uptime in the hour, percent.
              */
             uptime?: number | null;
+        };
+        Torrent: {
+            /** Format: date-time */
+            added_at?: string | null;
+            category: string;
+            /**
+             * Format: int64
+             * @description Bytes per second.
+             */
+            dl_speed: number;
+            /** Format: int64 */
+            downloaded: number;
+            /**
+             * Format: int64
+             * @description Seconds; `None` when unknown or done.
+             */
+            eta_s?: number | null;
+            hash: string;
+            name: string;
+            /** Format: int64 */
+            num_seeds: number;
+            /**
+             * Format: double
+             * @description 0.0–1.0.
+             */
+            progress: number;
+            /** Format: double */
+            ratio: number;
+            /** @description qBittorrent's own state name. */
+            raw_state: string;
+            /**
+             * Format: int64
+             * @description Bytes.
+             */
+            size: number;
+            state: components["schemas"]["TorrentState"];
+            tags: string[];
+            /** Format: int64 */
+            up_speed: number;
+        };
+        TorrentCounts: {
+            /** Format: int32 */
+            all: number;
+            /** Format: int32 */
+            downloading: number;
+            /** Format: int32 */
+            errored: number;
+            /** Format: int32 */
+            seeding: number;
+            /** Format: int32 */
+            stopped: number;
+        };
+        /** @enum {string} */
+        TorrentState: "downloading" | "seeding" | "stopped" | "queued" | "stalled" | "checking" | "metadata" | "errored" | "other";
+        TrackedRequest: {
+            /** Format: int64 */
+            arr_item_id?: number | null;
+            /** @description Sonarr/Radarr service and item, when matched. */
+            arr_service_id?: string | null;
+            request: components["schemas"]["MediaRequest"];
+            seerr_id: string;
+            steps: components["schemas"]["TrackerStep"][];
+            torrent_hash?: string | null;
+            /** @description qBittorrent service and torrent hash, when matched. */
+            torrent_service_id?: string | null;
+        };
+        TrackerStep: {
+            detail?: string | null;
+            /** @description Requested, Approved, Grabbed, Downloading, Imported, Available. */
+            label: string;
+            state: components["schemas"]["StepState"];
+        };
+        Transcode: {
+            audio_codec?: string | null;
+            audio_direct: boolean;
+            /**
+             * Format: int64
+             * @description Bits per second.
+             */
+            bitrate?: number | null;
+            hardware?: string | null;
+            /** Format: int32 */
+            height?: number | null;
+            /** @description e.g. `AudioCodecNotSupported`. */
+            reasons: string[];
+            video_codec?: string | null;
+            video_direct: boolean;
+            /** Format: int32 */
+            width?: number | null;
         };
         /** @description Partial update. Absent fields stay as they are; `null` clears optional fields. */
         UpdateService: {
@@ -1431,6 +2033,20 @@ export interface components {
             id: number;
             role: components["schemas"]["Role"];
             username: string;
+        };
+        WantedSubtitle: {
+            /**
+             * Format: int64
+             * @description Sonarr series id or Radarr movie id (for `search`).
+             */
+            item_id: number;
+            /** @description `episode` or `movie`. */
+            kind: string;
+            /** @description Missing languages, e.g. `["Danish", "English (HI)"]`. */
+            languages: string[];
+            /** @description `S01E03 · Episode title` for episodes. */
+            subtitle?: string | null;
+            title: string;
         };
     };
     responses: never;
@@ -1754,6 +2370,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServerInfo"];
+                };
+            };
+        };
+    };
+    media_overview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaOverview"];
+                };
+            };
+        };
+    };
+    media_search: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaSearchResult"][];
                 };
             };
         };
@@ -2404,6 +3060,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServiceHistory"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    image: {
+        parameters: {
+            query: {
+                /** @description Image path on the service, e.g. `/MediaCover/3/poster.jpg` or `/Items/{id}/Images/Primary`. */
+                path: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Image bytes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/*": unknown;
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    query: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Query result (JSON) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
             404: {

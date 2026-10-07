@@ -707,7 +707,10 @@ async fn media_actions_queries_and_confirm() {
     let app = App::demo().await;
     let owner = app.login("demo", "demo").await;
     tokio::time::sleep(Duration::from_millis(300)).await;
-    let hash = "e1e2e3e4e5e6e7e8e9e0e1e2e3e4e5e6e7e8e9e0";
+    // Demo media state is shared by every test in this binary, so only touch items the
+    // other tests don't assert on: two seeding ISOs and the Copper Valley request.
+    let hash = format!("{:040x}", 0xabc000 + 16);
+    let other = format!("{:040x}", 0xabc000 + 13);
     let (status, body, _) = app
         .call(
             "POST",
@@ -734,7 +737,7 @@ async fn media_actions_queries_and_confirm() {
             "POST",
             "/api/v1/services/qbittorrent/actions/stop",
             Some(&owner),
-            Some(json!({"args": {"hashes": "all"}})),
+            Some(json!({"args": {"hashes": [other]}})),
         )
         .await;
     assert_eq!(status, StatusCode::OK);
@@ -744,11 +747,11 @@ async fn media_actions_queries_and_confirm() {
             "POST",
             "/api/v1/services/seerr/actions/approve",
             Some(&owner),
-            Some(json!({"args": {"id": 31}})),
+            Some(json!({"args": {"id": 30}})),
         )
         .await;
     assert_eq!(status, StatusCode::OK, "{body}");
-    assert_eq!(body["message"], "Static Bloom approved");
+    assert_eq!(body["message"], "Copper Valley approved");
 
     let (status, lib, _) = app
         .call(
