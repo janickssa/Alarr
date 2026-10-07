@@ -5,7 +5,8 @@ use std::collections::BTreeMap;
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use serde::{Deserialize, Deserializer};
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use utoipa::ToSchema;
 use utoipa_axum::{router::OpenApiRouter, routes};
@@ -15,7 +16,7 @@ use crate::auth::CurrentUser;
 use crate::db::{ActivityResult, ServiceRow};
 use crate::modules::catalogue::{self, CatalogueEntry};
 use crate::modules::{
-    ActionResult, Category, ConnectionTest, ModuleError, ServiceKind, ServiceSnapshot,
+    ActionResult, Category, ConnectionTest, Health, ModuleError, ServiceKind, ServiceSnapshot,
     build_module, validate_config,
 };
 use crate::services::{self, ServiceView};
@@ -31,6 +32,7 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(enable))
         .routes(routes!(disable))
         .routes(routes!(snapshot))
+        .routes(routes!(history))
         .routes(routes!(run_action))
 }
 
@@ -540,6 +542,94 @@ async fn snapshot(
         .ok_or_else(|| ApiError::NotFound("no data yet (disabled or first poll pending)".into()))
 }
 
+#[derive(Debug, Serialize, ToSchema)]
+pub struct HistoryPoint {
+    /// Start of the minute.
+    pub at: DateTime<Utc>,
+    /// Worst state in that minute (`healthy`, `warning` or `down`).
+    pub health: Health,
+    pub response_ms: Option<i64>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct Incident {
+    pub start: DateTime<Utc>,
+    /// `None` while still down.
+    pub end: Option<DateTime<Utc>>,
+    pub minutes: i64,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ServiceHistory {
+    /// Per-minute samples for the last 24 h, oldest first.
+    pub points: Vec<HistoryPoint>,
+    /// Percent, one decimal.
+    pub uptime_24h: Option<f64>,
+    pub uptime_7d: Option<f64>,
+    /// Latest run of `down` minutes in the last 7 days.
+    pub last_incident: Option<Incident>,
+}
+
+fn state_health(state: i64) -> Health {
+    match state {
+        2 => Health::Healthy,
+        1 => Health::Warning,
+        _ => Health::Down,
+    }
+}
+
+fn last_incident(points: &[(i64, i64, Option<i64>)]) -> Option<Incident> {
+    let last_down = points.iter().rposition(|p| p.1 == 0)?;
+    let mut first = last_down;
+    while first > 0 && points[first - 1].1 == 0 && points[first].0 - points[first - 1].0 <= 120 {
+        first -= 1;
+    }
+    let ongoing = last_down == points.len() - 1;
+    let start = points[first].0;
+    let end = points[last_down].0 + 60;
+    Some(Incident {
+        start: crate::db::ts(start),
+        end: (!ongoing).then(|| crate::db::ts(end)),
+        minutes: (end - start) / 60,
+    })
+}
+
+fn pct(points: &[&(i64, i64, Option<i64>)]) -> Option<f64> {
+    let up = points.iter().filter(|p| p.1 > 0).count() as f64;
+    (!points.is_empty()).then(|| (up / points.len() as f64 * 1000.0).round() / 10.0)
+}
+
+/// Per-minute health and response time for the last 24 h, uptime and the last incident.
+#[utoipa::path(get, path = "/services/{id}/history", tag = "services",
+    params(("id" = String, Path)),
+    responses((status = 200, body = ServiceHistory), (status = 404, body = ErrorBody)))]
+async fn history(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<String>,
+) -> ApiResult<Json<ServiceHistory>> {
+    find(&state, &user, &id).await?;
+    let now = crate::db::now();
+    let week = state
+        .db
+        .uptime_points(&format!("svc:{id}"), now - 7 * 86_400)
+        .await?;
+    let day: Vec<_> = week.iter().filter(|p| p.0 >= now - 86_400).collect();
+    Ok(Json(ServiceHistory {
+        points: day
+            .iter()
+            .map(|p| HistoryPoint {
+                at: crate::db::ts(p.0),
+                health: state_health(p.1),
+                response_ms: p.2,
+            })
+            .collect(),
+        uptime_24h: pct(&day),
+        uptime_7d: pct(&week.iter().collect::<Vec<_>>()),
+        last_incident: last_incident(&week),
+    }))
+}
+
 /// Run a module action (e.g. `scan_library`). `refresh` (poll now) works for every service.
 #[utoipa::path(post, path = "/services/{id}/actions/{action}", tag = "services",
     params(("id" = String, Path), ("action" = String, Path)),
@@ -624,6 +714,19 @@ async fn run_action(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn incidents() {
+        let p = |m: i64, s: i64| (m * 60, s, None);
+        assert!(last_incident(&[p(1, 2), p(2, 2)]).is_none());
+        let i = last_incident(&[p(1, 0), p(2, 2), p(3, 0), p(4, 0), p(5, 2)]).unwrap();
+        assert_eq!(
+            (i.start.timestamp(), i.minutes, i.end.is_some()),
+            (180, 2, true)
+        );
+        let ongoing = last_incident(&[p(1, 2), p(2, 0)]).unwrap();
+        assert!(ongoing.end.is_none());
+    }
 
     #[test]
     fn slugs() {

@@ -132,6 +132,7 @@ pub struct ClusterOverview {
 pub struct RangeQuery {
     /// `hour` (default), `day` or `week`.
     #[serde(default)]
+    #[param(inline)]
     pub range: RrdRange,
 }
 

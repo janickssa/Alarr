@@ -713,7 +713,12 @@
             "description": "`hour` (default), `day` or `week`.",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/RrdRange"
+              "type": "string",
+              "enum": [
+                "hour",
+                "day",
+                "week"
+              ]
             }
           }
         ],
@@ -778,7 +783,12 @@
             "description": "`hour` (default), `day` or `week`.",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/RrdRange"
+              "type": "string",
+              "enum": [
+                "hour",
+                "day",
+                "week"
+              ]
             }
           }
         ],
@@ -1235,6 +1245,45 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ServiceView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/{id}/history": {
+      "get": {
+        "tags": [
+          "services"
+        ],
+        "summary": "Per-minute health and response time for the last 24 h, uptime and the last incident.",
+        "operationId": "history",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceHistory"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -2730,6 +2779,56 @@
           }
         }
       },
+      "HistoryPoint": {
+        "type": "object",
+        "required": [
+          "at",
+          "health"
+        ],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Start of the minute."
+          },
+          "health": {
+            "$ref": "#/components/schemas/Health",
+            "description": "Worst state in that minute (`healthy`, `warning` or `down`)."
+          },
+          "response_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "Incident": {
+        "type": "object",
+        "required": [
+          "start",
+          "minutes"
+        ],
+        "properties": {
+          "end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "`None` while still down."
+          },
+          "minutes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "IntegrationLevel": {
         "type": "string",
         "enum": [
@@ -3409,6 +3508,47 @@
           "version": {
             "type": "string",
             "description": "Server version."
+          }
+        }
+      },
+      "ServiceHistory": {
+        "type": "object",
+        "required": [
+          "points"
+        ],
+        "properties": {
+          "last_incident": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Incident",
+                "description": "Latest run of `down` minutes in the last 7 days."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoryPoint"
+            },
+            "description": "Per-minute samples for the last 24 h, oldest first."
+          },
+          "uptime_24h": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Percent, one decimal."
+          },
+          "uptime_7d": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
           }
         }
       },
