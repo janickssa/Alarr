@@ -220,12 +220,13 @@ async fn login(
     }
 }
 
-/// End the current web session.
+/// Sign out: ends the web session, or unpairs the device (PWA cookie or bearer token).
 #[utoipa::path(post, path = "/auth/logout", tag = "auth",
-    responses((status = 204, description = "Signed out; cookie cleared")))]
+    responses((status = 204, description = "Signed out; cookies cleared")))]
 async fn logout(State(state): State<AppState>, user: CurrentUser) -> ApiResult<impl IntoResponse> {
-    if let AuthVia::Session(hash) = &user.via {
-        state.db.delete_session(hash).await?;
+    match &user.via {
+        AuthVia::Session(hash) => state.db.delete_session(hash).await?,
+        AuthVia::Device(id) => state.db.delete_device(*id).await?,
     }
     state
         .log(
@@ -237,12 +238,17 @@ async fn logout(State(state): State<AppState>, user: CurrentUser) -> ApiResult<i
             None,
         )
         .await?;
+    let secure = state.config.secure_cookies();
     Ok((
         StatusCode::NO_CONTENT,
-        [(
-            header::SET_COOKIE,
-            crate::auth::clear_session_cookie(state.config.secure_cookies()),
-        )],
+        // Two Set-Cookie headers: an array would keep only the last one.
+        axum::response::AppendHeaders([
+            (
+                header::SET_COOKIE,
+                crate::auth::clear_session_cookie(secure),
+            ),
+            (header::SET_COOKIE, crate::auth::clear_device_cookie(secure)),
+        ]),
     ))
 }
 

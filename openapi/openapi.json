@@ -312,11 +312,11 @@
         "tags": [
           "auth"
         ],
-        "summary": "End the current web session.",
+        "summary": "Sign out: ends the web session, or unpairs the device (PWA cookie or bearer token).",
         "operationId": "logout",
         "responses": {
           "204": {
-            "description": "Signed out; cookie cleared"
+            "description": "Signed out; cookies cleared"
           }
         }
       }
@@ -5316,7 +5316,6 @@
       "PairingCompleted": {
         "type": "object",
         "required": [
-          "token",
           "device"
         ],
         "properties": {
@@ -5324,8 +5323,11 @@
             "$ref": "#/components/schemas/Device"
           },
           "token": {
-            "type": "string",
-            "description": "Bearer token for `Authorization: Bearer …`. Shown once; store it in the Keychain."
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Bearer token for `Authorization: Bearer …`. Shown once; store it in the Keychain.\n`null` for the PWA, which gets it as an HttpOnly cookie instead."
           }
         }
       },

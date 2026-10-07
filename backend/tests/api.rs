@@ -508,6 +508,42 @@ async fn pairing_issues_a_revocable_device_token() {
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (status, _, _) = app.call("GET", "/api/v1/auth/me", Some(&token), None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    // The PWA gets its device token as an HttpOnly cookie, never in the body.
+    let (_, started, _) = app
+        .call(
+            "POST",
+            "/api/v1/pairing/start",
+            Some(&owner),
+            Some(json!({})),
+        )
+        .await;
+    let (status, done, cookie) = app
+        .call(
+            "POST",
+            "/api/v1/pairing/complete",
+            None,
+            Some(json!({"code": started["code"], "device_name": "Pixel", "platform": "pwa"})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(done["token"].is_null());
+    let cookie = cookie.expect("device cookie");
+    assert!(cookie.starts_with("quorum_device=qd_"), "{cookie}");
+    let (status, me, _) = app
+        .call("GET", "/api/v1/auth/me", Some(&cookie), None)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(me["auth"], "device");
+    // Signing out unpairs the device.
+    let (status, _, _) = app
+        .call("POST", "/api/v1/auth/logout", Some(&cookie), None)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, _, _) = app
+        .call("GET", "/api/v1/auth/me", Some(&cookie), None)
+        .await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
 
 #[tokio::test]

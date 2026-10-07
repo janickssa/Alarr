@@ -23,7 +23,7 @@
 
 	let { children }: LayoutProps = $props();
 
-	const PUBLIC = ['/login', '/setup'];
+	const PUBLIC = ['/login', '/setup', '/pair'];
 	const isPublic = $derived(PUBLIC.some((p) => page.url.pathname.startsWith(p)));
 	let ready = $state(false);
 	let searchInput: HTMLInputElement | undefined = $state();

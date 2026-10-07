@@ -3,6 +3,7 @@
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -52,7 +53,8 @@ pub struct CompletePairing {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct PairingCompleted {
     /// Bearer token for `Authorization: Bearer …`. Shown once; store it in the Keychain.
-    pub token: String,
+    /// `null` for the PWA, which gets it as an HttpOnly cookie instead.
+    pub token: Option<String>,
     pub device: Device,
 }
 
@@ -124,7 +126,7 @@ async fn complete(
     State(state): State<AppState>,
     ClientIp(ip): ClientIp,
     Json(req): Json<CompletePairing>,
-) -> ApiResult<Json<PairingCompleted>> {
+) -> ApiResult<axum::response::Response> {
     limit_auth(&state, "pairing", ip)?;
     let name = req.device_name.trim();
     if name.is_empty() || name.chars().count() > 64 {
@@ -171,7 +173,22 @@ async fn complete(
             None,
         )
         .await?;
-    Ok(Json(PairingCompleted { token, device }))
+    if platform == "pwa" {
+        let cookie = crate::auth::device_cookie(&token, state.config.secure_cookies());
+        return Ok((
+            [(axum::http::header::SET_COOKIE, cookie)],
+            Json(PairingCompleted {
+                token: None,
+                device,
+            }),
+        )
+            .into_response());
+    }
+    Ok(Json(PairingCompleted {
+        token: Some(token),
+        device,
+    })
+    .into_response())
 }
 
 /// Paired devices: all for the owner, your own for everyone else.

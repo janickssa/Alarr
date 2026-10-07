@@ -117,7 +117,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** End the current web session. */
+        /** Sign out: ends the web session, or unpairs the device (PWA cookie or bearer token). */
         post: operations["logout"];
         delete?: never;
         options?: never;
@@ -1793,8 +1793,11 @@ export interface components {
         };
         PairingCompleted: {
             device: components["schemas"]["Device"];
-            /** @description Bearer token for `Authorization: Bearer …`. Shown once; store it in the Keychain. */
-            token: string;
+            /**
+             * @description Bearer token for `Authorization: Bearer …`. Shown once; store it in the Keychain.
+             *     `null` for the PWA, which gets it as an HttpOnly cookie instead.
+             */
+            token?: string | null;
         };
         PairingStarted: {
             /** @description Code to type on the device, formatted `XXXX-XXXX`. */
@@ -2695,7 +2698,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Signed out; cookie cleared */
+            /** @description Signed out; cookies cleared */
             204: {
                 headers: {
                     [name: string]: unknown;

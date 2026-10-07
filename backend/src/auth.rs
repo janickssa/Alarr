@@ -15,6 +15,10 @@ use crate::db::{Role, User};
 use crate::state::AppState;
 
 pub const SESSION_COOKIE: &str = "quorum_session";
+/// Device token cookie for the installed PWA, so the token is never readable by scripts.
+pub const DEVICE_COOKIE: &str = "quorum_device";
+/// Browsers cap cookie lifetime at 400 days; the device stays paired until revoked.
+const DEVICE_COOKIE_MAX_AGE: i64 = 400 * 86_400;
 /// Sessions slide: each use extends them to 30 days from now.
 pub const SESSION_TTL: i64 = 30 * 86_400;
 pub const SESSION_PREFIX: &str = "qs_";
@@ -114,6 +118,15 @@ impl FromRequestParts<AppState> for CurrentUser {
                 });
             }
         }
+        if let Some(token) = cookie(parts, DEVICE_COOKIE)
+            && token.starts_with(DEVICE_PREFIX)
+            && let Some((device, user)) = state.db.device_user(&sha256_hex(token)).await?
+        {
+            return Ok(Self {
+                user,
+                via: AuthVia::Device(device.id),
+            });
+        }
         Err(ApiError::Unauthorized)
     }
 }
@@ -122,6 +135,21 @@ impl FromRequestParts<AppState> for CurrentUser {
 pub fn session_cookie(token: &str, secure: bool) -> String {
     format!(
         "{SESSION_COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict; Max-Age={SESSION_TTL}{}",
+        if secure { "; Secure" } else { "" }
+    )
+}
+
+/// `Set-Cookie` value carrying a PWA device token.
+pub fn device_cookie(token: &str, secure: bool) -> String {
+    format!(
+        "{DEVICE_COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict; Max-Age={DEVICE_COOKIE_MAX_AGE}{}",
+        if secure { "; Secure" } else { "" }
+    )
+}
+
+pub fn clear_device_cookie(secure: bool) -> String {
+    format!(
+        "{DEVICE_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0{}",
         if secure { "; Secure" } else { "" }
     )
 }
