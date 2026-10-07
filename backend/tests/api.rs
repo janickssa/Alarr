@@ -121,6 +121,19 @@ async fn public_endpoints_and_auth_required() {
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
 
+#[test]
+fn openapi_operation_ids_are_unique() {
+    let spec = serde_json::to_value(quorum_server::api::openapi()).unwrap();
+    let mut seen = std::collections::HashSet::new();
+    for item in spec["paths"].as_object().unwrap().values() {
+        for op in item.as_object().unwrap().values() {
+            if let Some(id) = op["operationId"].as_str() {
+                assert!(seen.insert(id.to_owned()), "duplicate operationId {id}");
+            }
+        }
+    }
+}
+
 #[tokio::test]
 async fn login_logout_and_rate_limit() {
     let app = App::demo().await;

@@ -1,0 +1,120 @@
+<script lang="ts">
+	// Request tracker stepper: Requested → Approved → Grabbed → Downloading → Imported →
+	// Available. The current step is blue, or amber with a reason when stuck.
+	import Icon from '../Icon.svelte';
+
+	const STEPS = ['Requested', 'Approved', 'Grabbed', 'Downloading', 'Imported', 'Available'];
+
+	let {
+		title,
+		meta,
+		done,
+		stuck = false,
+		subs = []
+	}: { title: string; meta?: string; done: number; stuck?: boolean; subs?: string[] } = $props();
+</script>
+
+<div class="tracker">
+	<div class="top">
+		<span class="title">{title}</span>
+		{#if meta}<span class="meta">{meta}</span>{/if}
+	</div>
+	<ol class="steps">
+		{#each STEPS as label, i (label)}
+			{@const state = i < done ? 'done' : i === done ? (stuck ? 'stuck' : 'current') : 'todo'}
+			<li class="step {state}" aria-current={i === done ? 'step' : undefined}>
+				<div class="bar"></div>
+				<div class="lbl">
+					<Icon
+						name={state === 'done'
+							? 'ph-check-circle'
+							: state === 'stuck'
+								? 'ph-warning'
+								: state === 'current'
+									? 'ph-circle-notch'
+									: 'ph-circle'}
+						fill={state === 'done' || state === 'stuck'}
+						size={13}
+					/>{label}
+				</div>
+				<span class="sub">{i <= done ? (subs[i] ?? '') : ''}</span>
+			</li>
+		{/each}
+	</ol>
+</div>
+
+<style>
+	.tracker {
+		background: var(--color-surface);
+		border-radius: var(--radius-md);
+		padding: 14px 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+	.top {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 8px;
+	}
+	.title {
+		font-size: 14px;
+	}
+	.meta {
+		font-size: 11.5px;
+		color: var(--color-neutral-400);
+	}
+	.steps {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+		gap: 4px;
+	}
+	.step {
+		display: flex;
+		flex-direction: column;
+		gap: 7px;
+		min-width: 0;
+	}
+	.bar {
+		height: 3px;
+		border-radius: 2px;
+		background: var(--color-border);
+	}
+	.lbl {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		font-size: 12px;
+		color: var(--color-neutral-500);
+	}
+	.sub {
+		font-size: 11px;
+		color: var(--color-neutral-500);
+	}
+	.done .bar {
+		background: var(--color-neutral-300);
+	}
+	.done .lbl {
+		color: var(--color-text);
+	}
+	.current .bar,
+	.current .lbl,
+	.current .sub {
+		color: var(--health-progress);
+		background: none;
+	}
+	.current .bar {
+		background: var(--health-progress);
+	}
+	.stuck .bar {
+		background: var(--health-warning);
+	}
+	.stuck .lbl,
+	.stuck .sub {
+		color: var(--health-warning);
+	}
+</style>

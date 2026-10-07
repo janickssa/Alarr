@@ -310,7 +310,7 @@ impl ProxmoxApi for DemoProxmox {
                 }),
                 maxmem: Some(mem),
                 disk: Some(if g.ty == GuestType::Lxc {
-                    3 * GB + g.vmid as u64 * 50_000_000
+                    2 * GB + (g.vmid as u64 % 40) * 60_000_000
                 } else {
                     0
                 }),

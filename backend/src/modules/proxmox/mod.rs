@@ -115,7 +115,9 @@ impl GuestStatus {
         match self {
             Self::Running => Health::Healthy,
             Self::Paused => Health::Warning,
-            Self::Stopped => Health::Down,
+            // A stopped guest is usually stopped on purpose. A linked service still
+            // reports down when its guest is not running.
+            Self::Stopped => Health::Disabled,
             Self::Unknown => Health::Unknown,
         }
     }

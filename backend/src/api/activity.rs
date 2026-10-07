@@ -24,7 +24,7 @@ pub struct ActivityQuery {
 }
 
 /// Who did what, when, to what, and the result. Newest first. Guests see their own entries.
-#[utoipa::path(get, path = "/activity", tag = "activity",
+#[utoipa::path(get, path = "/activity", tag = "activity", operation_id = "list_activity",
     params(ActivityQuery),
     responses((status = 200, body = Vec<ActivityEntry>)))]
 async fn list(

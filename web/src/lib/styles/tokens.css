@@ -1,0 +1,116 @@
+/*
+ * Quorum design tokens. Ported from design/_ds/nocturne-…/styles.css (Nocturne, dark) plus
+ * the batch 1 board: health colours, service accents, type scale, density.
+ * Colours are defined once here; a light theme can be added later as another
+ * [data-theme] block that redefines the same custom properties.
+ */
+
+:root,
+:root[data-theme='dark'] {
+	color-scheme: dark;
+
+	/* Ground & surfaces */
+	--color-bg: #161826;
+	--color-surface: #232532;
+	--color-raised: #292b31;
+	--color-border: #3f424d;
+	--color-text: #e9e9ed;
+	--color-text-muted: color-mix(in srgb, var(--color-text) 55%, transparent);
+	--color-accent: #9184d9;
+	--color-accent-2: #a7a1db;
+	--color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+
+	/* Tonal ramps */
+	--color-neutral-100: #f3f5fe;
+	--color-neutral-200: #e4e7f5;
+	--color-neutral-300: #cfd3e5;
+	--color-neutral-400: #b2b6ca;
+	--color-neutral-500: #9397ab;
+	--color-neutral-600: #75798c;
+	--color-neutral-700: #595d6c;
+	--color-neutral-800: #3f424d;
+	--color-neutral-900: #292b31;
+
+	--color-accent-100: #f5f4ff;
+	--color-accent-200: #e7e5fe;
+	--color-accent-300: #d2cefd;
+	--color-accent-400: #b5abfc;
+	--color-accent-500: #968ae0;
+	--color-accent-600: #796cbf;
+	--color-accent-700: #5d5294;
+	--color-accent-800: #423a6a;
+	--color-accent-900: #2b2741;
+
+	--color-section: #262a60;
+	--color-section-glow: #353b80;
+
+	/* Health: the only saturated colours. Always paired with an icon and a label. */
+	--health-healthy: oklch(0.78 0.13 155);
+	--health-healthy-fill: oklch(0.3 0.05 155);
+	--health-healthy-strip: oklch(0.62 0.1 155);
+	--health-warning: oklch(0.83 0.13 80);
+	--health-warning-fill: oklch(0.32 0.055 80);
+	--health-warning-edge: oklch(0.55 0.1 80);
+	--health-down: oklch(0.72 0.16 25);
+	--health-down-fill: oklch(0.31 0.07 25);
+	--health-down-edge: oklch(0.5 0.12 25);
+	--health-down-text: oklch(0.76 0.15 25);
+	--health-progress: oklch(0.77 0.11 240);
+	--health-progress-fill: oklch(0.31 0.05 240);
+	--health-neutral: #9397ab;
+	--health-neutral-fill: #2f313a;
+
+	/* Service accents: tile oklch(0.33 0.045 H), ink oklch(0.84 0.07 H). Set --accent-h
+	   (and optionally --accent-c) on an element to tint it. */
+	--accent-h: 265;
+	--accent-c: 0.045;
+
+	/* Charts */
+	--chart-line: #b5abfc;
+	--chart-area: #9184d9;
+	--chart-secondary: #9397ab;
+	--chart-grid: #3f424d;
+
+	/* Fonts */
+	--font-heading: 'Inter', system-ui, sans-serif;
+	--font-heading-weight: 500;
+	--font-body: 'Inter', system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+	/* Type scale (batch 1, 1c) */
+	--text-large-title: 500 32px/1.2 var(--font-heading);
+	--text-title: 500 22px/1.2 var(--font-heading);
+	--text-stat: 500 26px/1.2 var(--font-heading);
+	--text-headline: 500 16px/1.3 var(--font-heading);
+	--text-body: 400 15px/1.55 var(--font-body);
+	--text-caption: 400 12px/1.4 var(--font-body);
+	--text-overline: 500 11px/1.3 var(--font-body);
+	--text-mono: 400 13px/1.4 var(--font-mono);
+
+	/* Spacing */
+	--space-1: 2.8px;
+	--space-2: 5.6px;
+	--space-3: 8.4px;
+	--space-4: 11.2px;
+	--space-6: 16.8px;
+	--space-8: 22.4px;
+
+	/* Density: desktop */
+	--row-height: 36px;
+	--gutter: 24px;
+	--gap: 16px;
+	--header-h: 60px;
+
+	/* Radii */
+	--radius-sm: 4px;
+	--radius-md: 8px;
+	--radius-lg: 14px;
+
+	/* Elevation */
+	--shadow-sm: 0 0 0 1px #3f424d;
+	--shadow-md: 0 0 0 1px #595d6c, 0 6px 18px rgba(0, 0, 0, 0.55);
+	--shadow-lg: 0 0 0 1px #9397ab, 0 16px 40px rgba(0, 0, 0, 0.65);
+
+	/* Motion */
+	--shimmer-duration: 1.2s;
+}

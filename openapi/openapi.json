@@ -21,7 +21,7 @@
           "activity"
         ],
         "summary": "Who did what, when, to what, and the result. Newest first. Guests see their own entries.",
-        "operationId": "list",
+        "operationId": "list_activity",
         "parameters": [
           {
             "name": "limit",
@@ -713,7 +713,12 @@
             "description": "`hour` (default), `day` or `week`.",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/RrdRange"
+              "type": "string",
+              "enum": [
+                "hour",
+                "day",
+                "week"
+              ]
             }
           }
         ],
@@ -778,7 +783,12 @@
             "description": "`hour` (default), `day` or `week`.",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/RrdRange"
+              "type": "string",
+              "enum": [
+                "hour",
+                "day",
+                "week"
+              ]
             }
           }
         ],
@@ -866,7 +876,7 @@
           "services"
         ],
         "summary": "Services you can see, with live health.",
-        "operationId": "list",
+        "operationId": "list_services",
         "responses": {
           "200": {
             "content": {
@@ -1242,6 +1252,45 @@
         }
       }
     },
+    "/services/{id}/history": {
+      "get": {
+        "tags": [
+          "services"
+        ],
+        "summary": "Per-minute health and response time for the last 24 h, uptime and the last incident.",
+        "operationId": "history",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceHistory"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/services/{id}/snapshot": {
       "get": {
         "tags": [
@@ -1579,7 +1628,11 @@
         "type": "object",
         "properties": {
           "args": {
-            "type": "object"
+            "type": "object",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "confirm": {
             "type": "boolean",
@@ -2057,7 +2110,11 @@
               "object",
               "null"
             ],
-            "description": "Module settings (`ProxmoxSettings`, `HealthCheckSettings`)."
+            "description": "Module settings (`ProxmoxSettings`, `HealthCheckSettings`).",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "sort_order": {
             "type": [
@@ -2727,6 +2784,56 @@
           },
           "service": {
             "$ref": "#/components/schemas/ServiceView"
+          }
+        }
+      },
+      "HistoryPoint": {
+        "type": "object",
+        "required": [
+          "at",
+          "health"
+        ],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Start of the minute."
+          },
+          "health": {
+            "$ref": "#/components/schemas/Health",
+            "description": "Worst state in that minute (`healthy`, `warning` or `down`)."
+          },
+          "response_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "Incident": {
+        "type": "object",
+        "required": [
+          "start",
+          "minutes"
+        ],
+        "properties": {
+          "end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "`None` while still down."
+          },
+          "minutes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -3412,6 +3519,47 @@
           }
         }
       },
+      "ServiceHistory": {
+        "type": "object",
+        "required": [
+          "points"
+        ],
+        "properties": {
+          "last_incident": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Incident",
+                "description": "Latest run of `down` minutes in the last 7 days."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoryPoint"
+            },
+            "description": "Per-minute samples for the last 24 h, oldest first."
+          },
+          "uptime_24h": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "Percent, one decimal."
+          },
+          "uptime_7d": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          }
+        }
+      },
       "ServiceKind": {
         "type": "string",
         "description": "Kind of service module. Adding a service = adding a variant, a module file and a\nregistry entry in [`build_module`].",
@@ -3605,7 +3753,11 @@
           },
           "settings": {
             "type": "object",
-            "description": "Module settings (see `ProxmoxSettings`, `HealthCheckSettings`)."
+            "description": "Module settings (see `ProxmoxSettings`, `HealthCheckSettings`).",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "sort_order": {
             "type": "integer",
@@ -3936,7 +4088,11 @@
               "object",
               "null"
             ],
-            "description": "Merged into the stored settings; a `null` value removes that key."
+            "description": "Merged into the stored settings; a `null` value removes that key.",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "sort_order": {
             "type": [

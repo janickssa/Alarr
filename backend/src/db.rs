@@ -802,6 +802,22 @@ impl Db {
         Ok(out)
     }
 
+    /// Minute samples `(minute start, state, response ms)` for one target since `since`, oldest first.
+    pub async fn uptime_points(
+        &self,
+        target: &str,
+        since: i64,
+    ) -> anyhow::Result<Vec<(i64, i64, Option<i64>)>> {
+        Ok(sqlx::query_as(
+            "SELECT minute, state, response_ms FROM uptime_minutes
+             WHERE target = ? AND minute >= ? ORDER BY minute",
+        )
+        .bind(target)
+        .bind(since)
+        .fetch_all(&self.pool)
+        .await?)
+    }
+
     /// Move minute samples older than 7 days into hourly rows; keep hours for 90 days.
     pub async fn downsample_uptime(&self, now: i64) -> anyhow::Result<()> {
         let cutoff = (now - 7 * 86_400) / 3600 * 3600;

@@ -132,7 +132,9 @@ async fn overview(State(state): State<AppState>, user: CurrentUser) -> ApiResult
         warning,
         down,
         unknown: total - healthy - warning - down,
-        message: if problems_n == 0 {
+        message: if problems_n == 0 && total == 1 {
+            "1 service healthy".to_owned()
+        } else if problems_n == 0 {
             format!("All {} healthy", plural(total, "service", "services"))
         } else {
             plural(problems_n, "problem", "problems")
