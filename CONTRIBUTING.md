@@ -12,7 +12,7 @@ The [README](README.md) is the single source of scope, phases, architecture and 
 
 ```sh
 cd backend && cargo run -- --demo        # fake data, sign in as demo/demo
-cd web && npm run dev                    # web dev server
+cd web && npm run dev                    # web dev server, proxies /api to :8080
 ```
 
 ## Local checks (same as CI)
@@ -34,8 +34,15 @@ npm run check
 npm run build
 ```
 
-OpenAPI: after changing any API type or route, regenerate and commit the spec:
+OpenAPI: after changing any API type or route, regenerate and commit the spec and the web client types:
 
 ```sh
 cd backend && cargo run -- openapi > ../openapi/openapi.json
+cd ../web && npm run gen:api
+```
+
+Full build (the web UI is embedded into the binary):
+
+```sh
+(cd web && npm ci && npm run build) && (cd backend && cargo build --release)
 ```
