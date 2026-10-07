@@ -21,6 +21,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Alerts, newest first. */
+        get: operations["list_alerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/alerts/mutes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Alert types the signed-in user (or this device) muted. */
+        get: operations["get_alert_mutes"];
+        /** Replace the muted alert types for the signed-in user (or this device). */
+        put: operations["put_alert_mutes"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/alerts/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-type alert settings and the channels. */
+        get: operations["get_alert_settings"];
+        /** Change per-type settings (owner). */
+        put: operations["put_alert_settings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/alerts/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a test notification on one channel (owner). */
+        post: operations["test_alert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -101,6 +171,24 @@ export interface paths {
         put?: never;
         /** Create the owner account with the one-time setup token. Signs the owner in. */
         post: operations["setup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/automation/throttle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Auto-throttle settings and whether it is throttling now. */
+        get: operations["get_throttle"];
+        /** Change auto-throttle (owner). */
+        put: operations["put_throttle"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -279,6 +367,23 @@ export interface paths {
         put?: never;
         /** Start pairing a device. Owner only. */
         post: operations["start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxmox/backups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest backup (`vzdump`) per guest, from the task list and job logs of the last 35 days. */
+        get: operations["backups"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -744,10 +849,46 @@ export interface components {
         };
         /** @enum {string} */
         ActivityResult: "ok" | "error" | "pending";
-        AlertEvent: {
+        Alert: {
+            /**
+             * @description `service_down`, `node_offline`, `disk_full`, `download_failed`,
+             *     `certificate_expiring`, `new_request`.
+             */
+            alert_type: string;
+            /** Format: date-time */
+            created_at: string;
+            delivery: components["schemas"]["Delivery"][];
+            /** Format: int64 */
+            id: number;
+            key: string;
             message: string;
+            /** Format: date-time */
+            resolved_at?: string | null;
             service_id?: string | null;
+            /** @description `critical`, `warning` or `info`. */
+            severity: string;
             title: string;
+        };
+        AlertEvent: {
+            alert: components["schemas"]["Alert"];
+            /** @description Service the alert belongs to, if any (used for permission filtering). */
+            service_id?: string | null;
+        };
+        AlertSettingsUpdate: {
+            /** @description Types to change; types not listed keep their settings. */
+            types: components["schemas"]["TypeSettings"][];
+        };
+        AlertSettingsView: {
+            channels: components["schemas"]["ChannelInfo"][];
+            /** @description Quiet hours use this time zone (the server's local time). */
+            timezone: string;
+            types: components["schemas"]["AlertTypeView"][];
+        };
+        /** @enum {string} */
+        AlertType: "service_down" | "node_offline" | "disk_full" | "download_failed" | "certificate_expiring" | "new_request";
+        AlertTypeView: components["schemas"]["TypeSettings"] & {
+            description: string;
+            label: string;
         };
         /** @description Settings shared by every client. */
         AppSettings: {
@@ -780,6 +921,29 @@ export interface components {
         };
         /** @enum {string} */
         ArrFlavor: "sonarr" | "radarr";
+        AuthEvent: {
+            /** @description `login`, `login_failed`, `logout`, `authorize_application`, … */
+            action: string;
+            app?: string | null;
+            /** Format: date-time */
+            at: string;
+            client_ip?: string | null;
+            user?: string | null;
+        };
+        AuthentikData: {
+            events: components["schemas"]["AuthEvent"][];
+            /** Format: int64 */
+            failed_24h: number;
+            /** Format: int64 */
+            logins_24h: number;
+            /** @description True when more than [`MAX_PAGES`] pages of logins happened and the count is a floor. */
+            logins_capped: boolean;
+            outposts: components["schemas"]["Outpost"][];
+            /** Format: int64 */
+            sessions?: number | null;
+            /** @description Newer Authentik release, when the server reports it is outdated. */
+            update_available?: string | null;
+        };
         BackendInfo: {
             demo: boolean;
             name: string;
@@ -849,6 +1013,35 @@ export interface components {
         };
         /** @enum {string} */
         Category: "infrastructure" | "media" | "network_security" | "apps";
+        Certificate: {
+            /**
+             * Format: int64
+             * @description Whole days left; negative when expired.
+             */
+            days_left?: number | null;
+            domains: string[];
+            /** Format: date-time */
+            expires_at?: string | null;
+            /**
+             * Format: int32
+             * @description Number of proxy hosts using it.
+             */
+            hosts: number;
+            /** Format: int64 */
+            id: number;
+            name: string;
+            /** @description `letsencrypt` or `other`. */
+            provider: string;
+        };
+        /** @description What the settings page shows about a channel. */
+        ChannelInfo: {
+            configured: boolean;
+            /** @description Where it delivers (e.g. ntfy server and topic), or how to set it up. */
+            detail: string;
+            /** @description `ntfy` or `push`. */
+            id: string;
+            label: string;
+        };
         /** @enum {string} */
         CheckType: "http" | "tcp";
         ClusterInfo: {
@@ -925,6 +1118,14 @@ export interface components {
             role: components["schemas"]["Role"];
             username: string;
         };
+        /** @description Result of delivering an alert on one channel. */
+        Delivery: {
+            /** @description `ntfy` or `push`. */
+            channel: string;
+            detail?: string | null;
+            /** @description `sent`, `failed`, `quiet_hours`, `not_configured` or `rate_limited`. */
+            result: string;
+        };
         Device: {
             /** Format: date-time */
             created_at: string;
@@ -941,6 +1142,14 @@ export interface components {
             /** Format: int64 */
             free: number;
             path: string;
+            /** Format: int64 */
+            total: number;
+        };
+        DnsPoint: {
+            /** Format: date-time */
+            at: string;
+            /** Format: int64 */
+            blocked: number;
             /** Format: int64 */
             total: number;
         };
@@ -969,7 +1178,7 @@ export interface components {
             /** @enum {string} */
             event: "action";
         } | {
-            /** @description An alert fired (alerts engine arrives in phase 4). */
+            /** @description An alert fired or was resolved (`alert.resolved_at` set). */
             data: components["schemas"]["AlertEvent"];
             /** @enum {string} */
             event: "alert";
@@ -1015,6 +1224,20 @@ export interface components {
             /** Format: int32 */
             vmid: number;
         };
+        GuestBackup: {
+            /**
+             * Format: date-time
+             * @description When the backup task ended.
+             */
+            at?: string | null;
+            /** @description Error text when it failed. */
+            error?: string | null;
+            node: string;
+            ok: boolean;
+            upid: string;
+            /** Format: int32 */
+            vmid: number;
+        };
         GuestCounts: {
             /** Format: int32 */
             running: number;
@@ -1024,6 +1247,7 @@ export interface components {
             total: number;
         };
         GuestDetail: {
+            backup?: components["schemas"]["GuestBackup"] | null;
             guest: components["schemas"]["Guest"];
             ha_managed: boolean;
             last_backup?: components["schemas"]["Task"] | null;
@@ -1094,6 +1318,7 @@ export interface components {
             tls_fingerprint: string | null;
         };
         HealthEntry: {
+            backup?: components["schemas"]["GuestBackup"] | null;
             guest_type?: components["schemas"]["GuestType"] | null;
             health: components["schemas"]["Health"];
             health_reason?: string | null;
@@ -1369,6 +1594,34 @@ export interface components {
             /** @enum {string} */
             type: "navidrome";
             value: components["schemas"]["NavidromeData"];
+        } | {
+            /** @enum {string} */
+            type: "technitium";
+            value: components["schemas"]["TechnitiumData"];
+        } | {
+            /** @enum {string} */
+            type: "npm";
+            /** @description Nginx Proxy Manager. */
+            value: components["schemas"]["NpmData"];
+        } | {
+            /** @enum {string} */
+            type: "authentik";
+            value: components["schemas"]["AuthentikData"];
+        } | {
+            /** @enum {string} */
+            type: "nextcloud";
+            value: components["schemas"]["NextcloudData"];
+        } | {
+            /** @enum {string} */
+            type: "wireguard";
+            value: components["schemas"]["WireguardData"];
+        };
+        Mutes: {
+            /**
+             * @description Muted alert types. From a paired device these are the device's own mutes; from the
+             *     web, the user's (which also apply to all their devices).
+             */
+            types: components["schemas"]["AlertType"][];
         };
         NavidromeData: {
             /** Format: int64 */
@@ -1381,6 +1634,47 @@ export interface components {
              * @description Songs in the library (from the scan status).
              */
             songs?: number | null;
+        };
+        NextcloudData: {
+            /** Format: int64 */
+            active_1h: number;
+            /** Format: int64 */
+            active_24h: number;
+            /** Format: int64 */
+            active_5m: number;
+            /** Format: int64 */
+            app_updates: number;
+            /** Format: int64 */
+            apps_installed?: number | null;
+            /** @description Load averages (1, 5, 15 min). */
+            cpu_load: number[];
+            database?: string | null;
+            /** Format: int64 */
+            database_size?: number | null;
+            /** Format: int64 */
+            files: number;
+            /**
+             * Format: int64
+             * @description Free space in the data directory, bytes.
+             */
+            free_space?: number | null;
+            /** Format: int64 */
+            mem_free?: number | null;
+            /**
+             * Format: int64
+             * @description Bytes.
+             */
+            mem_total?: number | null;
+            /** Format: int64 */
+            php_memory_limit?: number | null;
+            php_version?: string | null;
+            /** Format: int64 */
+            shares: number;
+            /** @description Newer Nextcloud version available (from Nextcloud's own update check). */
+            update_available?: string | null;
+            /** Format: int64 */
+            users: number;
+            webserver?: string | null;
         };
         Node: {
             /** Format: int64 */
@@ -1473,6 +1767,22 @@ export interface components {
             transcode_reason?: string | null;
             user: string;
         };
+        NpmData: {
+            certificates: components["schemas"]["Certificate"][];
+            hosts: components["schemas"]["ProxyHost"][];
+        };
+        Outpost: {
+            healthy: boolean;
+            id: string;
+            /** @description `proxy`, `ldap`, `radius`, `rac` */
+            kind: string;
+            /** Format: date-time */
+            last_seen?: string | null;
+            managed: boolean;
+            name: string;
+            outdated: boolean;
+            version?: string | null;
+        };
         Overview: {
             /** @description Enabled, visible services in Home order, without hidden ones. */
             highlights: components["schemas"]["Highlight"][];
@@ -1543,6 +1853,20 @@ export interface components {
             /** @description API token id, e.g. `quorum@pve!quorum`. */
             token_id: string;
         };
+        ProxyHost: {
+            /** Format: int64 */
+            certificate_id?: number | null;
+            domains: string[];
+            enabled: boolean;
+            error?: string | null;
+            /** @description `http://10.0.20.108:8096` */
+            forward: string;
+            /** Format: int64 */
+            id: number;
+            /** @description Nginx accepted the host's config (`meta.nginx_online`), when reported. */
+            online?: boolean | null;
+            ssl_forced: boolean;
+        };
         QbittorrentData: {
             /** @description Alternative ("turtle") speed limits on. */
             alt_speed: boolean;
@@ -1605,6 +1929,11 @@ export interface components {
         };
         /** @enum {string} */
         QuickActionKind: "retry" | "start_guest";
+        /** @description Quiet hours in the server's local time, `HH:MM`. The window may cross midnight. */
+        QuietHours: {
+            end: string;
+            start: string;
+        };
         RecentEntry: {
             item: components["schemas"]["RecentItem"];
             service_id: string;
@@ -1710,7 +2039,7 @@ export interface components {
          *     registry entry in [`build_module`].
          * @enum {string}
          */
-        ServiceKind: "proxmox" | "health_check" | "jellyfin" | "seerr" | "sonarr" | "radarr" | "prowlarr" | "bazarr" | "qbittorrent" | "navidrome";
+        ServiceKind: "proxmox" | "health_check" | "jellyfin" | "seerr" | "sonarr" | "radarr" | "prowlarr" | "bazarr" | "qbittorrent" | "navidrome" | "technitium" | "nginx_proxy_manager" | "authentik" | "nextcloud" | "wireguard";
         ServiceRef: {
             health: components["schemas"]["Health"];
             id: string;
@@ -1897,6 +2226,58 @@ export interface components {
         };
         /** @enum {string} */
         TaskState: "running" | "ok" | "error";
+        TechnitiumData: {
+            /** Format: int64 */
+            block_list_zones: number;
+            /** Format: int64 */
+            blocked: number;
+            blocking_enabled: boolean;
+            /** Format: int64 */
+            cached: number;
+            /** @description Queries per interval over the last 24 h. */
+            chart: components["schemas"]["DnsPoint"][];
+            /** Format: int64 */
+            clients: number;
+            /**
+             * Format: date-time
+             * @description Set while blocking is paused; it resumes by itself at this time.
+             */
+            paused_until?: string | null;
+            top_blocked: components["schemas"]["TopEntry"][];
+            top_clients: components["schemas"]["TopEntry"][];
+            top_domains: components["schemas"]["TopEntry"][];
+            /** Format: int64 */
+            total_queries: number;
+        };
+        TestAlert: {
+            /** @description `ntfy` or `push`. */
+            channel: string;
+        };
+        TestAlertResult: {
+            message: string;
+            ok: boolean;
+        };
+        ThrottleSettings: {
+            /** @default false */
+            enabled: boolean;
+            /**
+             * @description Count only streams from outside the LAN (Jellyfin's "remote" sessions).
+             * @default false
+             */
+            only_remote: boolean;
+            /**
+             * @description qBittorrent service to throttle; the first one when unset.
+             * @default null
+             */
+            qbittorrent_id: string | null;
+        };
+        /** @description Current status for the qBittorrent page. */
+        ThrottleStatus: components["schemas"]["ThrottleSettings"] & {
+            /** @description The limits are on because of auto-throttle right now. */
+            engaged: boolean;
+            /** @description Streams counted right now (after the remote-only filter). */
+            streams: number;
+        };
         TimelineBucket: {
             /** @description Worst state seen in the hour; `unknown` without samples. */
             health: components["schemas"]["Health"];
@@ -1907,6 +2288,14 @@ export interface components {
              * @description Uptime in the hour, percent.
              */
             uptime?: number | null;
+        };
+        TopEntry: {
+            /** @description Client host name from reverse lookup, when known. */
+            domain?: string | null;
+            /** Format: int64 */
+            hits: number;
+            /** @description Domain name, or client IP for top clients. */
+            name: string;
         };
         Torrent: {
             /** Format: date-time */
@@ -1997,6 +2386,14 @@ export interface components {
             /** Format: int32 */
             width?: number | null;
         };
+        /** @description Settings for one alert type. */
+        TypeSettings: {
+            alert_type: components["schemas"]["AlertType"];
+            /** @description `ntfy` and/or `push`. */
+            channels: string[];
+            enabled: boolean;
+            quiet_hours?: components["schemas"]["QuietHours"] | null;
+        };
         /** @description Partial update. Absent fields stay as they are; `null` clears optional fields. */
         UpdateService: {
             base_url?: string | null;
@@ -2048,6 +2445,34 @@ export interface components {
             subtitle?: string | null;
             title: string;
         };
+        WgInterface: {
+            /** Format: int32 */
+            listen_port?: number | null;
+            name: string;
+            public_key: string;
+        };
+        WgPeer: {
+            allowed_ips: string[];
+            endpoint?: string | null;
+            interface: string;
+            /** Format: date-time */
+            last_handshake?: string | null;
+            /** @description From the agent's names file, when set. */
+            name?: string | null;
+            online: boolean;
+            public_key: string;
+            /** Format: int64 */
+            rx_bytes: number;
+            /** Format: int64 */
+            tx_bytes: number;
+        };
+        WireguardData: {
+            /** @description False when no agent answers: the page shows install steps. */
+            agent_installed: boolean;
+            agent_version?: string | null;
+            interfaces: components["schemas"]["WgInterface"][];
+            peers: components["schemas"]["WgPeer"][];
+        };
     };
     responses: never;
     parameters: never;
@@ -2077,6 +2502,146 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActivityEntry"][];
+                };
+            };
+        };
+    };
+    list_alerts: {
+        parameters: {
+            query?: {
+                /** @description 1–200, default 50. */
+                limit?: number | null;
+                /** @description Return alerts older than this id (pagination). */
+                before?: number | null;
+                /** @description Only unresolved alerts. */
+                active?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Alert"][];
+                };
+            };
+        };
+    };
+    get_alert_mutes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mutes"];
+                };
+            };
+        };
+    };
+    put_alert_mutes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Mutes"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mutes"];
+                };
+            };
+        };
+    };
+    get_alert_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertSettingsView"];
+                };
+            };
+        };
+    };
+    put_alert_settings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertSettingsUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertSettingsView"];
+                };
+            };
+            /** @description Invalid settings */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    test_alert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestAlert"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestAlertResult"];
                 };
             };
         };
@@ -2260,6 +2825,55 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
+            };
+        };
+    };
+    get_throttle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThrottleStatus"];
+                };
+            };
+        };
+    };
+    put_throttle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThrottleSettings"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThrottleStatus"];
+                };
+            };
+            /** @description Unknown qBittorrent service */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -2495,6 +3109,33 @@ export interface operations {
                 };
             };
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    backups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestBackup"][];
+                };
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -48,6 +48,9 @@
 	<div class="page-header">
 		<h1 class="page-title">{category ? CATEGORY_LABEL[category] : 'Services'}</h1>
 		<span class="spacer"></span>
+		<a class="btn btn-secondary" href={resolve('/launcher')}
+			><Icon name="ph-squares-four" />Launcher</a
+		>
 		{#if session.isOwner}
 			<a class="btn btn-secondary" href={resolve('/settings/services')}
 				><Icon name="ph-sliders" />Manage</a

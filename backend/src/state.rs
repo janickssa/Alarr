@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use chrono::{DateTime, Utc};
 
+use crate::alerts::channels::NotificationChannel;
 use crate::auth::RateLimiter;
 use crate::config::Config;
 use crate::crypto::SecretBox;
@@ -26,6 +27,10 @@ pub struct AppStateInner {
     pub setup_token: Mutex<Option<String>>,
     pub demo: bool,
     pub started_at: DateTime<Utc>,
+    /// Notification channels for alerts (ntfy, push).
+    pub channels: Vec<Arc<dyn NotificationChannel>>,
+    /// qBittorrent auto-throttle state (see `automation`).
+    pub throttle: tokio::sync::Mutex<crate::automation::Throttle>,
 }
 
 #[derive(Clone)]
@@ -51,7 +56,10 @@ impl AppState {
             },
             demo,
         );
+        let channels = crate::alerts::channels::from_config(&config);
         Self(Arc::new(AppStateInner {
+            channels,
+            throttle: Default::default(),
             config,
             db,
             secrets,

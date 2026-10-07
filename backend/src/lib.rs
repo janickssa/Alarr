@@ -1,8 +1,10 @@
 //! Quorum server library: config, storage, auth, service modules, pollers and the HTTP API.
 
+pub mod alerts;
 pub mod api;
 pub mod app;
 pub mod auth;
+pub mod automation;
 pub mod config;
 pub mod crypto;
 pub mod db;

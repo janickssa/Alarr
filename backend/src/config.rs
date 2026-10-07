@@ -32,7 +32,8 @@ pub struct ServerConfig {
     pub seed: Option<PathBuf>,
 }
 
-/// ntfy delivery (used from phase 4).
+/// ntfy delivery for alerts. An access token, when the topic needs one, comes from the
+/// `QUORUM_NTFY_TOKEN` environment variable.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NtfyConfig {

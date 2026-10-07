@@ -1,6 +1,7 @@
 //! Service modules: the shared trait, common types and the module registry.
 
 pub mod arr;
+pub mod authentik;
 pub mod bazarr;
 pub mod catalogue;
 pub mod health_check;
@@ -8,10 +9,14 @@ pub mod http;
 pub mod jellyfin;
 pub mod media_demo;
 pub mod navidrome;
+pub mod nextcloud;
+pub mod npm;
 pub mod prowlarr;
 pub mod proxmox;
 pub mod qbittorrent;
 pub mod seerr;
+pub mod technitium;
+pub mod wireguard;
 
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
@@ -37,10 +42,15 @@ pub enum ServiceKind {
     Bazarr,
     Qbittorrent,
     Navidrome,
+    Technitium,
+    NginxProxyManager,
+    Authentik,
+    Nextcloud,
+    Wireguard,
 }
 
 impl ServiceKind {
-    pub const ALL: [ServiceKind; 10] = [
+    pub const ALL: [ServiceKind; 15] = [
         Self::Proxmox,
         Self::HealthCheck,
         Self::Jellyfin,
@@ -51,6 +61,11 @@ impl ServiceKind {
         Self::Bazarr,
         Self::Qbittorrent,
         Self::Navidrome,
+        Self::Technitium,
+        Self::NginxProxyManager,
+        Self::Authentik,
+        Self::Nextcloud,
+        Self::Wireguard,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -65,6 +80,11 @@ impl ServiceKind {
             Self::Bazarr => "bazarr",
             Self::Qbittorrent => "qbittorrent",
             Self::Navidrome => "navidrome",
+            Self::Technitium => "technitium",
+            Self::NginxProxyManager => "nginx_proxy_manager",
+            Self::Authentik => "authentik",
+            Self::Nextcloud => "nextcloud",
+            Self::Wireguard => "wireguard",
         }
     }
 
@@ -75,6 +95,9 @@ impl ServiceKind {
     pub fn level(self) -> IntegrationLevel {
         match self {
             Self::HealthCheck => IntegrationLevel::HealthCheck,
+            Self::NginxProxyManager | Self::Authentik | Self::Nextcloud | Self::Wireguard => {
+                IntegrationLevel::ReadOnly
+            }
             _ => IntegrationLevel::Full,
         }
     }
@@ -87,9 +110,18 @@ impl ServiceKind {
             Self::HealthCheck => (Duration::from_secs(30), Duration::from_secs(30)),
             Self::Qbittorrent => (Duration::from_secs(10), Duration::from_secs(2)),
             Self::Jellyfin | Self::Navidrome => (Duration::from_secs(15), Duration::from_secs(5)),
-            Self::Seerr | Self::Sonarr | Self::Radarr | Self::Prowlarr | Self::Bazarr => {
-                (Duration::from_secs(60), Duration::from_secs(15))
+            Self::Seerr
+            | Self::Sonarr
+            | Self::Radarr
+            | Self::Prowlarr
+            | Self::Bazarr
+            | Self::Authentik => (Duration::from_secs(60), Duration::from_secs(15)),
+            Self::Technitium | Self::Wireguard => {
+                (Duration::from_secs(30), Duration::from_secs(10))
             }
+            Self::Nextcloud => (Duration::from_secs(120), Duration::from_secs(30)),
+            // Certificates change slowly.
+            Self::NginxProxyManager => (Duration::from_secs(300), Duration::from_secs(60)),
         }
     }
 
@@ -98,7 +130,9 @@ impl ServiceKind {
         match self {
             Self::Proxmox => &["token_secret"],
             Self::HealthCheck => &[],
-            Self::Qbittorrent | Self::Navidrome => &["password"],
+            Self::Qbittorrent | Self::Navidrome | Self::NginxProxyManager | Self::Nextcloud => {
+                &["password"]
+            }
             _ => &["api_key"],
         }
     }
@@ -232,6 +266,12 @@ pub enum ModuleData {
     Bazarr(Box<bazarr::BazarrData>),
     Qbittorrent(Box<qbittorrent::QbittorrentData>),
     Navidrome(Box<navidrome::NavidromeData>),
+    Technitium(Box<technitium::TechnitiumData>),
+    /// Nginx Proxy Manager.
+    Npm(Box<npm::NpmData>),
+    Authentik(Box<authentik::AuthentikData>),
+    Nextcloud(Box<nextcloud::NextcloudData>),
+    Wireguard(Box<wireguard::WireguardData>),
 }
 
 impl ModuleData {
@@ -245,6 +285,11 @@ impl ModuleData {
             Self::Bazarr(d) => d.headline(),
             Self::Qbittorrent(d) => d.headline(),
             Self::Navidrome(d) => d.headline(),
+            Self::Technitium(d) => d.headline(),
+            Self::Npm(d) => d.headline(),
+            Self::Authentik(d) => d.headline(),
+            Self::Nextcloud(d) => d.headline(),
+            Self::Wireguard(d) => d.headline(),
             Self::None | Self::Proxmox(_) | Self::HealthCheck(_) => return None,
         })
     }
@@ -392,6 +437,11 @@ pub fn validate_config(cfg: &InstanceConfig) -> Result<(), String> {
         ServiceKind::Bazarr => bazarr::validate(cfg),
         ServiceKind::Qbittorrent => qbittorrent::validate(cfg),
         ServiceKind::Navidrome => navidrome::validate(cfg),
+        ServiceKind::Technitium => technitium::validate(cfg),
+        ServiceKind::NginxProxyManager => npm::validate(cfg),
+        ServiceKind::Authentik => authentik::validate(cfg),
+        ServiceKind::Nextcloud => nextcloud::validate(cfg),
+        ServiceKind::Wireguard => wireguard::validate(cfg),
     }
 }
 
@@ -418,5 +468,15 @@ pub fn build_module(cfg: &InstanceConfig, demo: bool) -> anyhow::Result<Arc<dyn 
         (ServiceKind::Qbittorrent, true) => Arc::new(qbittorrent::QbittorrentModule::demo()),
         (ServiceKind::Navidrome, false) => Arc::new(navidrome::NavidromeModule::new(cfg)?),
         (ServiceKind::Navidrome, true) => Arc::new(navidrome::NavidromeModule::demo()),
+        (ServiceKind::Technitium, false) => Arc::new(technitium::TechnitiumModule::new(cfg)?),
+        (ServiceKind::Technitium, true) => Arc::new(technitium::TechnitiumModule::demo()),
+        (ServiceKind::NginxProxyManager, false) => Arc::new(npm::NpmModule::new(cfg)?),
+        (ServiceKind::NginxProxyManager, true) => Arc::new(npm::NpmModule::demo()),
+        (ServiceKind::Authentik, false) => Arc::new(authentik::AuthentikModule::new(cfg)?),
+        (ServiceKind::Authentik, true) => Arc::new(authentik::AuthentikModule::demo()),
+        (ServiceKind::Nextcloud, false) => Arc::new(nextcloud::NextcloudModule::new(cfg)?),
+        (ServiceKind::Nextcloud, true) => Arc::new(nextcloud::NextcloudModule::demo()),
+        (ServiceKind::Wireguard, false) => Arc::new(wireguard::WireguardModule::new(cfg)?),
+        (ServiceKind::Wireguard, true) => Arc::new(wireguard::WireguardModule::demo()),
     })
 }

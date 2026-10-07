@@ -59,8 +59,20 @@
 	const secretSet = $derived(existing?.secrets?.token_secret?.set ?? false);
 	const apiKeySet = $derived(existing?.secrets?.api_key?.set ?? false);
 	const passwordSet = $derived(existing?.secrets?.password?.set ?? false);
-	const API_KEY_KINDS = ['jellyfin', 'seerr', 'sonarr', 'radarr', 'prowlarr', 'bazarr'];
-	const PASSWORD_KINDS = ['qbittorrent', 'navidrome'];
+	const API_KEY_KINDS = [
+		'jellyfin',
+		'seerr',
+		'sonarr',
+		'radarr',
+		'prowlarr',
+		'bazarr',
+		'technitium',
+		'authentik',
+		'wireguard'
+	];
+	const PASSWORD_KINDS = ['qbittorrent', 'navidrome', 'nginx_proxy_manager', 'nextcloud'];
+	// Username is required for these (Nextcloud can use a serverinfo token instead).
+	const USERNAME_REQUIRED = ['navidrome', 'nginx_proxy_manager'];
 	const usesApiKey = API_KEY_KINDS.includes(kind);
 	const usesPassword = PASSWORD_KINDS.includes(kind);
 	const isModule = usesApiKey || usesPassword;
@@ -70,7 +82,28 @@
 		sonarr: 'Settings → General → Security → API Key.',
 		radarr: 'Settings → General → Security → API Key.',
 		prowlarr: 'Settings → General → Security → API Key.',
-		bazarr: 'Settings → General → Security → API Key.'
+		bazarr: 'Settings → General → Security → API Key.',
+		technitium:
+			'Administration → Sessions → Create Token, for a user allowed Dashboard: View and Settings: View + Modify (to pause blocking).',
+		authentik:
+			'Admin interface → Directory → Tokens and App passwords → Create (intent API), for a user that can view events and outposts.',
+		wireguard:
+			'The token in /etc/quorum-agent/token on the WireGuard container (see agent/README.md).'
+	};
+	const KEY_LABEL: Record<string, string> = {
+		technitium: 'API token',
+		authentik: 'API token',
+		wireguard: 'Agent token'
+	};
+	const USER_LABEL: Record<string, string> = { nginx_proxy_manager: 'Email' };
+	const PASSWORD_HINT: Record<string, string> = {
+		qbittorrent:
+			'Leave empty if qBittorrent skips authentication for this address (Web UI → Bypass authentication for clients in whitelisted IP subnets).',
+		navidrome: 'A Navidrome user; used with the Subsonic API token scheme.',
+		nginx_proxy_manager:
+			'A Nginx Proxy Manager user without two-factor sign-in. Quorum only reads hosts and certificates.',
+		nextcloud:
+			'An admin username with an app password (Personal settings → Security). Or leave the username empty and put the serverinfo token in the password field.'
 	};
 	const URL_HINT: Record<string, string> = {
 		jellyfin: 'http://10.0.20.108:8096',
@@ -80,7 +113,12 @@
 		prowlarr: 'http://10.0.20.125:9696',
 		bazarr: 'http://10.0.20.127:6767',
 		qbittorrent: 'http://10.0.20.120:8080',
-		navidrome: 'http://10.0.20.119:4533'
+		navidrome: 'http://10.0.20.119:4533',
+		technitium: 'http://10.0.20.112:5380',
+		nginx_proxy_manager: 'http://10.0.20.115:81',
+		authentik: 'https://10.0.20.121:9443',
+		nextcloud: 'https://10.0.20.113',
+		wireguard: 'http://10.0.20.102:9587'
 	};
 
 	onMount(async () => {
@@ -316,10 +354,10 @@
 		</section>
 	{:else if isModule}
 		<section class="card">
-			<h2 class="overline">{usesApiKey ? 'API key' : 'Sign-in'}</h2>
+			<h2 class="overline">{usesApiKey ? (KEY_LABEL[kind] ?? 'API key') : 'Sign-in'}</h2>
 			{#if usesApiKey}
 				<div class="field">
-					<label for="key">API key</label>
+					<label for="key">{KEY_LABEL[kind] ?? 'API key'}</label>
 					<input
 						id="key"
 						class="input mono"
@@ -336,12 +374,12 @@
 			{:else}
 				<div class="cols">
 					<div class="field">
-						<label for="user">Username</label>
+						<label for="user">{USER_LABEL[kind] ?? 'Username'}</label>
 						<input
 							id="user"
 							class="input"
 							autocomplete="off"
-							required={kind === 'navidrome'}
+							required={USERNAME_REQUIRED.includes(kind)}
 							bind:value={username}
 						/>
 					</div>
@@ -352,17 +390,13 @@
 							class="input"
 							type="password"
 							autocomplete="off"
-							required={kind === 'navidrome' && !passwordSet}
+							required={kind !== 'qbittorrent' && !passwordSet}
 							bind:value={password}
 							placeholder={passwordSet ? '•••• (set, leave empty to keep)' : ''}
 						/>
 					</div>
 				</div>
-				<span class="hint">
-					{kind === 'qbittorrent'
-						? 'Leave empty if qBittorrent skips authentication for this address (Web UI → Bypass authentication for clients in whitelisted IP subnets).'
-						: 'A Navidrome user; used with the Subsonic API token scheme.'}
-				</span>
+				<span class="hint">{PASSWORD_HINT[kind] ?? ''} Stored encrypted. Never shown again.</span>
 			{/if}
 			<div class="field">
 				<label for="mfp">Certificate fingerprint (optional)</label>

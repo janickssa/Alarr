@@ -213,8 +213,20 @@ pub trait ProxmoxApi: Send + Sync {
         vmid: Option<u32>,
         limit: u32,
     ) -> anyhow::Result<Vec<TaskListEntry>>;
+    /// Finished `vzdump` tasks on a node since a Unix time, newest first
+    /// (`GET /nodes/{node}/tasks?typefilter=vzdump&since=`; needs `Sys.Audit`).
+    async fn vzdump_tasks(&self, node: &str, since: i64) -> anyhow::Result<Vec<TaskListEntry>>;
+    /// Lines of a task log (`GET /nodes/{node}/tasks/{upid}/log`; needs `Sys.Audit`).
+    async fn task_log(&self, node: &str, upid: &str) -> anyhow::Result<Vec<String>>;
     /// Privileges of the token on `/` (for the connection test).
     async fn permissions(&self) -> anyhow::Result<Vec<String>>;
+}
+
+/// One line of `GET /nodes/{node}/tasks/{upid}/log`.
+#[derive(Debug, Clone, Deserialize)]
+pub struct TaskLogLine {
+    #[serde(default)]
+    pub t: String,
 }
 
 /// Node names and UPIDs end up in URL paths; only allow the characters Proxmox uses.
@@ -379,6 +391,32 @@ impl ProxmoxApi for HttpProxmox {
         }
         self.get(&format!("/nodes/{}/tasks", safe_segment(node)?), &query)
             .await
+    }
+
+    async fn vzdump_tasks(&self, node: &str, since: i64) -> anyhow::Result<Vec<TaskListEntry>> {
+        self.get(
+            &format!("/nodes/{}/tasks", safe_segment(node)?),
+            &[
+                ("typefilter", "vzdump".to_owned()),
+                ("since", since.to_string()),
+                ("limit", "500".to_owned()),
+            ],
+        )
+        .await
+    }
+
+    async fn task_log(&self, node: &str, upid: &str) -> anyhow::Result<Vec<String>> {
+        let lines: Vec<TaskLogLine> = self
+            .get(
+                &format!(
+                    "/nodes/{}/tasks/{}/log",
+                    safe_segment(node)?,
+                    safe_segment(upid)?
+                ),
+                &[("limit", "50000".to_owned())],
+            )
+            .await?;
+        Ok(lines.into_iter().map(|l| l.t).collect())
     }
 
     async fn permissions(&self) -> anyhow::Result<Vec<String>> {

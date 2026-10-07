@@ -1,6 +1,7 @@
 //! Proxmox VE module: cluster, nodes, storage, guests, RRD graphs, tasks and power actions.
 
 pub mod api;
+pub mod backups;
 pub mod demo;
 
 use std::collections::HashMap;
@@ -530,6 +531,7 @@ pub fn validate(cfg: &InstanceConfig) -> Result<(), String> {
 pub struct ProxmoxModule {
     api: Arc<dyn ProxmoxApi>,
     base_url: Option<String>,
+    backups: backups::BackupCache,
 }
 
 impl ProxmoxModule {
@@ -546,6 +548,7 @@ impl ProxmoxModule {
         Ok(Self {
             api: Arc::new(api),
             base_url: Some(base_url),
+            backups: Default::default(),
         })
     }
 
@@ -557,11 +560,20 @@ impl ProxmoxModule {
         Self {
             api,
             base_url: None,
+            backups: Default::default(),
         }
     }
 
     pub fn api(&self) -> &dyn ProxmoxApi {
         self.api.as_ref()
+    }
+
+    /// Latest backup per guest on these nodes (cached for 5 minutes).
+    pub async fn backups(
+        &self,
+        nodes: &[String],
+    ) -> anyhow::Result<HashMap<u32, backups::GuestBackup>> {
+        self.backups.get(self.api.as_ref(), nodes).await
     }
 
     async fn fetch(&self) -> anyhow::Result<(ProxmoxData, Health, Option<String>, u64)> {

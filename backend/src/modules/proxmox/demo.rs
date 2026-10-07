@@ -542,6 +542,78 @@ impl ProxmoxApi for DemoProxmox {
         Ok(out)
     }
 
+    async fn vzdump_tasks(&self, node: &str, since: i64) -> anyhow::Result<Vec<TaskListEntry>> {
+        // The nightly backup job (all guests on the node, so no task id) for the last 3 nights,
+        // plus a manual backup of one guest. draw.io's backup fails on pve-03 every night.
+        let mut out = Vec::new();
+        for night in 0..3 {
+            let start = Self::nightly(night);
+            out.push(TaskListEntry {
+                upid: format!("UPID:{node}:0000D00{night}:00000001:{start:08X}:vzdump::root@pam:"),
+                node: Some(node.into()),
+                kind: Some("vzdump".into()),
+                id: None,
+                user: Some("root@pam".into()),
+                starttime: Some(start as u64),
+                endtime: Some(start as u64 + 1260),
+                status: Some(if node == "pve-03" {
+                    "job errors".into()
+                } else {
+                    "OK".into()
+                }),
+            });
+        }
+        if node == "pve-02" {
+            let start = now() - 5 * 3600;
+            out.push(TaskListEntry {
+                upid: format!("UPID:{node}:0000D0FF:00000001:{start:08X}:vzdump:113:root@pam:"),
+                node: Some(node.into()),
+                kind: Some("vzdump".into()),
+                id: Some("113".into()),
+                user: Some("root@pam".into()),
+                starttime: Some(start as u64),
+                endtime: Some(start as u64 + 240),
+                status: Some("OK".into()),
+            });
+        }
+        out.retain(|t| t.starttime.is_some_and(|s| s as i64 >= since));
+        out.sort_by_key(|t| std::cmp::Reverse(t.starttime));
+        Ok(out)
+    }
+
+    async fn task_log(&self, node: &str, upid: &str) -> anyhow::Result<Vec<String>> {
+        if !upid.contains(":vzdump::") {
+            return Ok(vec!["TASK OK".into()]);
+        }
+        let mut lines =
+            vec!["INFO: starting new backup job: vzdump --all 1 --mode snapshot".into()];
+        for (vmid, _, _, ty, ..) in GUESTS.iter().filter(|g| g.2 == node) {
+            // mkdocs is excluded from the job (shows "no backup").
+            if *vmid == 128 {
+                continue;
+            }
+            let kind = if *ty == GuestType::Lxc { "lxc" } else { "qemu" };
+            lines.push(format!("INFO: Starting Backup of VM {vmid} ({kind})"));
+            if *vmid == 116 {
+                lines.push(format!(
+                    "ERROR: Backup of VM {vmid} failed - unable to create temporary directory '/var/tmp/vzdumptmp1234_{vmid}' - No space left on device"
+                ));
+            } else {
+                lines.push(format!(
+                    "INFO: Finished Backup of VM {vmid} (00:01:{:02})",
+                    vmid % 60
+                ));
+            }
+        }
+        lines.push(if node == "pve-03" {
+            "INFO: Backup job finished with errors".into()
+        } else {
+            "INFO: Backup job finished successfully".into()
+        });
+        lines.push("TASK OK".into());
+        Ok(lines)
+    }
+
     async fn permissions(&self) -> anyhow::Result<Vec<String>> {
         Ok(super::REQUIRED_PRIVILEGES
             .iter()
@@ -551,6 +623,13 @@ impl ProxmoxApi for DemoProxmox {
 }
 
 impl DemoProxmox {
+    /// Start of the nightly backup `nights_ago` nights back (02:00 UTC).
+    fn nightly(nights_ago: i64) -> i64 {
+        let today = (now() / 86_400) * 86_400 + 2 * 3600;
+        let last = if today > now() { today - 86_400 } else { today };
+        last - nights_ago * 86_400
+    }
+
     fn find(&self, vmid: u32) -> anyhow::Result<DemoGuest> {
         self.state
             .lock()

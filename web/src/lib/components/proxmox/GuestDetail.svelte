@@ -180,20 +180,18 @@
 
 	<section class="card">
 		<h3 class="overline">Last backup</h3>
-		{#if detail.last_backup}
+		{#if detail.backup}
 			<div class="row caption">
 				<Icon
-					name={detail.last_backup.state === 'ok' ? 'ph-check-circle' : 'ph-x-circle'}
+					name={detail.backup.ok ? 'ph-check-circle' : 'ph-x-circle'}
 					fill
-					color={detail.last_backup.state === 'ok' ? 'var(--health-healthy)' : 'var(--health-down)'}
+					color={detail.backup.ok ? 'var(--health-healthy)' : 'var(--health-down)'}
 				/>
-				<span title={dateTime(detail.last_backup.started_at)}
-					><RelativeTime value={detail.last_backup.started_at} /></span
-				>
-				<span class="faint">{detail.last_backup.exit_status ?? ''}</span>
+				<span title={dateTime(detail.backup.at)}><RelativeTime value={detail.backup.at} /></span>
+				<span class="faint">{detail.backup.ok ? 'OK' : (detail.backup.error ?? 'failed')}</span>
 			</div>
 		{:else}
-			<p class="muted caption">No backup task in the recent history.</p>
+			<p class="muted caption">No backup in the last 35 days.</p>
 		{/if}
 	</section>
 

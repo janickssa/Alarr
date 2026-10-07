@@ -14,6 +14,7 @@ use super::error::{ApiError, ApiResult, ErrorBody};
 use crate::auth::CurrentUser;
 use crate::db::{ActivityResult, ServiceRow};
 use crate::modules::proxmox::api::safe_segment;
+use crate::modules::proxmox::backups::GuestBackup;
 use crate::modules::proxmox::{
     ClusterInfo, Guest, GuestType, Node, PowerAction, ProxmoxData, RrdPoint, RrdRange, StoragePool,
     Task, TaskState, upid_node,
@@ -33,6 +34,49 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(guest_rrd))
         .routes(routes!(power))
         .routes(routes!(task))
+        .routes(routes!(backups))
+}
+
+/// Latest backup per guest (online nodes only). Empty when it can't be read.
+pub async fn guest_backups(
+    state: &AppState,
+    pve_id: &str,
+) -> std::collections::HashMap<u32, GuestBackup> {
+    let Some(module) = state.supervisor.module(pve_id) else {
+        return Default::default();
+    };
+    let Some(pm) = module.as_proxmox() else {
+        return Default::default();
+    };
+    let nodes: Vec<String> = match state.cache.get(pve_id).map(|s| s.data) {
+        Some(crate::modules::ModuleData::Proxmox(d)) => d
+            .nodes
+            .iter()
+            .filter(|n| n.online)
+            .map(|n| n.name.clone())
+            .collect(),
+        _ => return Default::default(),
+    };
+    match pm.backups(&nodes).await {
+        Ok(b) => b,
+        Err(e) => {
+            tracing::warn!(error = %e, "reading backup tasks failed");
+            Default::default()
+        }
+    }
+}
+
+/// Latest backup (`vzdump`) per guest, from the task list and job logs of the last 35 days.
+#[utoipa::path(get, path = "/proxmox/backups", tag = "proxmox",
+    responses((status = 200, body = Vec<GuestBackup>), (status = 404, body = ErrorBody)))]
+async fn backups(
+    State(state): State<AppState>,
+    user: CurrentUser,
+) -> ApiResult<Json<Vec<GuestBackup>>> {
+    let p = pve(&state, &user).await?;
+    let mut out: Vec<GuestBackup> = guest_backups(&state, &p.id).await.into_values().collect();
+    out.sort_by_key(|b| b.vmid);
+    Ok(Json(out))
 }
 
 /// The Proxmox service, its module and current data, checked against the user's access.
@@ -226,8 +270,10 @@ pub struct GuestDetail {
     pub linked_services: Vec<ServiceRef>,
     /// Latest tasks for this guest (power actions, backups), newest first.
     pub recent_tasks: Vec<Task>,
-    /// Latest finished backup (`vzdump`) task.
+    /// Latest finished backup (`vzdump`) task that names this guest.
     pub last_backup: Option<Task>,
+    /// Latest backup of this guest, including backup jobs over several guests.
+    pub backup: Option<GuestBackup>,
 }
 
 /// One guest with live status, linked services and recent tasks.
@@ -278,6 +324,7 @@ async fn guest(
         linked_services,
         recent_tasks: recent_tasks.into_iter().take(10).collect(),
         last_backup,
+        backup: guest_backups(&state, &p.id).await.remove(&vmid),
         guest: g,
     }))
 }

@@ -66,6 +66,195 @@
         }
       }
     },
+    "/alerts": {
+      "get": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Alerts, newest first.",
+        "operationId": "list_alerts",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1–200, default 50.",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "description": "Return alerts older than this id (pagination).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "description": "Only unresolved alerts.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Alert"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/mutes": {
+      "get": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Alert types the signed-in user (or this device) muted.",
+        "operationId": "get_alert_mutes",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mutes"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Replace the muted alert types for the signed-in user (or this device).",
+        "operationId": "put_alert_mutes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Mutes"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mutes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/settings": {
+      "get": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Per-type alert settings and the channels.",
+        "operationId": "get_alert_settings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertSettingsView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Change per-type settings (owner).",
+        "operationId": "put_alert_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertSettingsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertSettingsView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid settings"
+          }
+        }
+      }
+    },
+    "/alerts/test": {
+      "post": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Send a test notification on one channel (owner).",
+        "operationId": "test_alert",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestAlert"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestAlertResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/login": {
       "post": {
         "tags": [
@@ -273,6 +462,57 @@
         "security": [
           {}
         ]
+      }
+    },
+    "/automation/throttle": {
+      "get": {
+        "tags": [
+          "automation"
+        ],
+        "summary": "Auto-throttle settings and whether it is throttling now.",
+        "operationId": "get_throttle",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThrottleStatus"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "automation"
+        ],
+        "summary": "Change auto-throttle (owner).",
+        "operationId": "put_throttle",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThrottleSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThrottleStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Unknown qBittorrent service"
+          }
+        }
       }
     },
     "/devices": {
@@ -558,6 +798,38 @@
             }
           },
           "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/proxmox/backups": {
+      "get": {
+        "tags": [
+          "proxmox"
+        ],
+        "summary": "Latest backup (`vzdump`) per guest, from the task list and job logs of the last 35 days.",
+        "operationId": "backups",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GuestBackup"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
@@ -1873,15 +2145,49 @@
           "pending"
         ]
       },
-      "AlertEvent": {
+      "Alert": {
         "type": "object",
         "required": [
+          "id",
+          "alert_type",
+          "key",
+          "severity",
           "title",
-          "message"
+          "message",
+          "created_at",
+          "delivery"
         ],
         "properties": {
+          "alert_type": {
+            "type": "string",
+            "description": "`service_down`, `node_offline`, `disk_full`, `download_failed`,\n`certificate_expiring`, `new_request`."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "delivery": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Delivery"
+            }
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "key": {
+            "type": "string"
+          },
           "message": {
             "type": "string"
+          },
+          "resolved_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           },
           "service_id": {
             "type": [
@@ -1889,10 +2195,106 @@
               "null"
             ]
           },
+          "severity": {
+            "type": "string",
+            "description": "`critical`, `warning` or `info`."
+          },
           "title": {
             "type": "string"
           }
         }
+      },
+      "AlertEvent": {
+        "type": "object",
+        "required": [
+          "alert"
+        ],
+        "properties": {
+          "alert": {
+            "$ref": "#/components/schemas/Alert"
+          },
+          "service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Service the alert belongs to, if any (used for permission filtering)."
+          }
+        }
+      },
+      "AlertSettingsUpdate": {
+        "type": "object",
+        "required": [
+          "types"
+        ],
+        "properties": {
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TypeSettings"
+            },
+            "description": "Types to change; types not listed keep their settings."
+          }
+        }
+      },
+      "AlertSettingsView": {
+        "type": "object",
+        "required": [
+          "types",
+          "channels",
+          "timezone"
+        ],
+        "properties": {
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChannelInfo"
+            }
+          },
+          "timezone": {
+            "type": "string",
+            "description": "Quiet hours use this time zone (the server's local time)."
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertTypeView"
+            }
+          }
+        }
+      },
+      "AlertType": {
+        "type": "string",
+        "enum": [
+          "service_down",
+          "node_offline",
+          "disk_full",
+          "download_failed",
+          "certificate_expiring",
+          "new_request"
+        ]
+      },
+      "AlertTypeView": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TypeSettings"
+          },
+          {
+            "type": "object",
+            "required": [
+              "label",
+              "description"
+            ],
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          }
+        ]
       },
       "AppSettings": {
         "type": "object",
@@ -1987,6 +2389,94 @@
           "sonarr",
           "radarr"
         ]
+      },
+      "AuthEvent": {
+        "type": "object",
+        "required": [
+          "action",
+          "at"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "`login`, `login_failed`, `logout`, `authorize_application`, …"
+          },
+          "app": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "client_ip": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "user": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "AuthentikData": {
+        "type": "object",
+        "required": [
+          "logins_24h",
+          "failed_24h",
+          "logins_capped",
+          "events",
+          "outposts"
+        ],
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuthEvent"
+            }
+          },
+          "failed_24h": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "logins_24h": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "logins_capped": {
+            "type": "boolean",
+            "description": "True when more than [`MAX_PAGES`] pages of logins happened and the count is a floor."
+          },
+          "outposts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Outpost"
+            }
+          },
+          "sessions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "update_available": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Newer Authentik release, when the server reports it is outdated."
+          }
+        }
       },
       "BackendInfo": {
         "type": "object",
@@ -2198,6 +2688,82 @@
           "network_security",
           "apps"
         ]
+      },
+      "Certificate": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "domains",
+          "provider",
+          "hosts"
+        ],
+        "properties": {
+          "days_left": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Whole days left; negative when expired."
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "hosts": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of proxy hosts using it.",
+            "minimum": 0
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string",
+            "description": "`letsencrypt` or `other`."
+          }
+        }
+      },
+      "ChannelInfo": {
+        "type": "object",
+        "description": "What the settings page shows about a channel.",
+        "required": [
+          "id",
+          "label",
+          "configured",
+          "detail"
+        ],
+        "properties": {
+          "configured": {
+            "type": "boolean"
+          },
+          "detail": {
+            "type": "string",
+            "description": "Where it delivers (e.g. ntfy server and topic), or how to set it up."
+          },
+          "id": {
+            "type": "string",
+            "description": "`ntfy` or `push`."
+          },
+          "label": {
+            "type": "string"
+          }
+        }
       },
       "CheckType": {
         "type": "string",
@@ -2475,6 +3041,30 @@
           }
         }
       },
+      "Delivery": {
+        "type": "object",
+        "description": "Result of delivering an alert on one channel.",
+        "required": [
+          "channel",
+          "result"
+        ],
+        "properties": {
+          "channel": {
+            "type": "string",
+            "description": "`ntfy` or `push`."
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result": {
+            "type": "string",
+            "description": "`sent`, `failed`, `quiet_hours`, `not_configured` or `rate_limited`."
+          }
+        }
+      },
       "Device": {
         "type": "object",
         "required": [
@@ -2525,6 +3115,30 @@
           },
           "path": {
             "type": "string"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "DnsPoint": {
+        "type": "object",
+        "required": [
+          "at",
+          "total",
+          "blocked"
+        ],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "blocked": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           },
           "total": {
             "type": "integer",
@@ -2613,7 +3227,7 @@
           },
           {
             "type": "object",
-            "description": "An alert fired (alerts engine arrives in phase 4).",
+            "description": "An alert fired or was resolved (`alert.resolved_at` set).",
             "required": [
               "data",
               "event"
@@ -2621,7 +3235,7 @@
             "properties": {
               "data": {
                 "$ref": "#/components/schemas/AlertEvent",
-                "description": "An alert fired (alerts engine arrives in phase 4)."
+                "description": "An alert fired or was resolved (`alert.resolved_at` set)."
               },
               "event": {
                 "type": "string",
@@ -2767,6 +3381,46 @@
           }
         }
       },
+      "GuestBackup": {
+        "type": "object",
+        "required": [
+          "vmid",
+          "node",
+          "ok",
+          "upid"
+        ],
+        "properties": {
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the backup task ended."
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Error text when it failed."
+          },
+          "node": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "upid": {
+            "type": "string"
+          },
+          "vmid": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
       "GuestCounts": {
         "type": "object",
         "required": [
@@ -2801,6 +3455,17 @@
           "recent_tasks"
         ],
         "properties": {
+          "backup": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuestBackup",
+                "description": "Latest backup of this guest, including backup jobs over several guests."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "guest": {
             "$ref": "#/components/schemas/Guest"
           },
@@ -2811,7 +3476,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/Task",
-                "description": "Latest finished backup (`vzdump`) task."
+                "description": "Latest finished backup (`vzdump`) task that names this guest."
               },
               {
                 "type": "null"
@@ -2998,6 +3663,17 @@
           "warnings"
         ],
         "properties": {
+          "backup": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuestBackup",
+                "description": "Guests: latest backup in the last 35 days."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "guest_type": {
             "oneOf": [
               {
@@ -3951,9 +4627,116 @@
                 "$ref": "#/components/schemas/NavidromeData"
               }
             }
+          },
+          {
+            "type": "object",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "technitium"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/TechnitiumData"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Nginx Proxy Manager.",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "npm"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/NpmData",
+                "description": "Nginx Proxy Manager."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "authentik"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/AuthentikData"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "nextcloud"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/NextcloudData"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "wireguard"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/WireguardData"
+              }
+            }
           }
         ],
         "description": "Module-specific snapshot payload."
+      },
+      "Mutes": {
+        "type": "object",
+        "required": [
+          "types"
+        ],
+        "properties": {
+          "types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertType"
+            },
+            "description": "Muted alert types. From a paired device these are the device's own mutes; from the\nweb, the user's (which also apply to all their devices)."
+          }
+        }
       },
       "NavidromeData": {
         "type": "object",
@@ -3993,6 +4776,139 @@
             "format": "int64",
             "description": "Songs in the library (from the scan status).",
             "minimum": 0
+          }
+        }
+      },
+      "NextcloudData": {
+        "type": "object",
+        "required": [
+          "users",
+          "files",
+          "shares",
+          "active_5m",
+          "active_1h",
+          "active_24h",
+          "app_updates",
+          "cpu_load"
+        ],
+        "properties": {
+          "active_1h": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "active_24h": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "active_5m": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "app_updates": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "apps_installed": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "cpu_load": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            },
+            "description": "Load averages (1, 5, 15 min)."
+          },
+          "database": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "database_size": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "files": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "free_space": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Free space in the data directory, bytes.",
+            "minimum": 0
+          },
+          "mem_free": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "mem_total": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Bytes.",
+            "minimum": 0
+          },
+          "php_memory_limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "php_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "shares": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "update_available": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Newer Nextcloud version available (from Nextcloud's own update check)."
+          },
+          "users": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "webserver": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -4297,6 +5213,72 @@
           }
         }
       },
+      "NpmData": {
+        "type": "object",
+        "required": [
+          "hosts",
+          "certificates"
+        ],
+        "properties": {
+          "certificates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Certificate"
+            }
+          },
+          "hosts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProxyHost"
+            }
+          }
+        }
+      },
+      "Outpost": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "managed",
+          "healthy",
+          "outdated"
+        ],
+        "properties": {
+          "healthy": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "description": "`proxy`, `ldap`, `radius`, `rac`"
+          },
+          "last_seen": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "managed": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "outdated": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "Overview": {
         "type": "object",
         "required": [
@@ -4547,6 +5529,58 @@
           }
         }
       },
+      "ProxyHost": {
+        "type": "object",
+        "required": [
+          "id",
+          "domains",
+          "forward",
+          "enabled",
+          "ssl_forced"
+        ],
+        "properties": {
+          "certificate_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "forward": {
+            "type": "string",
+            "description": "`http://10.0.20.108:8096`"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "online": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Nginx accepted the host's config (`meta.nginx_online`), when reported."
+          },
+          "ssl_forced": {
+            "type": "boolean"
+          }
+        }
+      },
       "QbittorrentData": {
         "type": "object",
         "required": [
@@ -4738,6 +5772,22 @@
           "retry",
           "start_guest"
         ]
+      },
+      "QuietHours": {
+        "type": "object",
+        "description": "Quiet hours in the server's local time, `HH:MM`. The window may cross midnight.",
+        "required": [
+          "start",
+          "end"
+        ],
+        "properties": {
+          "end": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string"
+          }
+        }
       },
       "RecentEntry": {
         "type": "object",
@@ -5096,7 +6146,12 @@
           "prowlarr",
           "bazarr",
           "qbittorrent",
-          "navidrome"
+          "navidrome",
+          "technitium",
+          "nginx_proxy_manager",
+          "authentik",
+          "nextcloud",
+          "wireguard"
         ]
       },
       "ServiceRef": {
@@ -5713,6 +6768,159 @@
           "error"
         ]
       },
+      "TechnitiumData": {
+        "type": "object",
+        "required": [
+          "total_queries",
+          "blocked",
+          "cached",
+          "clients",
+          "block_list_zones",
+          "chart",
+          "top_clients",
+          "top_domains",
+          "top_blocked",
+          "blocking_enabled"
+        ],
+        "properties": {
+          "block_list_zones": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "blocked": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "blocking_enabled": {
+            "type": "boolean"
+          },
+          "cached": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "chart": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DnsPoint"
+            },
+            "description": "Queries per interval over the last 24 h."
+          },
+          "clients": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "paused_until": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Set while blocking is paused; it resumes by itself at this time."
+          },
+          "top_blocked": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopEntry"
+            }
+          },
+          "top_clients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopEntry"
+            }
+          },
+          "top_domains": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopEntry"
+            }
+          },
+          "total_queries": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TestAlert": {
+        "type": "object",
+        "required": [
+          "channel"
+        ],
+        "properties": {
+          "channel": {
+            "type": "string",
+            "description": "`ntfy` or `push`."
+          }
+        }
+      },
+      "TestAlertResult": {
+        "type": "object",
+        "required": [
+          "ok",
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ThrottleSettings": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "only_remote": {
+            "type": "boolean",
+            "description": "Count only streams from outside the LAN (Jellyfin's \"remote\" sessions).",
+            "default": false
+          },
+          "qbittorrent_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "qBittorrent service to throttle; the first one when unset.",
+            "default": null
+          }
+        }
+      },
+      "ThrottleStatus": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ThrottleSettings"
+          },
+          {
+            "type": "object",
+            "required": [
+              "engaged",
+              "streams"
+            ],
+            "properties": {
+              "engaged": {
+                "type": "boolean",
+                "description": "The limits are on because of auto-throttle right now."
+              },
+              "streams": {
+                "type": "integer",
+                "description": "Streams counted right now (after the remote-only filter).",
+                "minimum": 0
+              }
+            }
+          }
+        ],
+        "description": "Current status for the qBittorrent page."
+      },
       "TimelineBucket": {
         "type": "object",
         "required": [
@@ -5735,6 +6943,31 @@
             ],
             "format": "double",
             "description": "Uptime in the hour, percent."
+          }
+        }
+      },
+      "TopEntry": {
+        "type": "object",
+        "required": [
+          "name",
+          "hits"
+        ],
+        "properties": {
+          "domain": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Client host name from reverse lookup, when known."
+          },
+          "hits": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string",
+            "description": "Domain name, or client IP for top clients."
           }
         }
       },
@@ -6020,6 +7253,40 @@
           }
         }
       },
+      "TypeSettings": {
+        "type": "object",
+        "description": "Settings for one alert type.",
+        "required": [
+          "alert_type",
+          "enabled",
+          "channels"
+        ],
+        "properties": {
+          "alert_type": {
+            "$ref": "#/components/schemas/AlertType"
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "`ntfy` and/or `push`."
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "quiet_hours": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/QuietHours"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "UpdateService": {
         "type": "object",
         "description": "Partial update. Absent fields stay as they are; `null` clears optional fields.",
@@ -6196,6 +7463,119 @@
           },
           "title": {
             "type": "string"
+          }
+        }
+      },
+      "WgInterface": {
+        "type": "object",
+        "required": [
+          "name",
+          "public_key"
+        ],
+        "properties": {
+          "listen_port": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "public_key": {
+            "type": "string"
+          }
+        }
+      },
+      "WgPeer": {
+        "type": "object",
+        "required": [
+          "interface",
+          "public_key",
+          "allowed_ips",
+          "online",
+          "rx_bytes",
+          "tx_bytes"
+        ],
+        "properties": {
+          "allowed_ips": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "endpoint": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interface": {
+            "type": "string"
+          },
+          "last_handshake": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "From the agent's names file, when set."
+          },
+          "online": {
+            "type": "boolean"
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "rx_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "tx_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "WireguardData": {
+        "type": "object",
+        "required": [
+          "agent_installed",
+          "interfaces",
+          "peers"
+        ],
+        "properties": {
+          "agent_installed": {
+            "type": "boolean",
+            "description": "False when no agent answers: the page shows install steps."
+          },
+          "agent_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interfaces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WgInterface"
+            }
+          },
+          "peers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WgPeer"
+            }
           }
         }
       }

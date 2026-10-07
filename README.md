@@ -339,18 +339,18 @@ Backend module + web page for each, in this order. Each needs demo data and wire
 
 ### Phase 4 – Network, infrastructure, alerts and automation
 
-- [ ] Technitium DNS (stats, chart, top lists, pause blocking with countdown, resume).
-- [ ] Nginx Proxy Manager (hosts, certificate expiry).
-- [ ] Authentik (logins, failed logins, events, outposts).
-- [ ] Nextcloud (serverinfo).
-- [ ] lxc-updater: **first ask the owner what it is and what it outputs**; then integrate (pending updates per container + badges on guest rows), or skip with a note.
-- [ ] `agent/`: tiny Rust binary for the WireGuard container that runs `wg show all dump` and exposes peers on `GET /peers` with a shared token. Install script + systemd unit. WireGuard module consumes it; "agent not installed" state.
-- [ ] Alerts engine: service down, disk ≥ 90 %, download failed, certificate < 14 d, new request, node offline. Per-type settings, quiet hours, deduplication.
-- [ ] Notification channel abstraction (`NotificationChannel` trait) so alerts can go to several channels; per alert type the owner picks ntfy, iOS push or both, and each user/device can mute types.
-- [ ] ntfy delivery.
-- [ ] Automation: auto-throttle qBittorrent (alt speed on) while Jellyfin has active streams (option: only remote streams), with hysteresis so it doesn't flap.
-- [ ] Backup status: last vzdump job per guest on guest detail and Health.
-- [ ] Launcher view.
+- [x] Technitium DNS (stats, chart, top lists, pause blocking with countdown, resume).
+- [x] Nginx Proxy Manager (hosts, certificate expiry).
+- [x] Authentik (logins, failed logins, events, outposts).
+- [x] Nextcloud (serverinfo).
+- [x] lxc-updater: **first ask the owner what it is and what it outputs**; then integrate (pending updates per container + badges on guest rows), or skip with a note. **Skipped for now at the owner's request (7 Oct 2026); see the Decisions log.**
+- [x] `agent/`: tiny Rust binary for the WireGuard container that runs `wg show all dump` and exposes peers on `GET /peers` with a shared token. Install script + systemd unit. WireGuard module consumes it; "agent not installed" state.
+- [x] Alerts engine: service down, disk ≥ 90 %, download failed, certificate < 14 d, new request, node offline. Per-type settings, quiet hours, deduplication.
+- [x] Notification channel abstraction (`NotificationChannel` trait) so alerts can go to several channels; per alert type the owner picks ntfy, iOS push or both, and each user/device can mute types.
+- [x] ntfy delivery.
+- [x] Automation: auto-throttle qBittorrent (alt speed on) while Jellyfin has active streams (option: only remote streams), with hysteresis so it doesn't flap.
+- [x] Backup status: last vzdump job per guest on guest detail and Health.
+- [x] Launcher view.
 
 **Definition of done:** all modules from the catalogue exist and can be toggled; alerts arrive in ntfy; auto-throttle works.
 
@@ -454,3 +454,16 @@ Same web codebase; this phase makes it a first-class mobile app.
 | 2026-10-07 | Demo mode now seeds 9 media services sharing one simulated state (torrents progress, approvals move requests on); the demo has 5 problems (Podgrab slow, draw.io down, Sonarr indexer warning, Prowlarr failing indexer, an errored torrent) | Shows every media state and problem path |
 | 2026-10-07 | qBittorrent auto-throttle while Jellyfin streams stays in phase 4 (Automation) as listed there | Belongs with the alerts/automation engine |
 | 2026-10-07 | Phase 3 verified in demo mode with a scripted headless-Chromium run over the Media page and every media service page (delete dialog, Seerr approve, global search, add-service forms) and an axe-core WCAG 2.1 AA audit with no violations on those pages | Same approach as phase 2; mobile layouts are phase 5 |
+| 2026-10-07 | Phase 4 APIs checked against upstream sources: Technitium `APIDOCS.md` and `WebServiceSettingsApi.cs` (v15+, bearer token), Nginx Proxy Manager `backend/schema` OpenAPI, Authentik `schema.yml`, Nextcloud serverinfo README and `ApiController.php` (`NC-Token`), wg(8) for `wg show all dump`, ntfy "Publishing" docs (JSON publish to the root URL), pve-manager `VZDump.pm`/`API2/VZDump.pm`/`API2/Tasks.pm` and pve-storage `Content.pm`. Not yet run against the owner's services, so the phase 4 definition of done (alerts arriving in the real ntfy, auto-throttle on the real qBittorrent) still needs a homelab check | README rule 4; pve.proxmox.com is blocked from the build environment, so the Proxmox sources on GitHub were used |
+| 2026-10-07 | lxc-updater: skipped for now at the owner's request. It stays in the catalogue without an integration (add it as a health check) | Owner's answer to the phase 4 question |
+| 2026-10-07 | Technitium pause/resume use `settings/temporaryDisableBlocking?minutes=` and `settings/set?enableBlocking=true`; the token needs Dashboard: View and Settings: View + Modify. Paused or disabled blocking shows as a warning | The documented calls; ad blocking off is worth noticing |
+| 2026-10-07 | Nginx Proxy Manager uses an email + password (JWT from `POST /api/tokens`, renewed before expiry or on 401); certificate `meta` is never read (it can hold private keys). Accepts old `0/1` booleans and `YYYY-MM-DD HH:MM:SS` dates | NPM has no API keys; older releases differ in shape |
+| 2026-10-07 | Nextcloud accepts either an admin username + app password (Basic) or the serverinfo token (`NC-Token`, used when the username is empty) | Both are documented; the token avoids an admin password |
+| 2026-10-07 | WireGuard agent: std-only Rust binary on port 9587, plain HTTP with a ≥ 32-character bearer token, optional client IP allow-list, peer names from an optional file; private and preshared keys are dropped while parsing. systemd grants only `CAP_NET_ADMIN`. No agent answering = "agent not installed" (unknown health, not a problem) | Tiny and auditable; TLS would need certificate handling in every container, so access is limited by token + allow-list on the LAN |
+| 2026-10-07 | Alerts: one active alert per dedup key, resolved when the condition clears (alerts for a service whose data is stale are frozen, not resolved); down/offline wait 60 s; new requests fire once and only for requests from the last 24 h; recovery messages for delivered down/offline alerts; max 10 sends a minute. History kept 30 days after resolving (migration 0002) | No floods on start, no flapping, no duplicate pages |
+| 2026-10-07 | Quiet hours are per alert type in the server's local time zone; during quiet hours alerts are recorded and shown in the app but not sent. ntfy access tokens come from `QUORUM_NTFY_TOKEN`, not the config file. The `push` channel is listed but reports "not set up" until the iPhone app (phase 6) | Keeps secrets out of config files; one place to set the time zone |
+| 2026-10-07 | Mutes are per user (web) or per paired device and hide in-app alert toasts now (and will filter iOS push later). ntfy topics are shared, so mutes don't apply to ntfy | ntfy has no per-user delivery |
+| 2026-10-07 | Auto-throttle: on after 20 s of streams (optionally remote only, paused streams don't count), off 5 min after the last stream; only lifts limits it set itself and backs off when the owner turns them off by hand; every switch is in the activity log. Default off | Hysteresis per the README; never fights the owner |
+| 2026-10-07 | Backup status comes from `vzdump` tasks (single-guest tasks by id, multi-guest jobs by parsing their logs), last 35 days, cached 5 min; Health warns when a guest's last backup failed. Listing backup files was rejected: it needs `Datastore.AllocateSpace` + `VM.Backup`, outside the read-only token role | Security rules keep the Proxmox token minimal |
+| 2026-10-07 | Launcher is its own page (`/launcher`, linked from Services, `g o`) rather than a Home mode | Optional per the README; Home stays the status view |
+| 2026-10-07 | Phase 4 verified in demo mode with a scripted headless-Chromium run (new service pages, pause blocking, alerts list/settings with a live alert, auto-throttle switch, Health backups, launcher) and an axe-core WCAG 2.1 AA audit with no violations on those pages | Same approach as phases 2 and 3 |

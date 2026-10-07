@@ -1,5 +1,14 @@
 <script lang="ts">
-	import type { QbittorrentData, ServiceView, Torrent } from '#lib/api/client.js';
+	import {
+		api,
+		errorMessage,
+		unwrap,
+		type QbittorrentData,
+		type Schemas,
+		type ServiceView,
+		type Torrent
+	} from '#lib/api/client.js';
+	import { toasts } from '#lib/toasts.svelte.js';
 	import { runAction } from '#lib/actions.svelte.js';
 	import { bytes, duration, rate } from '#lib/format.js';
 	import { session } from '#lib/session.svelte.js';
@@ -13,6 +22,36 @@
 	import TimeChart from '../TimeChart.svelte';
 
 	let { service, data }: { service: ServiceView; data: QbittorrentData } = $props();
+
+	// Auto-throttle (alternative limits on while Jellyfin streams); the owner changes it.
+	let throttle = $state<Schemas['ThrottleStatus'] | null>(null);
+	const isOwner = $derived(session.me?.user.role === 'owner');
+	async function loadThrottle() {
+		const r = await api.GET('/automation/throttle');
+		if (r.data) throttle = r.data;
+	}
+	$effect(() => {
+		// Refresh with each snapshot (alt speed may have been switched by the automation).
+		void data.alt_speed;
+		void loadThrottle();
+	});
+	async function saveThrottle(patch: Partial<Schemas['ThrottleSettings']>) {
+		if (!throttle) return;
+		try {
+			throttle = unwrap(
+				await api.PUT('/automation/throttle', {
+					body: {
+						enabled: throttle.enabled,
+						only_remote: throttle.only_remote,
+						qbittorrent_id: throttle.qbittorrent_id ?? null,
+						...patch
+					}
+				})
+			);
+		} catch (e) {
+			toasts.push({ kind: 'error', title: "Couldn't change auto-throttle", sub: errorMessage(e) });
+		}
+	}
 
 	type Filter = 'all' | 'downloading' | 'seeding' | 'stopped' | 'errored';
 	let filter = $state<Filter>('all');
@@ -105,6 +144,31 @@
 		/>
 		<Icon name="ph-gauge" />Alternative speed limits
 	</label>
+	<label class="alt">
+		<Switch
+			label="Auto-throttle while Jellyfin streams"
+			checked={throttle?.enabled ?? false}
+			disabled={!isOwner || !throttle}
+			onchange={(on) => void saveThrottle({ enabled: on })}
+		/>
+		Auto-throttle while streaming
+	</label>
+	{#if throttle?.enabled}
+		<label class="check caption">
+			<input
+				type="checkbox"
+				checked={throttle.only_remote}
+				disabled={!isOwner}
+				onchange={(e) => void saveThrottle({ only_remote: e.currentTarget.checked })}
+			/>
+			Only remote streams
+		</label>
+		<span class="caption faint"
+			>{throttle.engaged
+				? `Throttling · ${throttle.streams} stream${throttle.streams === 1 ? '' : 's'}`
+				: `${throttle.streams} stream${throttle.streams === 1 ? '' : 's'} now`}</span
+		>
+	{/if}
 	<span class="spacer"></span>
 	<button
 		class="btn btn-secondary btn-sm"
@@ -270,6 +334,11 @@
 	.wrap {
 		gap: 8px;
 		flex-wrap: wrap;
+	}
+	.check {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 	}
 	.alt {
 		display: inline-flex;

@@ -4,7 +4,7 @@ use serde::Serialize;
 use tokio::sync::broadcast;
 use utoipa::ToSchema;
 
-use crate::db::ActivityEntry;
+use crate::db::{ActivityEntry, Alert};
 use crate::modules::{Health, ServiceSnapshot};
 
 /// An event on `GET /api/v1/events`. The SSE event name is the `event` field;
@@ -18,7 +18,7 @@ pub enum Event {
     Health(HealthChange),
     /// A user action started or finished (mirrors the activity log).
     Action(ActionEvent),
-    /// An alert fired (alerts engine arrives in phase 4).
+    /// An alert fired or was resolved (`alert.resolved_at` set).
     Alert(AlertEvent),
 }
 
@@ -39,9 +39,9 @@ pub struct ActionEvent {
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct AlertEvent {
+    /// Service the alert belongs to, if any (used for permission filtering).
     pub service_id: Option<String>,
-    pub title: String,
-    pub message: String,
+    pub alert: Alert,
 }
 
 impl Event {
