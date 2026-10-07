@@ -15,10 +15,10 @@
 	import ServiceIcon from '#lib/components/ServiceIcon.svelte';
 	import SkeletonCard from '#lib/components/SkeletonCard.svelte';
 	import Switch from '#lib/components/Switch.svelte';
-	import { bytes, pct, rate, usedOf } from '#lib/format.js';
+	import { bytes, count, pct, rate, usedOf } from '#lib/format.js';
 	import { HEALTH } from '#lib/health.js';
 	import { live, refetchOnLive } from '#lib/live.svelte.js';
-	import type { QbittorrentData } from '#lib/api/client.js';
+	import type { QbittorrentData, TechnitiumData } from '#lib/api/client.js';
 	import { power } from '#lib/power.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 	import { toasts } from '#lib/toasts.svelte.js';
@@ -109,6 +109,11 @@
 	function qbt(id: string): QbittorrentData | null {
 		const d = live.snapshots[id]?.data;
 		return d?.type === 'qbittorrent' ? d.value : null;
+	}
+
+	function dns(id: string): TechnitiumData | null {
+		const d = live.snapshots[id]?.data;
+		return d?.type === 'technitium' ? d.value : null;
 	}
 
 	const byId = $derived(Object.fromEntries(session.services.map((s) => [s.id, s])));
@@ -300,6 +305,22 @@
 								]}
 								chart={q.history.map((p) => p.dl)}
 								chartLabel="Download · 10 min"
+							/>
+						{:else if h.service.kind === 'technitium' && dns(h.service.id)}
+							{@const d = dns(h.service.id)!}
+							<LargeCard
+								service={h.service}
+								{href}
+								stats={[
+									{ label: 'Queries · 24 h', value: count(d.total_queries) },
+									{
+										label: 'Blocked',
+										value: d.total_queries ? pct(d.blocked / d.total_queries) : '–'
+									},
+									{ label: 'Clients', value: `${d.clients}` }
+								]}
+								chart={d.chart.map((p) => p.blocked)}
+								chartLabel="Blocked · 24 h"
 							/>
 						{:else if h.service.level === 'health_check'}
 							<HealthCheckCard service={h.service} uptime7d={h.detail} {href} />

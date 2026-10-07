@@ -339,10 +339,10 @@ Backend module + web page for each, in this order. Each needs demo data and wire
 
 ### Phase 4 – Network, infrastructure, alerts and automation
 
-- [ ] Technitium DNS (stats, chart, top lists, pause blocking with countdown, resume).
-- [ ] Nginx Proxy Manager (hosts, certificate expiry).
-- [ ] Authentik (logins, failed logins, events, outposts).
-- [ ] Nextcloud (serverinfo).
+- [x] Technitium DNS (stats, chart, top lists, pause blocking with countdown, resume).
+- [x] Nginx Proxy Manager (hosts, certificate expiry).
+- [x] Authentik (logins, failed logins, events, outposts).
+- [x] Nextcloud (serverinfo).
 - [ ] lxc-updater: **first ask the owner what it is and what it outputs**; then integrate (pending updates per container + badges on guest rows), or skip with a note.
 - [ ] `agent/`: tiny Rust binary for the WireGuard container that runs `wg show all dump` and exposes peers on `GET /peers` with a shared token. Install script + systemd unit. WireGuard module consumes it; "agent not installed" state.
 - [ ] Alerts engine: service down, disk ≥ 90 %, download failed, certificate < 14 d, new request, node offline. Per-type settings, quiet hours, deduplication.

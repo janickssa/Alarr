@@ -40,6 +40,10 @@ export type MediaRequest = Schemas['MediaRequest'];
 export type ProwlarrData = Schemas['ProwlarrData'];
 export type BazarrData = Schemas['BazarrData'];
 export type NavidromeData = Schemas['NavidromeData'];
+export type TechnitiumData = Schemas['TechnitiumData'];
+export type NpmData = Schemas['NpmData'];
+export type AuthentikData = Schemas['AuthentikData'];
+export type NextcloudData = Schemas['NextcloudData'];
 export type MediaOverview = Schemas['MediaOverview'];
 
 /** An error response from the API, with the server's message. */

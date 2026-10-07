@@ -14,14 +14,18 @@
 	} from '#lib/api/client.js';
 	import ErrorState from '#lib/components/ErrorState.svelte';
 	import ArrBody from '#lib/components/service/ArrBody.svelte';
+	import AuthentikBody from '#lib/components/service/AuthentikBody.svelte';
 	import BazarrBody from '#lib/components/service/BazarrBody.svelte';
 	import HealthCheckBody from '#lib/components/service/HealthCheckBody.svelte';
 	import JellyfinBody from '#lib/components/service/JellyfinBody.svelte';
 	import NavidromeBody from '#lib/components/service/NavidromeBody.svelte';
+	import NextcloudBody from '#lib/components/service/NextcloudBody.svelte';
+	import NpmBody from '#lib/components/service/NpmBody.svelte';
 	import ProwlarrBody from '#lib/components/service/ProwlarrBody.svelte';
 	import QbittorrentBody from '#lib/components/service/QbittorrentBody.svelte';
 	import SeerrBody from '#lib/components/service/SeerrBody.svelte';
 	import ServiceHeader from '#lib/components/service/ServiceHeader.svelte';
+	import TechnitiumBody from '#lib/components/service/TechnitiumBody.svelte';
 	import SkeletonCard from '#lib/components/SkeletonCard.svelte';
 	import EmptyState from '#lib/components/EmptyState.svelte';
 	import { refetchOnLive } from '#lib/live.svelte.js';
@@ -123,6 +127,14 @@
 				<BazarrBody {service} data={data.value} />
 			{:else if data.type === 'navidrome'}
 				<NavidromeBody {service} data={data.value} />
+			{:else if data.type === 'technitium'}
+				<TechnitiumBody {service} data={data.value} />
+			{:else if data.type === 'npm'}
+				<NpmBody data={data.value} />
+			{:else if data.type === 'authentik'}
+				<AuthentikBody data={data.value} />
+			{:else if data.type === 'nextcloud'}
+				<NextcloudBody data={data.value} />
 			{/if}
 		{/if}
 	{/if}
