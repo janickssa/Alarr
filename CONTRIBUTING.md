@@ -8,6 +8,13 @@ The [README](README.md) is the single source of scope, phases, architecture and 
 - Never commit secrets, real IPs or hostnames.
 - Record ambiguous choices in the README's Decisions log.
 
+## Running locally
+
+```sh
+cd backend && cargo run -- --demo        # fake data, sign in as demo/demo
+cd web && npm run dev                    # web dev server
+```
+
 ## Local checks (same as CI)
 
 Backend (`backend/`):
