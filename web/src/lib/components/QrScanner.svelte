@@ -74,7 +74,6 @@
 </script>
 
 <div class="scanner">
-	<!-- svelte-ignore a11y_media_has_caption -->
 	<video bind:this={video} playsinline muted aria-label="Camera preview"></video>
 	<div class="frame" aria-hidden="true"></div>
 </div>
