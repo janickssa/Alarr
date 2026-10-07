@@ -42,9 +42,12 @@ jobs:
         if: always()
         working-directory: ios/QuorumKit
         run: |
-          f="$(find .build -path '*OpenAPIGenerator*' -name 'Types.swift' | head -1)"
-          echo "file: $f"
-          [ -n "$f" ] && grep -nE '^\s*(public )?(struct|enum|indirect enum|case [a-zA-Z_]+\(|case [a-zA-Z_]+$|var [a-zA-Z_]+: |func [a-zA-Z_]+\()' "$f" | grep -vE 'CodingKeys|init\(from|encode\(to' | sed -E 's/^ +//' || true
+          d="$(dirname "$(find .build -path '*OpenAPIGenerator*' -name 'Types.swift' | head -1)")"
+          for f in "$d/Types+Components+Schemas.swift" "$d/Types+Operations.swift"; do
+            echo "=== $(basename "$f")"
+            grep -E '^\s*(public )?(struct|enum|indirect enum|var|case [a-zA-Z_]+\(|case [a-zA-Z_]+$)' "$f" \
+              | grep -vE 'CodingKeys|codingKeys' | sed -E 's/^ +//; s/public //' || true
+          done
       - name: Generate the Xcode project
         if: hashFiles('ios/project.yml') != ''
         working-directory: ios

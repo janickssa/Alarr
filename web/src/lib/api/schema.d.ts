@@ -1039,7 +1039,8 @@ export interface components {
             health_path?: string | null;
             /** @description Phosphor icon name. */
             icon: string;
-            kind?: components["schemas"]["ServiceKind"] | null;
+            /** @description Module kind used for this preset. `None` = module not implemented yet. */
+            kind?: components["schemas"]["ServiceKind"];
             /** @description Integration level from the design catalogue (full, read-only, health). */
             level: string;
             name: string;
@@ -1123,7 +1124,7 @@ export interface components {
         };
         CreateService: {
             base_url?: string | null;
-            category?: components["schemas"]["Category"] | null;
+            category?: components["schemas"]["Category"];
             enabled?: boolean | null;
             /** @description Slug (`a-z`, `0-9`, `-`). Default: derived from the name. */
             id?: string | null;
@@ -1286,10 +1287,12 @@ export interface components {
             total: number;
         };
         GuestDetail: {
-            backup?: components["schemas"]["GuestBackup"] | null;
+            /** @description Latest backup of this guest, including backup jobs over several guests. */
+            backup?: components["schemas"]["GuestBackup"];
             guest: components["schemas"]["Guest"];
             ha_managed: boolean;
-            last_backup?: components["schemas"]["Task"] | null;
+            /** @description Latest finished backup (`vzdump`) task that names this guest. */
+            last_backup?: components["schemas"]["Task"];
             linked_services: components["schemas"]["ServiceRef"][];
             /** @description QEMU guest state (`running`, `paused`, …) from the live status. */
             qmp_status?: string | null;
@@ -1304,7 +1307,7 @@ export interface components {
         Health: "healthy" | "warning" | "down" | "in_progress" | "disabled" | "unknown";
         HealthChange: {
             health: components["schemas"]["Health"];
-            previous?: components["schemas"]["Health"] | null;
+            previous?: components["schemas"]["Health"];
             reason?: string | null;
             service_id: string;
         };
@@ -1357,8 +1360,9 @@ export interface components {
             tls_fingerprint: string | null;
         };
         HealthEntry: {
-            backup?: components["schemas"]["GuestBackup"] | null;
-            guest_type?: components["schemas"]["GuestType"] | null;
+            /** @description Guests: latest backup in the last 35 days. */
+            backup?: components["schemas"]["GuestBackup"];
+            guest_type?: components["schemas"]["GuestType"];
             health: components["schemas"]["Health"];
             health_reason?: string | null;
             /** @description `svc:<id>` or `guest:<vmid>`. */
@@ -1868,7 +1872,7 @@ export interface components {
         };
         Problem: {
             health: components["schemas"]["Health"];
-            quick_action?: components["schemas"]["QuickAction"] | null;
+            quick_action?: components["schemas"]["QuickAction"];
             reason?: string | null;
             service_id?: string | null;
             title: string;
@@ -2074,7 +2078,8 @@ export interface components {
             version: string;
         };
         ServiceHistory: {
-            last_incident?: components["schemas"]["Incident"] | null;
+            /** @description Latest run of `down` minutes in the last 7 days. */
+            last_incident?: components["schemas"]["Incident"];
             /** @description Per-minute samples for the last 24 h, oldest first. */
             points: components["schemas"]["HistoryPoint"][];
             /**
@@ -2131,7 +2136,8 @@ export interface components {
             id: string;
             kind: components["schemas"]["ServiceKind"];
             level: components["schemas"]["IntegrationLevel"];
-            linked_guest?: components["schemas"]["LinkedGuest"] | null;
+            /** @description The linked guest (by config or `svc-<id>` tag), if Proxmox knows it. */
+            linked_guest?: components["schemas"]["LinkedGuest"];
             /**
              * Format: int32
              * @description Container/VM explicitly linked in the service config.
@@ -2247,7 +2253,7 @@ export interface components {
             subtitle?: string | null;
             /** @description Movie title or series name. */
             title: string;
-            transcode?: components["schemas"]["Transcode"] | null;
+            transcode?: components["schemas"]["Transcode"];
             user: string;
         };
         SubtitleEvent: {
@@ -2443,12 +2449,12 @@ export interface components {
             /** @description `ntfy` and/or `push`. */
             channels: string[];
             enabled: boolean;
-            quiet_hours?: components["schemas"]["QuietHours"] | null;
+            quiet_hours?: components["schemas"]["QuietHours"];
         };
         /** @description Partial update. Absent fields stay as they are; `null` clears optional fields. */
         UpdateService: {
             base_url?: string | null;
-            category?: components["schemas"]["Category"] | null;
+            category?: components["schemas"]["Category"];
             /** Format: int32 */
             linked_vmid?: number | null;
             name?: string | null;
@@ -2468,7 +2474,7 @@ export interface components {
             can_act?: boolean | null;
             /** @description Set a new password (signs the user out everywhere on the web). */
             password?: string | null;
-            role?: components["schemas"]["Role"] | null;
+            role?: components["schemas"]["Role"];
         };
         User: {
             /** @description Guests only: service ids the guest may see. */
@@ -2578,7 +2584,8 @@ export interface components {
             transcodes: number;
         };
         WidgetSummary: {
-            downloads?: components["schemas"]["WidgetDownloads"] | null;
+            /** @description `null` without a visible qBittorrent. */
+            downloads?: components["schemas"]["WidgetDownloads"];
             /** Format: date-time */
             generated_at: string;
             nodes: components["schemas"]["NodeSummary"][];
@@ -2586,7 +2593,8 @@ export interface components {
             problems: components["schemas"]["Problem"][];
             services: components["schemas"]["WidgetService"][];
             status: components["schemas"]["StatusSummary"];
-            streams?: components["schemas"]["WidgetStreams"] | null;
+            /** @description `null` without a visible Jellyfin or Navidrome. */
+            streams?: components["schemas"]["WidgetStreams"];
         };
         WireguardData: {
             /** @description False when no agent answers: the page shows install steps. */

@@ -132,7 +132,7 @@ async fn public_endpoints_and_auth_required() {
 
 #[test]
 fn openapi_operation_ids_are_unique() {
-    let spec = serde_json::to_value(quorum_server::api::openapi()).unwrap();
+    let spec = quorum_server::api::openapi();
     let mut seen = std::collections::HashSet::new();
     for item in spec["paths"].as_object().unwrap().values() {
         for op in item.as_object().unwrap().values() {

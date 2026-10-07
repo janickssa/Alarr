@@ -29,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Some("openapi") => {
             let spec = quorum_server::api::openapi();
-            println!("{}", spec.to_pretty_json()?);
+            println!("{}", serde_json::to_string_pretty(&spec)?);
             Ok(())
         }
         None => {

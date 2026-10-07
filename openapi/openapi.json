@@ -2758,15 +2758,8 @@
             "description": "Phosphor icon name."
           },
           "kind": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ServiceKind",
-                "description": "Module kind used for this preset. `None` = module not implemented yet."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/ServiceKind",
+            "description": "Module kind used for this preset. `None` = module not implemented yet."
           },
           "level": {
             "type": "string",
@@ -3036,14 +3029,7 @@
             ]
           },
           "category": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Category"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/Category"
           },
           "enabled": {
             "type": [
@@ -3569,15 +3555,8 @@
         ],
         "properties": {
           "backup": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/GuestBackup",
-                "description": "Latest backup of this guest, including backup jobs over several guests."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/GuestBackup",
+            "description": "Latest backup of this guest, including backup jobs over several guests."
           },
           "guest": {
             "$ref": "#/components/schemas/Guest"
@@ -3586,15 +3565,8 @@
             "type": "boolean"
           },
           "last_backup": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Task",
-                "description": "Latest finished backup (`vzdump`) task that names this guest."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/Task",
+            "description": "Latest finished backup (`vzdump`) task that names this guest."
           },
           "linked_services": {
             "type": "array",
@@ -3656,14 +3628,7 @@
             "$ref": "#/components/schemas/Health"
           },
           "previous": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Health"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/Health"
           },
           "reason": {
             "type": [
@@ -3777,25 +3742,11 @@
         ],
         "properties": {
           "backup": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/GuestBackup",
-                "description": "Guests: latest backup in the last 35 days."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/GuestBackup",
+            "description": "Guests: latest backup in the last 35 days."
           },
           "guest_type": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/GuestType"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/GuestType"
           },
           "health": {
             "$ref": "#/components/schemas/Health"
@@ -5537,14 +5488,7 @@
             "$ref": "#/components/schemas/Health"
           },
           "quick_action": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/QuickAction"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/QuickAction"
           },
           "reason": {
             "type": [
@@ -6233,15 +6177,8 @@
         ],
         "properties": {
           "last_incident": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Incident",
-                "description": "Latest run of `down` minutes in the last 7 days."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/Incident",
+            "description": "Latest run of `down` minutes in the last 7 days."
           },
           "points": {
             "type": "array",
@@ -6426,15 +6363,8 @@
             "$ref": "#/components/schemas/IntegrationLevel"
           },
           "linked_guest": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/LinkedGuest",
-                "description": "The linked guest (by config or `svc-<id>` tag), if Proxmox knows it."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/LinkedGuest",
+            "description": "The linked guest (by config or `svc-<id>` tag), if Proxmox knows it."
           },
           "linked_vmid": {
             "type": [
@@ -6782,14 +6712,7 @@
             "description": "Movie title or series name."
           },
           "transcode": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Transcode"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/Transcode"
           },
           "user": {
             "type": "string"
@@ -7410,14 +7333,7 @@
             "type": "boolean"
           },
           "quiet_hours": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/QuietHours"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/QuietHours"
           }
         }
       },
@@ -7432,14 +7348,7 @@
             ]
           },
           "category": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Category"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/Category"
           },
           "linked_vmid": {
             "type": [
@@ -7514,14 +7423,7 @@
             "description": "Set a new password (signs the user out everywhere on the web)."
           },
           "role": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Role"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/Role"
           }
         }
       },
@@ -7861,15 +7763,8 @@
         ],
         "properties": {
           "downloads": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/WidgetDownloads",
-                "description": "`null` without a visible qBittorrent."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/WidgetDownloads",
+            "description": "`null` without a visible qBittorrent."
           },
           "generated_at": {
             "type": "string",
@@ -7898,15 +7793,8 @@
             "$ref": "#/components/schemas/StatusSummary"
           },
           "streams": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/WidgetStreams",
-                "description": "`null` without a visible Jellyfin or Navidrome."
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/WidgetStreams",
+            "description": "`null` without a visible Jellyfin or Navidrome."
           }
         }
       },

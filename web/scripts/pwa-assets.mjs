@@ -1,7 +1,11 @@
 // Renders the PWA icons and iOS splash screens from the design (batch 1, board 1j) with
-// Chromium. Output goes to static/icons and static/splash and is committed.
+// Chromium. Output goes to static/icons and static/splash and is committed, plus the iPhone
+// app icon (1024 px) in ios/Quorum/Assets.xcassets.
 //
 //   NODE_PATH=$(npm root -g) node scripts/pwa-assets.mjs     (needs `playwright` installed)
+//
+// App Store icons must not have an alpha channel: the iOS icon is rendered as a JPEG and
+// converted with `python3 -c "from PIL import Image; …"` (see ios/README.md).
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
@@ -21,11 +25,14 @@ const mark = (fill) => `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w
 const TILE = 'radial-gradient(120% 90% at 30% 15%,#353b80 0%,#262a60 40%,#161826 100%)';
 
 /** Icon tile: the mark fills 46 % (inside the 80 % maskable safe zone). */
-function iconHtml(size, radius) {
+function iconHtml(size, radius, edge = true) {
 	const m = Math.round(size * 0.46);
+	const shadow = edge
+		? `box-shadow:inset 0 0 0 ${Math.max(1, size / 120)}px rgba(181,171,252,.18);`
+		: '';
 	return `<html><body style="margin:0;background:transparent">
 <div style="width:${size}px;height:${size}px;border-radius:${radius}px;background:${TILE};
-box-shadow:inset 0 0 0 ${Math.max(1, size / 120)}px rgba(181,171,252,.18);display:grid;place-items:center">
+${shadow}display:grid;place-items:center">
 <div style="width:${m}px;height:${m}px;filter:drop-shadow(0 0 ${Math.max(1, size / 20)}px rgba(181,171,252,.45))">${mark('#262a60')}</div>
 </div></body></html>`;
 }
@@ -90,6 +97,8 @@ await shot(iconHtml(192, 0), 192, 192, `${root}/static/icons/maskable-192.png`);
 await shot(iconHtml(180, 0), 180, 180, `${root}/static/icons/apple-touch-icon.png`);
 await shot(iconHtml(32, 7), 32, 32, `${root}/static/icons/favicon-32.png`, true);
 await shot(iconHtml(16, 3), 16, 16, `${root}/static/icons/favicon-16.png`, true);
+// iOS draws its own edge; no inner line.
+await shot(iconHtml(1024, 0, false), 1024, 1024, `${root}/../ios/app-icon-1024.jpg`);
 writeFileSync(
 	`${root}/static/icons/favicon.svg`,
 	`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><defs><radialGradient id="g" cx="30%" cy="15%" r="120%"><stop offset="0" stop-color="#353b80"/><stop offset=".4" stop-color="#262a60"/><stop offset="1" stop-color="#161826"/></radialGradient></defs><rect width="48" height="48" rx="10" fill="url(#g)"/><g transform="translate(12.96 12.96) scale(.46)">${mark('#262a60').replace(/^<svg[^>]*>|<\/svg>$/g, '')}</g></svg>\n`
