@@ -70,7 +70,7 @@ pub static CATALOGUE: &[CatalogueEntry] = &[
     entry(
         "jellyfin",
         "Jellyfin",
-        None,
+        Some(ServiceKind::Jellyfin),
         "full",
         Media,
         "film-strip",
@@ -78,9 +78,19 @@ pub static CATALOGUE: &[CatalogueEntry] = &[
         Some(108),
     ),
     entry(
+        "jellyfin-public",
+        "Jellyfin (public)",
+        Some(ServiceKind::Jellyfin),
+        "full",
+        Media,
+        "film-strip",
+        305,
+        Some(105),
+    ),
+    entry(
         "seerr",
         "Seerr",
-        None,
+        Some(ServiceKind::Seerr),
         "full",
         Media,
         "ticket",
@@ -90,7 +100,7 @@ pub static CATALOGUE: &[CatalogueEntry] = &[
     entry(
         "sonarr",
         "Sonarr",
-        None,
+        Some(ServiceKind::Sonarr),
         "full",
         Media,
         "television-simple",
@@ -100,7 +110,7 @@ pub static CATALOGUE: &[CatalogueEntry] = &[
     entry(
         "radarr",
         "Radarr",
-        None,
+        Some(ServiceKind::Radarr),
         "full",
         Media,
         "film-slate",
@@ -110,7 +120,7 @@ pub static CATALOGUE: &[CatalogueEntry] = &[
     entry(
         "prowlarr",
         "Prowlarr",
-        None,
+        Some(ServiceKind::Prowlarr),
         "full",
         Media,
         "binoculars",
@@ -120,7 +130,7 @@ pub static CATALOGUE: &[CatalogueEntry] = &[
     entry(
         "bazarr",
         "Bazarr",
-        None,
+        Some(ServiceKind::Bazarr),
         "full",
         Media,
         "subtitles",
@@ -130,7 +140,7 @@ pub static CATALOGUE: &[CatalogueEntry] = &[
     entry(
         "qbittorrent",
         "qBittorrent",
-        None,
+        Some(ServiceKind::Qbittorrent),
         "full",
         Media,
         "arrows-down-up",
@@ -140,7 +150,7 @@ pub static CATALOGUE: &[CatalogueEntry] = &[
     entry(
         "navidrome",
         "Navidrome",
-        None,
+        Some(ServiceKind::Navidrome),
         "full",
         Media,
         "music-notes",
@@ -314,8 +324,8 @@ pub fn for_instance(preset: Option<&str>, kind: ServiceKind) -> &'static Catalog
     preset
         .and_then(find)
         .or_else(|| match kind {
-            ServiceKind::Proxmox => find("proxmox"),
             ServiceKind::HealthCheck => find("custom"),
+            other => find(other.as_str()),
         })
         .expect("catalogue has proxmox and custom entries")
 }

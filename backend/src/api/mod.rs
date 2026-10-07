@@ -4,6 +4,7 @@ pub mod activity;
 pub mod auth;
 pub mod error;
 pub mod events;
+pub mod media;
 pub mod overview;
 pub mod pairing;
 pub mod proxmox;
@@ -90,6 +91,7 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(pairing::router())
         .merge(services::router())
         .merge(overview::router())
+        .merge(media::router())
         .merge(proxmox::router())
         .merge(activity::router())
         .merge(settings::router())

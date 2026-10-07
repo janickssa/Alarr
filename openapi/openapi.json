@@ -405,6 +405,59 @@
         ]
       }
     },
+    "/media/overview": {
+      "get": {
+        "tags": [
+          "media"
+        ],
+        "summary": "Everything the Media page needs: now playing across Jellyfin instances and Navidrome,\nthe request tracker (Seerr → Sonarr/Radarr → qBittorrent → Jellyfin), the combined\ncalendar and recently added items.",
+        "operationId": "media_overview",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaOverview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/media/search": {
+      "get": {
+        "tags": [
+          "media"
+        ],
+        "summary": "Search movies (Radarr), series (Sonarr) and torrents (qBittorrent) by title.",
+        "operationId": "media_search",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaSearchResult"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/overview": {
       "get": {
         "tags": [
@@ -1291,6 +1344,106 @@
         }
       }
     },
+    "/services/{id}/image": {
+      "get": {
+        "tags": [
+          "services"
+        ],
+        "summary": "Proxy a poster or cover image from the service (keeps API keys on the server and\nworks without internet access).",
+        "operationId": "image",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "description": "Image path on the service, e.g. `/MediaCover/3/poster.jpg` or `/Items/{id}/Images/Primary`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image bytes",
+            "content": {
+              "image/*": {}
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/services/{id}/query/{name}": {
+      "get": {
+        "tags": [
+          "services"
+        ],
+        "summary": "A module query (read-only), e.g. `library` (Sonarr/Radarr) or `search?q=` (Seerr).\nThe response shape depends on the module and query.",
+        "operationId": "query",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Query result (JSON)",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/services/{id}/snapshot": {
       "get": {
         "tags": [
@@ -1763,6 +1916,78 @@
           }
         }
       },
+      "ArrData": {
+        "type": "object",
+        "required": [
+          "flavor",
+          "queue",
+          "calendar",
+          "missing",
+          "missing_total",
+          "health",
+          "disks",
+          "library_count",
+          "library_size"
+        ],
+        "properties": {
+          "calendar": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarItem"
+            },
+            "description": "From yesterday to 14 days ahead."
+          },
+          "disks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Disk"
+            }
+          },
+          "flavor": {
+            "$ref": "#/components/schemas/ArrFlavor"
+          },
+          "health": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HealthIssue"
+            }
+          },
+          "library_count": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "library_size": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MissingItem"
+            },
+            "description": "Newest 20 wanted (missing) items."
+          },
+          "missing_total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "queue": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QueueItem"
+            }
+          }
+        }
+      },
+      "ArrFlavor": {
+        "type": "string",
+        "enum": [
+          "sonarr",
+          "radarr"
+        ]
+      },
       "BackendInfo": {
         "type": "object",
         "required": [
@@ -1796,6 +2021,101 @@
             "format": "date-time"
           },
           "version": {
+            "type": "string"
+          }
+        }
+      },
+      "BazarrData": {
+        "type": "object",
+        "required": [
+          "missing_episodes",
+          "missing_movies",
+          "wanted",
+          "history"
+        ],
+        "properties": {
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubtitleEvent"
+            }
+          },
+          "missing_episodes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "missing_movies": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "wanted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WantedSubtitle"
+            }
+          }
+        }
+      },
+      "CalendarEntry": {
+        "type": "object",
+        "required": [
+          "service_id",
+          "flavor",
+          "item"
+        ],
+        "properties": {
+          "flavor": {
+            "$ref": "#/components/schemas/ArrFlavor"
+          },
+          "item": {
+            "$ref": "#/components/schemas/CalendarItem"
+          },
+          "service_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CalendarItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "at",
+          "kind",
+          "has_file"
+        ],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "has_file": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "item_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "kind": {
+            "type": "string",
+            "description": "Radarr: `cinema`, `digital` or `physical`; Sonarr: `airing`."
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
             "type": "string"
           }
         }
@@ -2187,6 +2507,29 @@
           "user_id": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "Disk": {
+        "type": "object",
+        "required": [
+          "path",
+          "free",
+          "total"
+        ],
+        "properties": {
+          "free": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "path": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
@@ -2744,6 +3087,32 @@
           "guest"
         ]
       },
+      "HealthIssue": {
+        "type": "object",
+        "required": [
+          "source",
+          "level",
+          "message"
+        ],
+        "properties": {
+          "level": {
+            "type": "string",
+            "description": "`notice`, `warning` or `error`."
+          },
+          "message": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "wiki_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "HealthReport": {
         "type": "object",
         "required": [
@@ -2837,6 +3206,74 @@
           }
         }
       },
+      "Indexer": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "enabled",
+          "protocol",
+          "privacy",
+          "status",
+          "queries_24h",
+          "grabs_24h",
+          "failures_24h"
+        ],
+        "properties": {
+          "avg_response_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "disabled_till": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "failures_24h": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "grabs_24h": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "privacy": {
+            "type": "string",
+            "description": "`public`, `semiPrivate` or `private`."
+          },
+          "protocol": {
+            "type": "string",
+            "description": "`torrent` or `usenet`."
+          },
+          "queries_24h": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "description": "`ok`, `failing` or `disabled`."
+          }
+        }
+      },
       "IntegrationLevel": {
         "type": "string",
         "enum": [
@@ -2844,6 +3281,139 @@
           "read_only",
           "health_check"
         ]
+      },
+      "ItemCounts": {
+        "type": "object",
+        "required": [
+          "movies",
+          "series",
+          "episodes",
+          "songs",
+          "albums"
+        ],
+        "properties": {
+          "albums": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "episodes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "movies": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "series": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "songs": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "JellyfinData": {
+        "type": "object",
+        "required": [
+          "server_name",
+          "streams",
+          "libraries",
+          "counts",
+          "recent",
+          "users"
+        ],
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/ItemCounts"
+          },
+          "libraries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Library"
+            }
+          },
+          "recent": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecentItem"
+            }
+          },
+          "server_name": {
+            "type": "string"
+          },
+          "streams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Stream"
+            }
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JellyfinUser"
+            }
+          }
+        }
+      },
+      "JellyfinUser": {
+        "type": "object",
+        "required": [
+          "name",
+          "is_admin"
+        ],
+        "properties": {
+          "is_admin": {
+            "type": "boolean"
+          },
+          "last_activity": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "Library": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "collection_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`movies`, `tvshows`, `music`, …"
+          },
+          "id": {
+            "type": "string",
+            "description": "Folder item id, used by `scan_library`."
+          },
+          "item_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          }
+        }
       },
       "LinkedGuest": {
         "type": "object",
@@ -2912,6 +3482,219 @@
           }
         }
       },
+      "MediaCounts": {
+        "type": "object",
+        "required": [
+          "streams",
+          "transcodes",
+          "downloading",
+          "pending_requests"
+        ],
+        "properties": {
+          "downloading": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "pending_requests": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "streams": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "transcodes": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "MediaOverview": {
+        "type": "object",
+        "required": [
+          "counts",
+          "now_playing",
+          "requests",
+          "calendar",
+          "recently_added"
+        ],
+        "properties": {
+          "calendar": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarEntry"
+            }
+          },
+          "counts": {
+            "$ref": "#/components/schemas/MediaCounts"
+          },
+          "now_playing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NowPlayingEntry"
+            }
+          },
+          "recently_added": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecentEntry"
+            }
+          },
+          "requests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrackedRequest"
+            }
+          }
+        }
+      },
+      "MediaRequest": {
+        "type": "object",
+        "required": [
+          "id",
+          "media_type",
+          "title",
+          "requested_by",
+          "status",
+          "media_status",
+          "seasons",
+          "is_4k"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "is_4k": {
+            "type": "boolean"
+          },
+          "media_status": {
+            "type": "string",
+            "description": "`unknown`, `pending`, `processing`, `partially_available`, `available`, `deleted`."
+          },
+          "media_type": {
+            "type": "string",
+            "description": "`movie` or `tv`."
+          },
+          "poster_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Poster URL (TMDB image CDN), when known."
+          },
+          "requested_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "requested_by": {
+            "type": "string"
+          },
+          "seasons": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          "status": {
+            "type": "string",
+            "description": "`pending`, `approved` or `declined`."
+          },
+          "title": {
+            "type": "string"
+          },
+          "tmdb_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "tvdb_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "MediaSearchResult": {
+        "type": "object",
+        "required": [
+          "kind",
+          "service_id",
+          "title",
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Movie/series id, or torrent hash."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`movie`, `series` or `torrent`."
+          },
+          "service_id": {
+            "type": "string"
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "MissingItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "title"
+        ],
+        "properties": {
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Episode id (Sonarr) or movie id (Radarr): used by the `search_item` action."
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
       "ModuleData": {
         "oneOf": [
           {
@@ -2963,9 +3746,178 @@
                 "$ref": "#/components/schemas/HealthCheckData"
               }
             }
+          },
+          {
+            "type": "object",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "jellyfin"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/JellyfinData"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "seerr"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/SeerrData"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Sonarr and Radarr.",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "arr"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/ArrData",
+                "description": "Sonarr and Radarr."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "prowlarr"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/ProwlarrData"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "bazarr"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/BazarrData"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "qbittorrent"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/QbittorrentData"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "value",
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "navidrome"
+                ]
+              },
+              "value": {
+                "$ref": "#/components/schemas/NavidromeData"
+              }
+            }
           }
         ],
         "description": "Module-specific snapshot payload."
+      },
+      "NavidromeData": {
+        "type": "object",
+        "required": [
+          "now_playing",
+          "scanning"
+        ],
+        "properties": {
+          "folders": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "last_scan": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "now_playing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NowPlaying"
+            }
+          },
+          "scanning": {
+            "type": "boolean"
+          },
+          "songs": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Songs in the library (from the scan status).",
+            "minimum": 0
+          }
+        }
       },
       "Node": {
         "type": "object",
@@ -3125,6 +4077,146 @@
           },
           "online": {
             "type": "boolean"
+          }
+        }
+      },
+      "NowPlaying": {
+        "type": "object",
+        "required": [
+          "user",
+          "title"
+        ],
+        "properties": {
+          "album": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "artist": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration_s": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "minutes_ago": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 0
+          },
+          "player": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          }
+        }
+      },
+      "NowPlayingEntry": {
+        "type": "object",
+        "required": [
+          "service_id",
+          "service_name",
+          "kind",
+          "user",
+          "title",
+          "paused",
+          "remote"
+        ],
+        "properties": {
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "e.g. \"1080p HEVC → H.264 · 12.4 Mbit/s\"."
+          },
+          "device": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "description": "`video` or `music`."
+          },
+          "paused": {
+            "type": "boolean"
+          },
+          "play_method": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`DirectPlay`, `DirectStream`, `Transcode` (video)."
+          },
+          "position_s": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "progress": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "0.0–1.0."
+          },
+          "remote": {
+            "type": "boolean"
+          },
+          "runtime_s": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "service_id": {
+            "type": "string"
+          },
+          "service_name": {
+            "type": "string"
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "transcode_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "e.g. \"audio codec not supported\"."
+          },
+          "user": {
+            "type": "string"
           }
         }
       },
@@ -3305,6 +4397,27 @@
           }
         }
       },
+      "ProwlarrData": {
+        "type": "object",
+        "required": [
+          "indexers",
+          "health"
+        ],
+        "properties": {
+          "health": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HealthIssue"
+            }
+          },
+          "indexers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Indexer"
+            }
+          }
+        }
+      },
       "ProxmoxData": {
         "type": "object",
         "required": [
@@ -3357,6 +4470,176 @@
           }
         }
       },
+      "QbittorrentData": {
+        "type": "object",
+        "required": [
+          "api_version",
+          "dl_speed",
+          "up_speed",
+          "connection",
+          "alt_speed",
+          "counts",
+          "torrents",
+          "history"
+        ],
+        "properties": {
+          "alt_speed": {
+            "type": "boolean",
+            "description": "Alternative (\"turtle\") speed limits on."
+          },
+          "api_version": {
+            "type": "string",
+            "description": "WebAPI version, e.g. `2.11.3`."
+          },
+          "connection": {
+            "type": "string",
+            "description": "`connected`, `firewalled` or `disconnected`."
+          },
+          "counts": {
+            "$ref": "#/components/schemas/TorrentCounts"
+          },
+          "dl_speed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "free_space": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Free space in the default save path, bytes.",
+            "minimum": 0
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpeedPoint"
+            },
+            "description": "Last 10 minutes of transfer speeds."
+          },
+          "torrents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Torrent"
+            }
+          },
+          "up_speed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "QueueItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "release",
+          "size",
+          "size_left",
+          "status"
+        ],
+        "properties": {
+          "download_client": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "download_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Download client id; the torrent hash for qBittorrent."
+          },
+          "episode_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "eta": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "item_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Series or movie id in Sonarr/Radarr."
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Warning or error text (first status message or error message)."
+          },
+          "protocol": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "release": {
+            "type": "string",
+            "description": "Release name."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "size_left": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "description": "`downloading`, `queued`, `paused`, `completed`, `delay`, `warning`, `failed`, …"
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Episode label (`S02E05 · Title`) for Sonarr."
+          },
+          "title": {
+            "type": "string",
+            "description": "Series or movie title."
+          },
+          "tracked_state": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`downloading`, `importPending`, `importing`, `imported`, `failedPending`, …"
+          },
+          "tracked_status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`ok`, `warning` or `error`."
+          }
+        }
+      },
       "QuickAction": {
         "type": "object",
         "required": [
@@ -3378,6 +4661,97 @@
           "retry",
           "start_guest"
         ]
+      },
+      "RecentEntry": {
+        "type": "object",
+        "required": [
+          "service_id",
+          "item"
+        ],
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/RecentItem"
+          },
+          "service_id": {
+            "type": "string"
+          }
+        }
+      },
+      "RecentItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "item_type"
+        ],
+        "properties": {
+          "added_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string"
+          },
+          "item_type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "series_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "RequestCounts": {
+        "type": "object",
+        "required": [
+          "total",
+          "pending",
+          "approved",
+          "processing",
+          "available"
+        ],
+        "properties": {
+          "approved": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "available": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "pending": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "processing": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
       },
       "Role": {
         "type": "string",
@@ -3496,6 +4870,32 @@
           }
         }
       },
+      "SeerrData": {
+        "type": "object",
+        "required": [
+          "counts",
+          "pending",
+          "recent"
+        ],
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/RequestCounts"
+          },
+          "pending": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MediaRequest"
+            }
+          },
+          "recent": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MediaRequest"
+            },
+            "description": "Latest 20 requests of any status."
+          }
+        }
+      },
       "ServerInfo": {
         "type": "object",
         "description": "Basic information about the running server.",
@@ -3565,7 +4965,15 @@
         "description": "Kind of service module. Adding a service = adding a variant, a module file and a\nregistry entry in [`build_module`].",
         "enum": [
           "proxmox",
-          "health_check"
+          "health_check",
+          "jellyfin",
+          "seerr",
+          "sonarr",
+          "radarr",
+          "prowlarr",
+          "bazarr",
+          "qbittorrent",
+          "navidrome"
         ]
       },
       "ServiceRef": {
@@ -3829,6 +5237,30 @@
           }
         }
       },
+      "SpeedPoint": {
+        "type": "object",
+        "required": [
+          "at",
+          "dl",
+          "up"
+        ],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dl": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "up": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
       "StartPairing": {
         "type": "object",
         "properties": {
@@ -3885,6 +5317,15 @@
           }
         }
       },
+      "StepState": {
+        "type": "string",
+        "enum": [
+          "done",
+          "current",
+          "stuck",
+          "todo"
+        ]
+      },
       "StoragePool": {
         "type": "object",
         "required": [
@@ -3940,6 +5381,144 @@
             "format": "int64",
             "description": "Bytes.",
             "minimum": 0
+          }
+        }
+      },
+      "Stream": {
+        "type": "object",
+        "required": [
+          "session_id",
+          "user",
+          "client",
+          "device",
+          "title",
+          "item_type",
+          "paused",
+          "play_method",
+          "remote"
+        ],
+        "properties": {
+          "bitrate": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Bits per second (transcode bitrate, or the source bitrate when playing directly).",
+            "minimum": 0
+          },
+          "client": {
+            "type": "string"
+          },
+          "device": {
+            "type": "string"
+          },
+          "item_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "item_type": {
+            "type": "string",
+            "description": "`Movie`, `Episode`, `Audio`, …"
+          },
+          "paused": {
+            "type": "boolean"
+          },
+          "play_method": {
+            "type": "string",
+            "description": "`DirectPlay`, `DirectStream` or `Transcode`."
+          },
+          "position_s": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "remote": {
+            "type": "boolean",
+            "description": "The client is not on a private network."
+          },
+          "runtime_s": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Source video codec and height, e.g. `HEVC 1080p`."
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`S02E05 · Episode title` for episodes."
+          },
+          "title": {
+            "type": "string",
+            "description": "Movie title or series name."
+          },
+          "transcode": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Transcode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "user": {
+            "type": "string"
+          }
+        }
+      },
+      "SubtitleEvent": {
+        "type": "object",
+        "required": [
+          "kind",
+          "title",
+          "description"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "language": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "when": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "As Bazarr formats it (e.g. \"2 hours ago\")."
           }
         }
       },
@@ -4033,6 +5612,288 @@
             ],
             "format": "double",
             "description": "Uptime in the hour, percent."
+          }
+        }
+      },
+      "Torrent": {
+        "type": "object",
+        "required": [
+          "hash",
+          "name",
+          "state",
+          "raw_state",
+          "progress",
+          "size",
+          "downloaded",
+          "dl_speed",
+          "up_speed",
+          "ratio",
+          "category",
+          "tags",
+          "num_seeds"
+        ],
+        "properties": {
+          "added_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "category": {
+            "type": "string"
+          },
+          "dl_speed": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Bytes per second.",
+            "minimum": 0
+          },
+          "downloaded": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "eta_s": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Seconds; `None` when unknown or done.",
+            "minimum": 0
+          },
+          "hash": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "num_seeds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "progress": {
+            "type": "number",
+            "format": "double",
+            "description": "0.0–1.0."
+          },
+          "ratio": {
+            "type": "number",
+            "format": "double"
+          },
+          "raw_state": {
+            "type": "string",
+            "description": "qBittorrent's own state name."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Bytes.",
+            "minimum": 0
+          },
+          "state": {
+            "$ref": "#/components/schemas/TorrentState"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "up_speed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "TorrentCounts": {
+        "type": "object",
+        "required": [
+          "all",
+          "downloading",
+          "seeding",
+          "stopped",
+          "errored"
+        ],
+        "properties": {
+          "all": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "downloading": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "errored": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "seeding": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "stopped": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "TorrentState": {
+        "type": "string",
+        "enum": [
+          "downloading",
+          "seeding",
+          "stopped",
+          "queued",
+          "stalled",
+          "checking",
+          "metadata",
+          "errored",
+          "other"
+        ]
+      },
+      "TrackedRequest": {
+        "type": "object",
+        "required": [
+          "seerr_id",
+          "request",
+          "steps"
+        ],
+        "properties": {
+          "arr_item_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "arr_service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Sonarr/Radarr service and item, when matched."
+          },
+          "request": {
+            "$ref": "#/components/schemas/MediaRequest"
+          },
+          "seerr_id": {
+            "type": "string"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrackerStep"
+            }
+          },
+          "torrent_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "torrent_service_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "qBittorrent service and torrent hash, when matched."
+          }
+        }
+      },
+      "TrackerStep": {
+        "type": "object",
+        "required": [
+          "label",
+          "state"
+        ],
+        "properties": {
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "description": "Requested, Approved, Grabbed, Downloading, Imported, Available."
+          },
+          "state": {
+            "$ref": "#/components/schemas/StepState"
+          }
+        }
+      },
+      "Transcode": {
+        "type": "object",
+        "required": [
+          "reasons",
+          "video_direct",
+          "audio_direct"
+        ],
+        "properties": {
+          "audio_codec": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "audio_direct": {
+            "type": "boolean"
+          },
+          "bitrate": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Bits per second.",
+            "minimum": 0
+          },
+          "hardware": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "height": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "e.g. `AudioCodecNotSupported`."
+          },
+          "video_codec": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "video_direct": {
+            "type": "boolean"
+          },
+          "width": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
           }
         }
       },
@@ -4174,6 +6035,43 @@
             "$ref": "#/components/schemas/Role"
           },
           "username": {
+            "type": "string"
+          }
+        }
+      },
+      "WantedSubtitle": {
+        "type": "object",
+        "required": [
+          "kind",
+          "title",
+          "languages",
+          "item_id"
+        ],
+        "properties": {
+          "item_id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Sonarr series id or Radarr movie id (for `search`)."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`episode` or `movie`."
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Missing languages, e.g. `[\"Danish\", \"English (HI)\"]`."
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`S01E03 · Episode title` for episodes."
+          },
+          "title": {
             "type": "string"
           }
         }

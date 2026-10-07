@@ -1,10 +1,19 @@
 //! Service modules: the shared trait, common types and the module registry.
 
+pub mod arr;
+pub mod bazarr;
 pub mod catalogue;
 pub mod health_check;
+pub mod http;
+pub mod jellyfin;
+pub mod media_demo;
+pub mod navidrome;
+pub mod prowlarr;
 pub mod proxmox;
+pub mod qbittorrent;
+pub mod seerr;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -20,28 +29,53 @@ use utoipa::ToSchema;
 pub enum ServiceKind {
     Proxmox,
     HealthCheck,
+    Jellyfin,
+    Seerr,
+    Sonarr,
+    Radarr,
+    Prowlarr,
+    Bazarr,
+    Qbittorrent,
+    Navidrome,
 }
 
 impl ServiceKind {
+    pub const ALL: [ServiceKind; 10] = [
+        Self::Proxmox,
+        Self::HealthCheck,
+        Self::Jellyfin,
+        Self::Seerr,
+        Self::Sonarr,
+        Self::Radarr,
+        Self::Prowlarr,
+        Self::Bazarr,
+        Self::Qbittorrent,
+        Self::Navidrome,
+    ];
+
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Proxmox => "proxmox",
             Self::HealthCheck => "health_check",
+            Self::Jellyfin => "jellyfin",
+            Self::Seerr => "seerr",
+            Self::Sonarr => "sonarr",
+            Self::Radarr => "radarr",
+            Self::Prowlarr => "prowlarr",
+            Self::Bazarr => "bazarr",
+            Self::Qbittorrent => "qbittorrent",
+            Self::Navidrome => "navidrome",
         }
     }
 
     pub fn parse(value: &str) -> Option<Self> {
-        match value {
-            "proxmox" => Some(Self::Proxmox),
-            "health_check" => Some(Self::HealthCheck),
-            _ => None,
-        }
+        Self::ALL.into_iter().find(|k| k.as_str() == value)
     }
 
     pub fn level(self) -> IntegrationLevel {
         match self {
-            Self::Proxmox => IntegrationLevel::Full,
             Self::HealthCheck => IntegrationLevel::HealthCheck,
+            _ => IntegrationLevel::Full,
         }
     }
 
@@ -51,6 +85,11 @@ impl ServiceKind {
         match self {
             Self::Proxmox => (Duration::from_secs(10), Duration::from_secs(3)),
             Self::HealthCheck => (Duration::from_secs(30), Duration::from_secs(30)),
+            Self::Qbittorrent => (Duration::from_secs(10), Duration::from_secs(2)),
+            Self::Jellyfin | Self::Navidrome => (Duration::from_secs(15), Duration::from_secs(5)),
+            Self::Seerr | Self::Sonarr | Self::Radarr | Self::Prowlarr | Self::Bazarr => {
+                (Duration::from_secs(60), Duration::from_secs(15))
+            }
         }
     }
 
@@ -59,6 +98,8 @@ impl ServiceKind {
         match self {
             Self::Proxmox => &["token_secret"],
             Self::HealthCheck => &[],
+            Self::Qbittorrent | Self::Navidrome => &["password"],
+            _ => &["api_key"],
         }
     }
 }
@@ -183,6 +224,30 @@ pub enum ModuleData {
     None,
     Proxmox(Box<proxmox::ProxmoxData>),
     HealthCheck(health_check::HealthCheckData),
+    Jellyfin(Box<jellyfin::JellyfinData>),
+    Seerr(Box<seerr::SeerrData>),
+    /// Sonarr and Radarr.
+    Arr(Box<arr::ArrData>),
+    Prowlarr(Box<prowlarr::ProwlarrData>),
+    Bazarr(Box<bazarr::BazarrData>),
+    Qbittorrent(Box<qbittorrent::QbittorrentData>),
+    Navidrome(Box<navidrome::NavidromeData>),
+}
+
+impl ModuleData {
+    /// Card headline and detail line for Home, when the module has data for it.
+    pub fn headline(&self) -> Option<(String, Option<String>)> {
+        Some(match self {
+            Self::Jellyfin(d) => d.headline(),
+            Self::Seerr(d) => d.headline(),
+            Self::Arr(d) => d.headline(),
+            Self::Prowlarr(d) => d.headline(),
+            Self::Bazarr(d) => d.headline(),
+            Self::Qbittorrent(d) => d.headline(),
+            Self::Navidrome(d) => d.headline(),
+            Self::None | Self::Proxmox(_) | Self::HealthCheck(_) => return None,
+        })
+    }
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -191,6 +256,16 @@ pub struct ActionDescriptor {
     pub label: String,
     /// Requires `"confirm": true` in the request body.
     pub destructive: bool,
+}
+
+impl ActionDescriptor {
+    pub fn new(id: &str, label: &str, destructive: bool) -> Self {
+        Self {
+            id: id.into(),
+            label: label.into(),
+            destructive,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -260,8 +335,31 @@ pub trait ServiceModule: Send + Sync {
 
     async fn test_connection(&self) -> ConnectionTest;
 
+    /// Read-only queries served by `GET /services/{id}/query/{name}` (e.g. `library`, `search`).
+    fn queries(&self) -> Vec<&'static str> {
+        Vec::new()
+    }
+
+    async fn query(
+        &self,
+        name: &str,
+        _args: &HashMap<String, String>,
+    ) -> Result<Value, ModuleError> {
+        Err(ModuleError::UnknownAction(name.to_owned()))
+    }
+
+    /// Fetch an image (poster, cover) from the service, for `GET /services/{id}/image`.
+    async fn image(&self, _path: &str) -> Result<(bytes::Bytes, String), ModuleError> {
+        Err(ModuleError::UnknownAction("images".into()))
+    }
+
     /// Proxmox access for the Proxmox endpoints; `None` for every other module.
     fn as_proxmox(&self) -> Option<&proxmox::ProxmoxModule> {
+        None
+    }
+
+    /// Sonarr/Radarr library access for the media endpoints.
+    fn as_arr(&self) -> Option<&arr::ArrModule> {
         None
     }
 }
@@ -287,6 +385,13 @@ pub fn validate_config(cfg: &InstanceConfig) -> Result<(), String> {
     match cfg.kind {
         ServiceKind::Proxmox => proxmox::validate(cfg),
         ServiceKind::HealthCheck => health_check::validate(cfg),
+        ServiceKind::Jellyfin => jellyfin::validate(cfg),
+        ServiceKind::Seerr => seerr::validate(cfg),
+        ServiceKind::Sonarr | ServiceKind::Radarr => arr::validate(cfg),
+        ServiceKind::Prowlarr => prowlarr::validate(cfg),
+        ServiceKind::Bazarr => bazarr::validate(cfg),
+        ServiceKind::Qbittorrent => qbittorrent::validate(cfg),
+        ServiceKind::Navidrome => navidrome::validate(cfg),
     }
 }
 
@@ -297,5 +402,21 @@ pub fn build_module(cfg: &InstanceConfig, demo: bool) -> anyhow::Result<Arc<dyn 
         (ServiceKind::Proxmox, true) => Arc::new(proxmox::ProxmoxModule::demo()),
         (ServiceKind::HealthCheck, false) => Arc::new(health_check::HealthCheckModule::new(cfg)?),
         (ServiceKind::HealthCheck, true) => Arc::new(health_check::DemoHealthCheck::new(cfg)),
+        (ServiceKind::Jellyfin, false) => Arc::new(jellyfin::JellyfinModule::new(cfg)?),
+        (ServiceKind::Jellyfin, true) => Arc::new(jellyfin::JellyfinModule::demo(&cfg.id)),
+        (ServiceKind::Seerr, false) => Arc::new(seerr::SeerrModule::new(cfg)?),
+        (ServiceKind::Seerr, true) => Arc::new(seerr::SeerrModule::demo()),
+        (ServiceKind::Sonarr, false) => Arc::new(arr::ArrModule::new(cfg, arr::ArrFlavor::Sonarr)?),
+        (ServiceKind::Sonarr, true) => Arc::new(arr::ArrModule::demo(arr::ArrFlavor::Sonarr)),
+        (ServiceKind::Radarr, false) => Arc::new(arr::ArrModule::new(cfg, arr::ArrFlavor::Radarr)?),
+        (ServiceKind::Radarr, true) => Arc::new(arr::ArrModule::demo(arr::ArrFlavor::Radarr)),
+        (ServiceKind::Prowlarr, false) => Arc::new(prowlarr::ProwlarrModule::new(cfg)?),
+        (ServiceKind::Prowlarr, true) => Arc::new(prowlarr::ProwlarrModule::demo()),
+        (ServiceKind::Bazarr, false) => Arc::new(bazarr::BazarrModule::new(cfg)?),
+        (ServiceKind::Bazarr, true) => Arc::new(bazarr::BazarrModule::demo()),
+        (ServiceKind::Qbittorrent, false) => Arc::new(qbittorrent::QbittorrentModule::new(cfg)?),
+        (ServiceKind::Qbittorrent, true) => Arc::new(qbittorrent::QbittorrentModule::demo()),
+        (ServiceKind::Navidrome, false) => Arc::new(navidrome::NavidromeModule::new(cfg)?),
+        (ServiceKind::Navidrome, true) => Arc::new(navidrome::NavidromeModule::demo()),
     })
 }
