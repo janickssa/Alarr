@@ -5,7 +5,8 @@
 		progress,
 		position,
 		transcode = false,
-		reason
+		reason,
+		tags = []
 	}: {
 		title: string;
 		detail: string;
@@ -13,6 +14,8 @@
 		position: string;
 		transcode?: boolean;
 		reason?: string;
+		/** Extra state tags, e.g. Remote or Paused. */
+		tags?: string[];
 	} = $props();
 </script>
 
@@ -21,6 +24,7 @@
 	<div class="body">
 		<div class="top">
 			<span class="title">{title}</span>
+			{#each tags as t (t)}<span class="tag tag-outline">{t}</span>{/each}
 			<span class="tag tag-neutral">{transcode ? 'Transcode' : 'Direct play'}</span>
 		</div>
 		<span class="detail">{detail}</span>
@@ -71,6 +75,8 @@
 	}
 	.title {
 		font-size: 14px;
+		flex: 1;
+		min-width: 0;
 	}
 	.detail {
 		font-size: 12px;

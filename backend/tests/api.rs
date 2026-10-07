@@ -22,9 +22,18 @@ impl App {
         let state = quorum_server::app::build(Config::parse("").unwrap(), true)
             .await
             .unwrap();
-        // Wait for the first Proxmox poll.
-        for _ in 0..100 {
-            if state.cache.get("proxmox").is_some() {
+        // Wait until every service has been polled once (tests run in parallel and the
+        // first polls can be slow under load).
+        let ids: Vec<String> = state
+            .db
+            .list_services()
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|r| r.id)
+            .collect();
+        for _ in 0..250 {
+            if ids.iter().all(|id| state.cache.get(id).is_some()) {
                 break;
             }
             tokio::time::sleep(Duration::from_millis(20)).await;
@@ -546,8 +555,14 @@ async fn overview_health_and_proxmox_reads() {
         .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(overview["nodes"].as_array().unwrap().len(), 3);
-    assert_eq!(overview["status"]["total"], 9);
-    assert_eq!(overview["status"]["message"], "2 problems");
+    assert_eq!(overview["status"]["total"], 18);
+    // Health checks: Podgrab slow, draw.io down. Media: Sonarr indexer warning, Prowlarr
+    // failing indexer, qBittorrent errored torrent.
+    assert_eq!(
+        overview["status"]["message"], "5 problems",
+        "{}",
+        overview["problems"]
+    );
 
     let (_, health, _) = app.call("GET", "/api/v1/health", Some(&owner), None).await;
     let entries = health["entries"].as_array().unwrap();
@@ -610,4 +625,188 @@ async fn sse_stream_opens_for_signed_in_users() {
         .unwrap();
     let text = String::from_utf8(frame.into_data().unwrap().to_vec()).unwrap();
     assert!(text.starts_with("event: snapshot"), "{text}");
+}
+
+#[tokio::test]
+async fn media_overview_tracks_requests_across_services() {
+    let app = App::demo().await;
+    let owner = app.login("demo", "demo").await;
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    let (status, m, _) = app
+        .call("GET", "/api/v1/media/overview", Some(&owner), None)
+        .await;
+    assert_eq!(status, StatusCode::OK, "{m}");
+    assert_eq!(m["counts"]["streams"], 3); // 2 Jellyfin + 1 Navidrome
+    assert_eq!(m["counts"]["transcodes"], 1);
+    let np = m["now_playing"].as_array().unwrap();
+    let orbit = np.iter().find(|n| n["title"] == "The Long Orbit").unwrap();
+    assert_eq!(orbit["transcode_reason"], "audio codec not supported");
+    assert_eq!(
+        orbit["detail"].as_str().unwrap(),
+        "HEVC 1080p → H.264 · 12 Mbit/s"
+    );
+
+    let req = |title: &str| {
+        m["requests"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["request"]["title"] == title)
+            .unwrap()
+            .clone()
+    };
+    let state = |r: &Value, i: usize| r["steps"][i]["state"].as_str().unwrap().to_owned();
+    // Glass Meridian: approved, grabbed by Radarr, downloading in qBittorrent.
+    let glass = req("Glass Meridian");
+    assert_eq!(
+        (state(&glass, 2).as_str(), state(&glass, 3).as_str()),
+        ("done", "current")
+    );
+    assert!(
+        glass["steps"][3]["detail"]
+            .as_str()
+            .unwrap()
+            .starts_with("62 %")
+    );
+    assert_eq!(
+        glass["torrent_hash"],
+        "8c212779b4abde7c6bc608063a0d008b7e40ce32"
+    );
+    // Saltwater Kings: grabbed but stuck with no seeders.
+    let salt = req("Saltwater Kings");
+    assert_eq!(state(&salt, 2), "stuck");
+    assert_eq!(salt["steps"][2]["detail"], "No seeders · 6 h");
+    // Harbor Lights: available. Static Bloom: waiting for approval.
+    assert!(
+        req("Harbor Lights")["steps"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|s| s["state"] == "done")
+    );
+    assert_eq!(state(&req("Static Bloom"), 1), "current");
+    assert!(!m["calendar"].as_array().unwrap().is_empty());
+
+    let (_, results, _) = app
+        .call("GET", "/api/v1/media/search?q=glass", Some(&owner), None)
+        .await;
+    let kinds: Vec<&str> = results
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| r["kind"].as_str().unwrap())
+        .collect();
+    assert!(
+        kinds.contains(&"movie") && kinds.contains(&"torrent"),
+        "{results}"
+    );
+}
+
+#[tokio::test]
+async fn media_actions_queries_and_confirm() {
+    let app = App::demo().await;
+    let owner = app.login("demo", "demo").await;
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    // Demo media state is shared by every test in this binary, so only touch items the
+    // other tests don't assert on: two seeding ISOs and the Copper Valley request.
+    let hash = format!("{:040x}", 0xabc000 + 16);
+    let other = format!("{:040x}", 0xabc000 + 13);
+    let (status, body, _) = app
+        .call(
+            "POST",
+            "/api/v1/services/qbittorrent/actions/delete",
+            Some(&owner),
+            Some(json!({"args": {"hashes": [hash]}})),
+        )
+        .await;
+    assert_eq!(
+        (status, body["error"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("confirm_required"))
+    );
+    let (status, _, _) = app
+        .call(
+            "POST",
+            "/api/v1/services/qbittorrent/actions/delete",
+            Some(&owner),
+            Some(json!({"confirm": true, "args": {"hashes": [hash], "delete_files": false}})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _, _) = app
+        .call(
+            "POST",
+            "/api/v1/services/qbittorrent/actions/stop",
+            Some(&owner),
+            Some(json!({"args": {"hashes": [other]}})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (status, body, _) = app
+        .call(
+            "POST",
+            "/api/v1/services/seerr/actions/approve",
+            Some(&owner),
+            Some(json!({"args": {"id": 30}})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body["message"], "Copper Valley approved");
+
+    let (status, lib, _) = app
+        .call(
+            "GET",
+            "/api/v1/services/radarr/query/library",
+            Some(&owner),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        lib.as_array()
+            .unwrap()
+            .iter()
+            .any(|m| m["title"] == "Glass Meridian")
+    );
+    let (status, found, _) = app
+        .call(
+            "GET",
+            "/api/v1/services/seerr/query/search?q=harbor",
+            Some(&owner),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(found.as_array().unwrap().len(), 2);
+    let (status, _, _) = app
+        .call(
+            "GET",
+            "/api/v1/services/seerr/query/nope",
+            Some(&owner),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _, _) = app
+        .call(
+            "GET",
+            "/api/v1/services/radarr/image?path=/etc/passwd",
+            Some(&owner),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    let (_, log, _) = app
+        .call("GET", "/api/v1/activity", Some(&owner), None)
+        .await;
+    let actions: Vec<&str> = log
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| e["action"].as_str().unwrap())
+        .collect();
+    assert!(
+        actions.contains(&"service.action.delete") && actions.contains(&"service.action.approve")
+    );
 }

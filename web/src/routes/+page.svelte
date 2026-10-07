@@ -15,9 +15,10 @@
 	import ServiceIcon from '#lib/components/ServiceIcon.svelte';
 	import SkeletonCard from '#lib/components/SkeletonCard.svelte';
 	import Switch from '#lib/components/Switch.svelte';
-	import { pct, usedOf } from '#lib/format.js';
+	import { bytes, pct, rate, usedOf } from '#lib/format.js';
 	import { HEALTH } from '#lib/health.js';
-	import { refetchOnLive } from '#lib/live.svelte.js';
+	import { live, refetchOnLive } from '#lib/live.svelte.js';
+	import type { QbittorrentData } from '#lib/api/client.js';
 	import { power } from '#lib/power.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 	import { toasts } from '#lib/toasts.svelte.js';
@@ -105,6 +106,11 @@
 		const total = onlineNodes.reduce((a, n) => a + (n.mem_total ?? 0), 0);
 		return total ? onlineNodes.reduce((a, n) => a + (n.mem_used ?? 0), 0) / total : null;
 	});
+	function qbt(id: string): QbittorrentData | null {
+		const d = live.snapshots[id]?.data;
+		return d?.type === 'qbittorrent' ? d.value : null;
+	}
+
 	const byId = $derived(Object.fromEntries(session.services.map((s) => [s.id, s])));
 </script>
 
@@ -280,6 +286,20 @@
 									{ label: 'CPU', value: pct(avgCpu) },
 									{ label: 'RAM', value: pct(ramFrac) }
 								]}
+							/>
+						{:else if h.service.kind === 'qbittorrent' && qbt(h.service.id)}
+							{@const q = qbt(h.service.id)!}
+							<LargeCard
+								service={h.service}
+								{href}
+								stats={[
+									{ label: 'Down', value: rate(q.dl_speed) },
+									{ label: 'Up', value: rate(q.up_speed) },
+									{ label: 'Active', value: `${q.counts.downloading}` },
+									{ label: 'Free', value: bytes(q.free_space) }
+								]}
+								chart={q.history.map((p) => p.dl)}
+								chartLabel="Download · 10 min"
 							/>
 						{:else if h.service.level === 'health_check'}
 							<HealthCheckCard service={h.service} uptime7d={h.detail} {href} />

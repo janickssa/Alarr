@@ -4,6 +4,7 @@ pub mod activity;
 pub mod auth;
 pub mod error;
 pub mod events;
+pub mod media;
 pub mod overview;
 pub mod pairing;
 pub mod proxmox;
@@ -28,6 +29,8 @@ use crate::state::AppState;
         crate::events::Event,
         crate::modules::proxmox::ProxmoxSettings,
         crate::modules::health_check::HealthCheckSettings,
+        crate::modules::arr::LibraryItem,
+        crate::modules::seerr::SearchResult,
     ))
 )]
 struct ApiDoc;
@@ -90,6 +93,7 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(pairing::router())
         .merge(services::router())
         .merge(overview::router())
+        .merge(media::router())
         .merge(proxmox::router())
         .merge(activity::router())
         .merge(settings::router())

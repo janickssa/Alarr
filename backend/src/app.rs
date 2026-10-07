@@ -161,6 +161,32 @@ async fn seed_demo(state: &AppState) -> anyhow::Result<()> {
             BTreeMap::new(),
         ));
     }
+    for (id, kind, ct) in [
+        ("jellyfin", ServiceKind::Jellyfin, 108),
+        ("jellyfin-pub", ServiceKind::Jellyfin, 105),
+        ("seerr", ServiceKind::Seerr, 126),
+        ("sonarr", ServiceKind::Sonarr, 123),
+        ("radarr", ServiceKind::Radarr, 124),
+        ("prowlarr", ServiceKind::Prowlarr, 125),
+        ("bazarr", ServiceKind::Bazarr, 127),
+        ("qbittorrent", ServiceKind::Qbittorrent, 120),
+        ("navidrome", ServiceKind::Navidrome, 119),
+    ] {
+        let (settings, secret) = match kind {
+            ServiceKind::Qbittorrent | ServiceKind::Navidrome => {
+                (json!({"username": "demo"}), "password")
+            }
+            _ => (json!({}), "api_key"),
+        };
+        rows.push(add(
+            id,
+            kind,
+            &format!("http://10.0.20.{ct}"),
+            Some(ct),
+            settings,
+            [(secret.to_owned(), "demo".to_owned())].into(),
+        ));
+    }
     for row in &rows {
         db.save_service(row).await?;
     }

@@ -1,8 +1,8 @@
 <script lang="ts">
-	// Global search over services and Proxmox guests. "/" focuses it from anywhere.
+	// Global search over services, Proxmox guests and media (movies, series, torrents). "/" focuses it from anywhere.
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { api, type Guest } from '#lib/api/client.js';
+	import { api, type Guest, type Schemas } from '#lib/api/client.js';
 	import { guestId } from '#lib/format.js';
 	import { session } from '#lib/session.svelte.js';
 	import HealthDot from '../HealthDot.svelte';
@@ -26,12 +26,38 @@
 		if (res.data) guests = res.data;
 	}
 
+	type MediaHit = Schemas['MediaSearchResult'];
+	let media = $state<MediaHit[]>([]);
+	let mediaSeq = 0;
+
+	// Media search hits the backend, so debounce it and drop stale responses.
+	$effect(() => {
+		const q = query.trim();
+		const seq = ++mediaSeq;
+		if (q.length < 2) {
+			media = [];
+			return;
+		}
+		const t = setTimeout(async () => {
+			const res = await api.GET('/media/search', { params: { query: { q } } });
+			if (seq === mediaSeq) media = res.data ?? [];
+		}, 250);
+		return () => clearTimeout(t);
+	});
+
+	const MEDIA_ICON: Record<string, string> = {
+		movie: 'ph-film-strip',
+		series: 'ph-television-simple',
+		torrent: 'ph-download-simple'
+	};
+
 	type Result = {
 		key: string;
 		label: string;
 		sub: string;
 		href: string;
-		kind: 'service' | 'guest';
+		kind: 'service' | 'guest' | 'media';
+		glyph?: string;
 		icon?: { icon: string; hue: number; chroma: number };
 		health?: 'healthy' | 'down' | 'warning' | 'unknown' | 'disabled' | 'in_progress';
 	};
@@ -62,7 +88,16 @@
 				kind: 'guest',
 				health: g.status === 'running' ? 'healthy' : g.status === 'stopped' ? 'down' : 'unknown'
 			}));
-		return [...svc, ...gst];
+		const names = Object.fromEntries(session.services.map((s) => [s.id, s.name]));
+		const med: Result[] = media.slice(0, 8).map((m) => ({
+			key: `m:${m.service_id}:${m.id}`,
+			label: m.title,
+			sub: [m.subtitle, names[m.service_id] ?? m.service_id].filter(Boolean).join(' · '),
+			href: resolve('/services/[id]', { id: m.service_id }),
+			kind: 'media',
+			glyph: MEDIA_ICON[m.kind] ?? 'ph-film-strip'
+		}));
+		return [...svc, ...gst, ...med];
 	});
 
 	$effect(() => {
@@ -111,8 +146,8 @@
 		bind:input
 		shortcut
 		width="360px"
-		label="Search services and containers"
-		placeholder="Search services, containers…"
+		label="Search services, containers and media"
+		placeholder="Search services, containers, media…"
 		{onkeydown}
 	/>
 	{#if open && query.trim()}
@@ -123,7 +158,7 @@
 						{#if r.icon}
 							<ServiceIcon icon={r.icon.icon} hue={r.icon.hue} chroma={r.icon.chroma} size={24} />
 						{:else}
-							<span class="cube"><Icon name="ph-cube" /></span>
+							<span class="cube"><Icon name={r.glyph ?? 'ph-cube'} /></span>
 						{/if}
 						<span class="lbl">{r.label}<span class="sub mono">{r.sub}</span></span>
 						{#if r.health}<HealthDot

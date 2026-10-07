@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -33,6 +33,8 @@ pub fn router() -> OpenApiRouter<AppState> {
         .routes(routes!(disable))
         .routes(routes!(snapshot))
         .routes(routes!(history))
+        .routes(routes!(query))
+        .routes(routes!(image))
         .routes(routes!(run_action))
 }
 
@@ -628,6 +630,79 @@ async fn history(
         uptime_7d: pct(&week.iter().collect::<Vec<_>>()),
         last_incident: last_incident(&week),
     }))
+}
+
+/// A module query (read-only), e.g. `library` (Sonarr/Radarr) or `search?q=` (Seerr).
+/// The response shape depends on the module and query.
+#[utoipa::path(get, path = "/services/{id}/query/{name}", tag = "services",
+    params(("id" = String, Path), ("name" = String, Path)),
+    responses((status = 200, description = "Query result (JSON)", body = serde_json::Value), (status = 400, body = ErrorBody), (status = 404, body = ErrorBody)))]
+async fn query(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path((id, name)): Path<(String, String)>,
+    Query(args): Query<std::collections::HashMap<String, String>>,
+) -> ApiResult<Json<Value>> {
+    find(&state, &user, &id).await?;
+    let module = state
+        .supervisor
+        .module(&id)
+        .ok_or_else(|| ApiError::Conflict("service is disabled".into()))?;
+    if !module.queries().contains(&name.as_str()) {
+        return Err(bad(format!("unknown query '{name}'")));
+    }
+    state.supervisor.watch(&id);
+    module
+        .query(&name, &args)
+        .await
+        .map(Json)
+        .map_err(|e| match e {
+            ModuleError::UnknownAction(_) | ModuleError::InvalidArgs(_) => bad(e.to_string()),
+            ModuleError::Failed(e) => ApiError::Upstream(crate::modules::describe_error(&e)),
+        })
+}
+
+#[derive(Debug, Deserialize, utoipa::IntoParams)]
+pub struct ImageQuery {
+    /// Image path on the service, e.g. `/MediaCover/3/poster.jpg` or `/Items/{id}/Images/Primary`.
+    pub path: String,
+}
+
+/// Proxy a poster or cover image from the service (keeps API keys on the server and
+/// works without internet access).
+#[utoipa::path(get, path = "/services/{id}/image", tag = "services",
+    params(("id" = String, Path), ImageQuery),
+    responses((status = 200, description = "Image bytes", content_type = "image/*"), (status = 404, body = ErrorBody)))]
+async fn image(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<String>,
+    Query(q): Query<ImageQuery>,
+) -> ApiResult<axum::response::Response> {
+    use axum::response::IntoResponse;
+    find(&state, &user, &id).await?;
+    let module = state
+        .supervisor
+        .module(&id)
+        .ok_or_else(|| ApiError::NotFound("service is disabled".into()))?;
+    let (bytes, content_type) = module
+        .image(&q.path)
+        .await
+        .map_err(|e| ApiError::NotFound(e.to_string()))?;
+    if !content_type.starts_with("image/") {
+        return Err(ApiError::NotFound("not an image".into()));
+    }
+    Ok((
+        [
+            (axum::http::header::CONTENT_TYPE, content_type),
+            (
+                axum::http::header::CACHE_CONTROL,
+                "private, max-age=86400".to_owned(),
+            ),
+        ],
+        bytes,
+    )
+        .into_response())
 }
 
 /// Run a module action (e.g. `scan_library`). `refresh` (poll now) works for every service.

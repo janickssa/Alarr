@@ -324,16 +324,16 @@ Top-level navigation on every surface: **Home · Proxmox · Media · Services ·
 
 Backend module + web page for each, in this order. Each needs demo data and wiremock tests.
 
-- [ ] qBittorrent (API version detection, alt speed toggle, delete with/without files).
-- [ ] Sonarr and Radarr (shared code where the APIs match).
-- [ ] Jellyfin (multi-instance: `jellyfin` and `jellyfin-pub`), library scan per library and all.
-- [ ] Seerr (approve/decline).
-- [ ] Prowlarr (test all indexers).
-- [ ] Bazarr (search missing).
-- [ ] Navidrome (scan, now playing).
-- [ ] Media overview endpoint + Media page: now playing, request tracker (match Seerr request → Sonarr/Radarr item → qBittorrent torrent by hash → Jellyfin item), combined calendar, recently added.
-- [ ] Home highlight cards for every media module.
-- [ ] Global search across guests, services, movies, series and torrents.
+- [x] qBittorrent (API version detection, alt speed toggle, delete with/without files).
+- [x] Sonarr and Radarr (shared code where the APIs match).
+- [x] Jellyfin (multi-instance: `jellyfin` and `jellyfin-pub`), library scan per library and all.
+- [x] Seerr (approve/decline).
+- [x] Prowlarr (test all indexers).
+- [x] Bazarr (search missing).
+- [x] Navidrome (scan, now playing).
+- [x] Media overview endpoint + Media page: now playing, request tracker (match Seerr request → Sonarr/Radarr item → qBittorrent torrent by hash → Jellyfin item), combined calendar, recently added.
+- [x] Home highlight cards for every media module.
+- [x] Global search across guests, services, movies, series and torrents.
 
 **Definition of done:** every media page works against real services and in demo mode; library scans, approvals, searches and torrent actions work and are logged.
 
@@ -445,3 +445,12 @@ Same web codebase; this phase makes it a first-class mobile app.
 | 2026-10-07 | Added `GET /services/{id}/history` (per-minute health and response time for 24 h, uptime, last incident) for the health-check page; free-form `settings`/`args` objects now declare `additionalProperties` so clients type them correctly | Needed by the service page chart and the add-service form |
 | 2026-10-07 | `/dev/components` returns 404 outside `npm run dev` (the route ships in the bundle but is unreachable) | SPA build has no per-route exclusion; this keeps it out of production use |
 | 2026-10-07 | Phase 2 verified in demo mode with a scripted headless-Chromium run (all pages, power flow, add service, pairing, guest view, keyboard menu) and an axe-core WCAG 2.1 AA audit with no violations. These browser checks are not in CI yet; the "only Proxmox + Jellyfin + qBittorrent" reflow check is repeated in phase 3 when those modules exist | Honest scope of the verification |
+| 2026-10-07 | Media APIs checked against upstream sources: qBittorrent WebAPI wiki (4.x and 5.x pages), the Sonarr v3, Radarr v3 and Prowlarr v1 OpenAPI specs, Jellyfin's controllers (`Sessions`, `Items`, `Library`, `LibraryStructure`, `ItemRefresh`), Seerr's OpenAPI spec, Bazarr's `api/` sources and the Subsonic/OpenSubsonic docs for Navidrome. Tests use wiremock fixtures shaped from those. Not yet run against the owner's real services, so the phase 3 definition of done stays open on that point | README rule 4; real-service check needs the homelab |
+| 2026-10-07 | qBittorrent: version from `/api/v2/app/webapiVersion`; ≥ 2.11 uses `stop`/`start` (and `stoppedUP`/`stoppedDL`), older uses `pause`/`resume`. One `/sync/maindata` read per poll; speed history (10 min) is kept in memory. Delete needs explicit hashes (never "all") and `confirm`; deleting files is a separate, unticked choice | qBittorrent 5 renamed the endpoints; one call keeps polling cheap |
+| 2026-10-07 | Jellyfin uses the API key in the `Authorization: MediaBrowser … Token=` header and asks `/Items` without a user id. Multi-instance is just two services (`jellyfin`, `jellyfin-pub`) with the same module | Header form is the one Jellyfin documents; no per-user setup needed |
+| 2026-10-07 | Bazarr "search missing" is `PATCH /api/series?action=search-wanted` and `PATCH /api/movies?action=search-wanted`; Navidrome uses Subsonic token auth (`md5(password + salt)`, fresh salt per request) | What the installed versions accept; the password itself never goes over the wire |
+| 2026-10-07 | Generic module endpoints: `GET /services/{id}/query/{name}` for on-demand reads (Sonarr/Radarr library, Seerr search) and `GET /services/{id}/image?path=` as an authenticated image proxy limited to each module's own image paths (`/MediaCover/…`, Jellyfin `/Items/…/Images/…`) and `image/*` responses. Seerr posters come straight from TMDB's image CDN | Keeps API keys server-side; one pattern for every module |
+| 2026-10-07 | Request tracker: Seerr request → Sonarr/Radarr item by TVDB/TMDB id → queue item → qBittorrent torrent by download id (hash) → available when Seerr says so. A step is "stuck" when the *arr queue reports a warning/error or the torrent is stalled or errored; the step's detail shows the reason | Simple rules that explain where a request is waiting |
+| 2026-10-07 | Demo mode now seeds 9 media services sharing one simulated state (torrents progress, approvals move requests on); the demo has 5 problems (Podgrab slow, draw.io down, Sonarr indexer warning, Prowlarr failing indexer, an errored torrent) | Shows every media state and problem path |
+| 2026-10-07 | qBittorrent auto-throttle while Jellyfin streams stays in phase 4 (Automation) as listed there | Belongs with the alerts/automation engine |
+| 2026-10-07 | Phase 3 verified in demo mode with a scripted headless-Chromium run over the Media page and every media service page (delete dialog, Seerr approve, global search, add-service forms) and an axe-core WCAG 2.1 AA audit with no violations on those pages | Same approach as phase 2; mobile layouts are phase 5 |

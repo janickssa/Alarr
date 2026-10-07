@@ -30,6 +30,17 @@ export type HealthEntry = Schemas['HealthEntry'];
 export type TimelineBucket = Schemas['TimelineBucket'];
 export type Me = Schemas['Me'];
 export type ProxmoxData = Schemas['ProxmoxData'];
+export type QbittorrentData = Schemas['QbittorrentData'];
+export type Torrent = Schemas['Torrent'];
+export type ArrData = Schemas['ArrData'];
+export type LibraryItem = Schemas['LibraryItem'];
+export type JellyfinData = Schemas['JellyfinData'];
+export type SeerrData = Schemas['SeerrData'];
+export type MediaRequest = Schemas['MediaRequest'];
+export type ProwlarrData = Schemas['ProwlarrData'];
+export type BazarrData = Schemas['BazarrData'];
+export type NavidromeData = Schemas['NavidromeData'];
+export type MediaOverview = Schemas['MediaOverview'];
 
 /** An error response from the API, with the server's message. */
 export class ApiError extends Error {

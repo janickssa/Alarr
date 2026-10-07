@@ -234,6 +234,13 @@ async fn overview(State(state): State<AppState>, user: CurrentUser) -> ApiResult
 
 fn highlight(state: &AppState, v: &ServiceView, stats: Option<&UptimeStats>) -> Highlight {
     let snapshot = state.cache.get(&v.id);
+    if let Some((headline, detail)) = snapshot.as_ref().and_then(|s| s.data.headline()) {
+        return Highlight {
+            service: v.clone(),
+            headline,
+            detail,
+        };
+    }
     let (headline, detail) = match snapshot.as_ref().map(|s| &s.data) {
         Some(ModuleData::Proxmox(d)) => {
             let running = d

@@ -40,7 +40,7 @@
 							<ServiceIcon icon={c.icon} hue={c.accent_hue} chroma={c.accent_chroma} />
 							<span class="txt"
 								><span>{c.name}</span><span class="caption faint"
-									>{c.kind === 'proxmox' ? 'Full integration' : 'Health check'}</span
+									>{c.kind === 'health_check' ? 'Health check' : 'Full integration'}</span
 								></span
 							>
 						</a>

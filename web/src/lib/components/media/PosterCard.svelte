@@ -18,7 +18,7 @@
 	<div
 		class="poster"
 		style:background={image
-			? `center / cover url(${image})`
+			? `center / cover no-repeat url("${image}"), linear-gradient(170deg, ${colors[0]}, ${colors[1]})`
 			: `linear-gradient(170deg, ${colors[0]}, ${colors[1]})`}
 	>
 		{#if isNew}<span class="tag tag-accent new">New</span>{/if}
