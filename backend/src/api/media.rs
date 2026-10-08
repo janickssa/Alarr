@@ -186,7 +186,13 @@ fn track(
     });
     let available = matches!(r.media_status.as_str(), "available" | "partially_available");
     let imported = matched.as_ref().is_some_and(|(_, i)| i.have > 0) && queue.is_empty();
-    let approved = r.status == "approved";
+    let failed = r.status == "failed";
+    // Anything already in Sonarr/Radarr's queue or library was approved, whatever the request
+    // says now (Seerr marks fulfilled requests `completed`).
+    let approved = matches!(r.status.as_str(), "approved" | "completed" | "failed")
+        || available
+        || imported
+        || !queue.is_empty();
     let age_h = r
         .requested_at
         .map(|t| (Utc::now() - t).num_hours())
@@ -239,7 +245,17 @@ fn track(
         match current {
             1 => step.detail = Some("waiting for approval".into()),
             2 => {
-                if let Some(msg) = problem.clone() {
+                if failed {
+                    step.state = StepState::Stuck;
+                    step.detail = Some(format!(
+                        "Seerr couldn't send it to {}",
+                        if flavor == ArrFlavor::Sonarr {
+                            "Sonarr"
+                        } else {
+                            "Radarr"
+                        }
+                    ));
+                } else if let Some(msg) = problem.clone() {
                     step.state = StepState::Stuck;
                     step.detail = Some(msg);
                 } else if queue.is_empty() && age_h >= 6 {
@@ -608,6 +624,80 @@ async fn search(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    fn request(status: &str, media_status: &str) -> MediaRequest {
+        MediaRequest {
+            id: 1,
+            media_type: "movie".into(),
+            tmdb_id: Some(9),
+            tvdb_id: None,
+            title: "Ted".into(),
+            year: Some(2012),
+            poster_url: None,
+            requested_by: "adm-jss".into(),
+            requested_at: Some(Utc::now() - chrono::Duration::hours(15)),
+            status: status.into(),
+            media_status: media_status.into(),
+            seasons: vec![],
+            is_4k: false,
+        }
+    }
+
+    fn states(t: &TrackedRequest) -> Vec<StepState> {
+        t.steps.iter().map(|s| s.state).collect()
+    }
+
+    /// Seerr marks fulfilled requests `completed` (5); they must not look unapproved.
+    #[test]
+    fn completed_and_available_is_done() {
+        let t = track("seerr", request("completed", "available"), &[], &[]);
+        assert!(
+            states(&t).iter().all(|s| *s == StepState::Done),
+            "{:?}",
+            t.steps
+        );
+    }
+
+    #[test]
+    fn completed_but_processing_is_past_approval() {
+        let t = track("seerr", request("completed", "processing"), &[], &[]);
+        assert_eq!(t.steps[1].state, StepState::Done);
+        // 15 h without a grab: flagged on the Grabbed step, not on approval.
+        assert_eq!(t.steps[2].state, StepState::Stuck);
+        assert!(
+            t.steps[2]
+                .detail
+                .as_deref()
+                .unwrap()
+                .contains("no release found")
+        );
+    }
+
+    #[test]
+    fn failed_request_is_stuck_at_grabbed() {
+        let t = track("seerr", request("failed", "pending"), &[], &[]);
+        assert_eq!(t.steps[1].state, StepState::Done);
+        assert_eq!(t.steps[2].state, StepState::Stuck);
+        assert!(t.steps[2].detail.as_deref().unwrap().contains("Radarr"));
+    }
+
+    #[test]
+    fn pending_waits_for_approval() {
+        let t = track("seerr", request("pending", "pending"), &[], &[]);
+        assert_eq!(t.steps[1].state, StepState::Current);
+        assert_eq!(t.steps[1].detail.as_deref(), Some("waiting for approval"));
+    }
+
+    #[test]
+    fn statuses_match_seerr() {
+        use crate::modules::seerr::{media_status, request_status};
+        assert_eq!(request_status(5), "completed");
+        assert_eq!(request_status(4), "failed");
+        assert_eq!(media_status(6), "blocklisted");
+        assert_eq!(media_status(7), "deleted");
+    }
+
     #[test]
     fn reason() {
         assert_eq!(

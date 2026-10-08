@@ -86,22 +86,29 @@ pub struct SearchResult {
     pub media_status: Option<String>,
 }
 
+/// Seerr's `MediaRequestStatus` (`server/constants/media.ts`).
 pub fn request_status(n: i64) -> &'static str {
     match n {
         1 => "pending",
         2 => "approved",
         3 => "declined",
+        // Sending the request to Sonarr/Radarr failed.
+        4 => "failed",
+        // Approved and since fulfilled.
+        5 => "completed",
         _ => "unknown",
     }
 }
 
+/// Seerr's `MediaStatus`.
 pub fn media_status(n: i64) -> &'static str {
     match n {
         2 => "pending",
         3 => "processing",
         4 => "partially_available",
         5 => "available",
-        6 => "deleted",
+        6 => "blocklisted",
+        7 => "deleted",
         _ => "unknown",
     }
 }
