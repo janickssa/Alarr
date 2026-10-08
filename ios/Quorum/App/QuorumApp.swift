@@ -40,7 +40,7 @@ struct RootView: View {
             if model.credentials == nil {
                 PairingView(link: model.pendingPairing)
             } else if model.me == nil {
-                if model.offline {
+                if model.problem != nil {
                     OfflineView()
                 } else {
                     VStack(spacing: 16) {
@@ -60,20 +60,39 @@ struct RootView: View {
 
 struct OfflineView: View {
     @EnvironmentObject var model: AppModel
+    @State private var busy = false
+
     var body: some View {
         VStack(spacing: 18) {
             LogoMark(size: 56)
-            Text("Can't reach Quorum").font(.title2.weight(.medium))
-            Text("\(model.credentials?.server.host() ?? "The server") isn't answering. Are you on Tailscale (or your VPN)? Is the server running?")
+            Text(model.problem?.title ?? "Can't connect").font(.title2.weight(.medium))
+            Text(model.problem?.reason ?? "")
                 .font(.callout).foregroundStyle(Theme.muted).multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-            Button {
-                Task { await model.start() }
-            } label: {
-                Label("Try again", systemImage: "arrow.clockwise")
+            Text("You stay signed in until you log out. Retrying by itself.")
+                .font(.caption).foregroundStyle(Theme.muted).multilineTextAlignment(.center)
+            HStack(spacing: 10) {
+                Button {
+                    busy = true
+                    Task {
+                        await model.start()
+                        busy = false
+                    }
+                } label: {
+                    Label("Try again", systemImage: "arrow.clockwise")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(busy)
+                Button("Log out", role: .destructive) {
+                    model.confirm = ConfirmRequest(
+                        title: "Log out of this iPhone?",
+                        message: "The pairing is removed. You need a new pairing code to sign in again.",
+                        confirmLabel: "Log out", destructive: true
+                    ) { _ in Task { await model.signOut() } }
+                }
+                .buttonStyle(.bordered)
             }
-            .buttonStyle(.borderedProminent)
         }
+        .padding(.horizontal, 32)
     }
 }
 

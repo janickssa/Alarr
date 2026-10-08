@@ -22,7 +22,7 @@
 	import { time } from '#lib/format.js';
 	import { live, refetchOnLive } from '#lib/live.svelte.js';
 	import { nav, parentOf } from '#lib/nav.svelte.js';
-	import { session } from '#lib/session.svelte.js';
+	import { ConnectError, session } from '#lib/session.svelte.js';
 
 	let { children }: LayoutProps = $props();
 
@@ -55,48 +55,92 @@
 	let ready = $state(false);
 	let searchInput: HTMLInputElement | undefined = $state();
 
-	/** True when the server couldn't be asked who we are (no VPN yet, proxy error, restart). */
-	let offline = $state(false);
+	/**
+	 * Why the app can't show anything right now. Once this browser has been signed in it
+	 * never goes to the sign-in page by itself: it shows this with "Try again" and
+	 * "Log out" until it gets in again or you log out.
+	 */
+	type Problem = { title: string; reason: string };
+	let problem = $state<Problem | null>(null);
 	let retry: ReturnType<typeof setTimeout> | undefined;
 
+	function describe(e: unknown): Problem {
+		const host = page.url.host;
+		const status = e instanceof ConnectError ? e.status : undefined;
+		if (!status)
+			return {
+				title: "Can't connect",
+				reason: `No answer from ${host}. Usually the VPN (WireGuard) isn't connected yet, or the server is down.`
+			};
+		if (status === 502 || status === 503 || status === 504)
+			return {
+				title: "Can't connect",
+				reason: `${host} answered HTTP ${status}: the proxy can't reach Quorum. Is the Quorum container running?`
+			};
+		return { title: "Can't connect", reason: `${host} answered HTTP ${status}.` };
+	}
+
+	const NOT_ACCEPTED: Problem = {
+		title: 'Sign-in not accepted',
+		reason:
+			"The server didn't accept this device's sign-in. It may have been unpaired or signed out from another device, or the server's database was reset. Log out and sign in again to continue."
+	};
+
 	async function boot() {
-		offline = false;
 		clearTimeout(retry);
 		let me;
 		try {
 			me = await session.loadMe();
-		} catch {
+		} catch (e) {
 			// Not the same as signed out: keep the sign-in and try again shortly (the VPN is
 			// often still connecting when the app is opened).
-			offline = true;
+			problem = describe(e);
 			ready = true;
 			retry = setTimeout(() => void boot(), 3000);
 			return;
 		}
 		if (!me) {
 			ready = true;
+			if (session.remembered && !isPublic) {
+				problem = NOT_ACCEPTED;
+				retry = setTimeout(() => void boot(), 15000);
+				return;
+			}
 			if (!isPublic) {
 				const setup = await api.GET('/auth/setup').catch(() => null);
 				await goto(resolve(setup?.data?.needs_setup ? '/setup' : '/login'));
 			}
 			return;
 		}
+		problem = null;
 		connection.signedOut = false;
 		await session.start(me);
 		ready = true;
+	}
+
+	async function logOut() {
+		clearTimeout(retry);
+		await session.signOut();
+		problem = null;
+		await goto(resolve('/login'));
 	}
 
 	onMount(() => {
 		void boot();
 	});
 
-	// Signed out elsewhere (session expired, device revoked): back to sign-in.
+	// A request got 401 while using the app (session expired, device revoked).
 	$effect(() => {
 		if (connection.signedOut && !isPublic) {
-			live.stop();
-			session.clear();
 			connection.signedOut = false;
-			void goto(resolve('/login'));
+			live.stop();
+			if (session.remembered) {
+				problem = NOT_ACCEPTED;
+				retry = setTimeout(() => void boot(), 15000);
+			} else {
+				session.clear();
+				void goto(resolve('/login'));
+			}
 		}
 	});
 
@@ -158,21 +202,23 @@
 
 {#if isPublic}
 	{@render children()}
-{:else if offline}
+{:else if problem}
 	<div class="splash" role="alert">
 		<Logo size={56} />
-		<h1 class="off-title">Can't reach Quorum</h1>
-		<p class="off-text">
-			<span class="mono">{page.url.host}</span> isn't answering. Are you on Tailscale (or your VPN)? Is
-			the server running? Retrying every few seconds; you stay signed in.
-		</p>
-		<button
-			class="btn btn-primary"
-			onclick={() => {
-				ready = false;
-				void boot();
-			}}><Icon name="ph-arrow-clockwise" />Try again</button
-		>
+		<h1 class="off-title">{problem.title}</h1>
+		<p class="off-text">{problem.reason}</p>
+		<p class="off-text faint">You stay signed in until you log out. Retrying by itself.</p>
+		<div class="off-actions">
+			<button
+				class="btn btn-primary"
+				onclick={() => {
+					ready = false;
+					problem = null;
+					void boot();
+				}}><Icon name="ph-arrow-clockwise" />Try again</button
+			>
+			<button class="btn btn-secondary" onclick={logOut}><Icon name="ph-sign-out" />Log out</button>
+		</div>
 	</div>
 {:else if !ready || !session.me}
 	<div class="splash">
@@ -242,6 +288,10 @@
 	}
 	.off-title {
 		font: var(--text-title);
+	}
+	.off-actions {
+		display: flex;
+		gap: 10px;
 	}
 	.off-text {
 		max-width: 320px;

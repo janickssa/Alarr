@@ -6,6 +6,12 @@ import UIKit
 import UserNotifications
 import WidgetKit
 
+/// Why the app can't show your data, on the "Can't connect" screen.
+struct Problem: Equatable {
+    var title: String
+    var reason: String
+}
+
 enum Tab: Hashable {
     case home, proxmox, media, services, more
 }
@@ -32,7 +38,9 @@ final class AppModel: ObservableObject {
     @Published var credentials: Credentials?
     @Published var me: S.Me?
     @Published var services: [S.ServiceView] = []
-    @Published var offline = false
+    /// Why the app can't load right now ("Can't connect", "Sign-in not accepted"). The
+    /// pairing stays in the Keychain: only Log out removes it.
+    @Published var problem: Problem?
     @Published var connected = false
     /// Bumped (at most every 2 s) when live data changed; screens reload on it.
     @Published var tick = 0
@@ -45,6 +53,7 @@ final class AppModel: ObservableObject {
     let toasts = Toasts()
     private(set) var client: Client?
     private var events: Task<Void, Never>?
+    private var retry: Task<Void, Never>?
     private var lastTick = Date.distantPast
     private var tickScheduled = false
     /// Activity entries we started (power actions): their result updates the toast.
@@ -86,25 +95,41 @@ final class AppModel: ObservableObject {
         await requestPush()
     }
 
-    /// Load the account and services and open the live connection.
+    /// Load the account and services and open the live connection. Never unpairs by
+    /// itself: when the server can't be reached or refuses the token, the app shows why and
+    /// keeps retrying until it works or you tap Log out.
     func start() async {
         guard let client else { return }
+        let host = credentials?.server.host() ?? "the server"
         do {
             let out = try await client.me()
             switch out {
             case .ok(let ok):
                 me = try ok.body.json
-                offline = false
+                problem = nil
+                retry?.cancel()
             case .unauthorized:
-                // Revoked from Settings → Users on the web.
-                signOutLocally()
-                toasts.show("This iPhone was unpaired", tone: .error)
+                show(Problem(
+                    title: "Sign-in not accepted",
+                    reason: "\(host) didn't accept this iPhone's pairing. It may have been removed on the web, or the server's database was reset. Log out and pair again to continue."
+                ), after: 15)
                 return
             default:
-                throw APIFailure(output: out)
+                let msg = APIFailure(output: out).message
+                let proxy = ["502", "503", "504"].contains { msg.contains("HTTP \($0)") }
+                show(Problem(
+                    title: "Can't connect",
+                    reason: proxy
+                        ? "The proxy in front of \(host) can't reach Quorum. Is the Quorum container running?"
+                        : "\(host): \(msg)."
+                ), after: 5)
+                return
             }
         } catch {
-            if me == nil { offline = true }
+            show(Problem(
+                title: "Can't connect",
+                reason: "No answer from \(host). Usually the VPN (WireGuard) isn't connected yet, or the server is down."
+            ), after: 5)
             return
         }
         await loadServices()
@@ -124,6 +149,22 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Show why loading failed and try again after a few seconds, while the app is open.
+    private func show(_ p: Problem, after seconds: Double) {
+        problem = p
+        // Keep showing loaded data on a short blip; the problem screen is for a cold start
+        // or a refused token.
+        if p.title != "Can't connect" { me = nil }
+        retry?.cancel()
+        retry = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(seconds * 1e9))
+            guard !Task.isCancelled, let self, self.problem != nil,
+                  UIApplication.shared.applicationState == .active else { return }
+            await self.start()
+        }
+    }
+
+    /// The only way the app forgets its pairing: you tap Log out.
     func signOut() async {
         if let client { _ = try? await client.logout() }
         signOutLocally()
@@ -131,6 +172,8 @@ final class AppModel: ObservableObject {
 
     private func signOutLocally() {
         events?.cancel()
+        retry?.cancel()
+        problem = nil
         Keychain.delete()
         SharedCache.remove(SharedCache.widget)
         WidgetCenter.shared.reloadAllTimelines()
