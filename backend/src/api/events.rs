@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use axum::extract::{Query, State};
 use axum::response::sse::{Event as SseEvent, KeepAlive, Sse};
-use futures_util::{Stream, StreamExt, stream};
+use futures_util::{StreamExt, stream};
 use serde::Deserialize;
 use tokio_stream::wrappers::BroadcastStream;
 use utoipa::IntoParams;
@@ -52,7 +52,7 @@ async fn events(
     State(state): State<AppState>,
     user: CurrentUser,
     Query(q): Query<EventsQuery>,
-) -> Sse<impl Stream<Item = Result<SseEvent, Infallible>>> {
+) -> impl axum::response::IntoResponse {
     let watch: Vec<String> = q
         .watch
         .unwrap_or_default()
@@ -106,7 +106,12 @@ async fn events(
         .chain(live)
         .map(move |e| {
             let _keep = &guard;
-            Ok(e)
+            Ok::<_, Infallible>(e)
         });
-    Sse::new(stream).keep_alive(KeepAlive::new().interval(Duration::from_secs(15)))
+    // nginx (e.g. Nginx Proxy Manager) buffers proxied responses unless told not to, which
+    // would hold events back until the buffer fills.
+    (
+        [("x-accel-buffering", "no")],
+        Sse::new(stream).keep_alive(KeepAlive::new().interval(Duration::from_secs(15))),
+    )
 }

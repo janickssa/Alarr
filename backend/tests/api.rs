@@ -696,6 +696,8 @@ async fn sse_stream_opens_for_signed_in_users() {
         response.headers()[header::CONTENT_TYPE],
         "text/event-stream"
     );
+    // Reverse proxies (nginx / Nginx Proxy Manager) must not buffer the stream.
+    assert_eq!(response.headers()["x-accel-buffering"], "no");
     let mut body = response.into_body();
     let frame = tokio::time::timeout(Duration::from_secs(2), body.frame())
         .await

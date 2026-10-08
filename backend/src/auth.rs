@@ -161,22 +161,53 @@ pub fn clear_session_cookie(secure: bool) -> String {
     )
 }
 
-/// The peer address of the connection. Quorum is reached directly over the VPN, so
-/// forwarding headers are not trusted.
+/// The client's address, used to rate-limit sign-in and pairing. Normally the connection's
+/// peer address. When the peer is one of `[server] trusted_proxies` (a reverse proxy such as
+/// Nginx Proxy Manager), the client is the right-most `X-Forwarded-For` entry that is not
+/// itself a trusted proxy; the header is ignored from anyone else, so it can't be spoofed.
 pub struct ClientIp(pub IpAddr);
 
-impl<S: Send + Sync> FromRequestParts<S> for ClientIp {
+impl FromRequestParts<AppState> for ClientIp {
     type Rejection = std::convert::Infallible;
 
-    async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
-        Ok(Self(
-            parts
-                .extensions
-                .get::<ConnectInfo<SocketAddr>>()
-                .map(|c| c.0.ip())
-                .unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED)),
-        ))
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let peer = parts
+            .extensions
+            .get::<ConnectInfo<SocketAddr>>()
+            .map(|c| c.0.ip())
+            .unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
+        Ok(Self(client_ip(
+            peer,
+            &parts.headers,
+            &state.config.server.trusted_proxies,
+        )))
     }
+}
+
+pub fn client_ip(
+    peer: IpAddr,
+    headers: &axum::http::HeaderMap,
+    proxies: &[crate::config::Cidr],
+) -> IpAddr {
+    let trusted = |ip: IpAddr| proxies.iter().any(|p| p.contains(ip));
+    if !trusted(peer) {
+        return peer;
+    }
+    let forwarded: Vec<IpAddr> = headers
+        .get_all("x-forwarded-for")
+        .iter()
+        .filter_map(|v| v.to_str().ok())
+        .flat_map(|v| v.split(','))
+        .filter_map(|e| e.trim().parse().ok())
+        .collect();
+    forwarded
+        .into_iter()
+        .rev()
+        .find(|ip| !trusted(*ip))
+        .unwrap_or(peer)
 }
 
 type WindowKey = (&'static str, IpAddr);
@@ -228,6 +259,32 @@ pub fn limit_auth(state: &AppState, scope: &'static str, ip: IpAddr) -> Result<(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn forwarded_for_only_from_trusted_proxies() {
+        let proxies: Vec<crate::config::Cidr> = vec!["10.0.20.5".to_owned().try_into().unwrap()];
+        let ip = |s: &str| s.parse::<IpAddr>().unwrap();
+        let mut h = axum::http::HeaderMap::new();
+        h.insert("x-forwarded-for", "203.0.113.9, 10.8.0.2".parse().unwrap());
+        // Through the proxy: the right-most address the proxy saw.
+        assert_eq!(client_ip(ip("10.0.20.5"), &h, &proxies), ip("10.8.0.2"));
+        // Anyone else can't pick their own address.
+        assert_eq!(client_ip(ip("10.8.0.7"), &h, &proxies), ip("10.8.0.7"));
+        // No proxies configured: the header is ignored.
+        assert_eq!(client_ip(ip("10.0.20.5"), &h, &[]), ip("10.0.20.5"));
+        // Proxy without the header (health checks): the proxy itself.
+        let empty = axum::http::HeaderMap::new();
+        assert_eq!(
+            client_ip(ip("10.0.20.5"), &empty, &proxies),
+            ip("10.0.20.5")
+        );
+        // Chained trusted proxies are skipped; garbage entries are ignored.
+        h.insert(
+            "x-forwarded-for",
+            "10.8.0.3, junk, 10.0.20.5".parse().unwrap(),
+        );
+        assert_eq!(client_ip(ip("10.0.20.5"), &h, &proxies), ip("10.8.0.3"));
+    }
 
     #[test]
     fn rate_limiter_blocks_after_max() {
