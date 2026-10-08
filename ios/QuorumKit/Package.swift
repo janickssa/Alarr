@@ -27,8 +27,15 @@ let package = Package(
             ],
             plugins: [.plugin(name: "OpenAPIGenerator", package: "swift-openapi-generator")]
         ),
-        .target(name: "QuorumCore", dependencies: ["QuorumAPI"]),
-        .testTarget(name: "QuorumCoreTests", dependencies: ["QuorumCore", "QuorumAPI"]),
+        .target(
+            name: "QuorumCore",
+            dependencies: ["QuorumAPI", .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime")]
+        ),
+        .testTarget(
+            name: "QuorumCoreTests",
+            dependencies: ["QuorumCore", "QuorumAPI"],
+            resources: [.copy("Fixtures")]
+        ),
     ],
     swiftLanguageModes: [.v5]
 )

@@ -6,3 +6,8 @@ Config/Local.xcconfig
 .swiftpm/
 xcuserdata/
 DerivedData/
+# Written by xcodegen from project.yml
+Quorum/Info.plist
+Quorum/Quorum.entitlements
+QuorumWidgets/Info.plist
+QuorumWidgets/QuorumWidgets.entitlements

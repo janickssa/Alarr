@@ -1,0 +1,3 @@
+// Copy to Local.xcconfig (not committed) and fill in.
+DEVELOPMENT_TEAM = ABCDE12345
+QUORUM_BUNDLE_ID = com.yourname.quorum
