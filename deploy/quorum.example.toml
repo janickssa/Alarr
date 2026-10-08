@@ -9,6 +9,10 @@ public_url = "https://quorum.your-tailnet.ts.net"
 database = "/var/lib/quorum/quorum.db"
 # Optional: services imported once on first start (see services.seed.example.toml).
 # seed = "/etc/quorum/services.seed.toml"
+# Behind a reverse proxy (e.g. Nginx Proxy Manager): its address(es), so sign-in and
+# pairing rate limits apply per device instead of to everyone at once. Only these
+# addresses may set X-Forwarded-For. IPs or CIDR ranges.
+# trusted_proxies = ["10.0.20.5"]
 
 # Alerts to ntfy. If the topic needs an access token, put it in the environment as
 # QUORUM_NTFY_TOKEN (e.g. in /etc/quorum/quorum.env), not here.

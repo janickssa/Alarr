@@ -30,6 +30,69 @@ pub struct ServerConfig {
     pub database: PathBuf,
     /// Optional services seed file, imported once when no services exist.
     pub seed: Option<PathBuf>,
+    /// Reverse proxies in front of Quorum (e.g. Nginx Proxy Manager), as IPs or CIDR
+    /// ranges. Only requests from these addresses may name the client in
+    /// `X-Forwarded-For`; everyone else is identified by the connection's address.
+    #[serde(default)]
+    pub trusted_proxies: Vec<Cidr>,
+}
+
+/// An IP address or range (`10.0.20.5`, `10.0.20.0/24`, `fd00::/8`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(try_from = "String")]
+pub struct Cidr {
+    addr: std::net::IpAddr,
+    prefix: u8,
+}
+
+impl Cidr {
+    pub fn contains(&self, ip: std::net::IpAddr) -> bool {
+        use std::net::IpAddr::{V4, V6};
+        // IPv4 clients can show up as IPv4-mapped IPv6 addresses on a dual-stack socket.
+        let ip = match ip {
+            V6(v6) => v6.to_ipv4_mapped().map(V4).unwrap_or(ip),
+            v4 => v4,
+        };
+        match (self.addr, ip) {
+            (V4(net), V4(ip)) => {
+                let mask = u32::MAX
+                    .checked_shl(32 - u32::from(self.prefix))
+                    .unwrap_or(0);
+                u32::from(net) & mask == u32::from(ip) & mask
+            }
+            (V6(net), V6(ip)) => {
+                let mask = u128::MAX
+                    .checked_shl(128 - u32::from(self.prefix))
+                    .unwrap_or(0);
+                u128::from(net) & mask == u128::from(ip) & mask
+            }
+            _ => false,
+        }
+    }
+}
+
+impl TryFrom<String> for Cidr {
+    type Error = String;
+
+    fn try_from(s: String) -> Result<Self, String> {
+        let (addr, prefix) = match s.trim().split_once('/') {
+            Some((a, p)) => (a, Some(p)),
+            None => (s.trim(), None),
+        };
+        let addr: std::net::IpAddr = addr
+            .parse()
+            .map_err(|_| format!("trusted_proxies: {s:?} is not an IP address or range"))?;
+        let max = if addr.is_ipv4() { 32 } else { 128 };
+        let prefix = match prefix {
+            Some(p) => p
+                .parse::<u8>()
+                .ok()
+                .filter(|p| *p <= max)
+                .ok_or_else(|| format!("trusted_proxies: bad prefix in {s:?}"))?,
+            None => max,
+        };
+        Ok(Self { addr, prefix })
+    }
 }
 
 /// ntfy delivery for alerts. An access token, when the topic needs one, comes from the
@@ -74,6 +137,7 @@ impl Default for ServerConfig {
             public_url: None,
             database: default_database(),
             seed: None,
+            trusted_proxies: Vec::new(),
         }
     }
 }
@@ -111,6 +175,14 @@ impl Config {
         }
         if let Ok(url) = std::env::var("QUORUM_PUBLIC_URL") {
             self.server.public_url = Some(url);
+        }
+        if let Ok(list) = std::env::var("QUORUM_TRUSTED_PROXIES") {
+            self.server.trusted_proxies = list
+                .split(',')
+                .filter(|p| !p.trim().is_empty())
+                .map(|p| Cidr::try_from(p.to_owned()))
+                .collect::<Result<_, _>>()
+                .map_err(|e| anyhow::anyhow!("QUORUM_TRUSTED_PROXIES: {e}"))?;
         }
         Ok(())
     }
@@ -151,6 +223,22 @@ pub fn parse_secret_key(value: &str) -> anyhow::Result<[u8; 32]> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn trusted_proxy_ranges() {
+        let c = Config::parse(
+            "[server]\ntrusted_proxies = [\"10.0.20.5\", \"192.168.1.0/24\", \"fd00::/8\"]",
+        )
+        .unwrap();
+        let p = &c.server.trusted_proxies;
+        let ip = |s: &str| s.parse().unwrap();
+        assert!(p[0].contains(ip("10.0.20.5")) && !p[0].contains(ip("10.0.20.6")));
+        assert!(p[1].contains(ip("192.168.1.77")) && !p[1].contains(ip("192.168.2.1")));
+        assert!(p[1].contains(ip("::ffff:192.168.1.9")), "IPv4-mapped");
+        assert!(p[2].contains(ip("fd12::1")) && !p[2].contains(ip("fe80::1")));
+        assert!(Config::parse("[server]\ntrusted_proxies = [\"npm.lan\"]").is_err());
+        assert!(Config::parse("[server]\ntrusted_proxies = [\"10.0.0.0/40\"]").is_err());
+    }
 
     #[test]
     fn parses_readme_example() {

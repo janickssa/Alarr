@@ -66,6 +66,36 @@ echo "QUORUM_SECRET_KEY=$(openssl rand -base64 32)" > quorum.env   # keep safe
 docker run -d --name quorum --env-file quorum.env -p 8080:8080 -v quorum-data:/var/lib/quorum quorum
 ```
 
+## 2c. Behind Nginx Proxy Manager (HTTPS on your own domain)
+
+Phones need HTTPS to install the web app and for the iPhone app. If your VPN clients use
+your home DNS and Nginx Proxy Manager (NPM) holds a publicly trusted certificate for your
+domain (for example Let's Encrypt through the Cloudflare DNS challenge), put Quorum behind it:
+
+1. **Proxy host** in NPM: domain `quorum.yourdomain`, scheme `http`, forward to the Quorum
+   LXC's IP, port `8080`. SSL tab: your certificate, **Force SSL**, HTTP/2.
+2. **Advanced** tab (live updates are one long-lived connection; Quorum also sends
+   `X-Accel-Buffering: no`, this is belt and braces):
+
+   ```nginx
+   proxy_buffering off;
+   proxy_read_timeout 1h;
+   ```
+3. **`quorum.toml`**:
+
+   ```toml
+   [server]
+   public_url = "https://quorum.yourdomain"   # in pairing QR codes; enables Secure cookies
+   trusted_proxies = ["<NPM's IP>"]           # rate limits per device, not per proxy
+   ```
+
+   Restart Quorum (`systemctl restart quorum`).
+4. Optionally let only NPM reach port 8080 (firewall on the LXC or in Proxmox), so nobody
+   bypasses the proxy.
+
+A **Cloudflare Origin CA** certificate won't work: only Cloudflare's own proxy trusts it, so
+phones reject it. Use a Let's Encrypt (or other public) certificate in NPM.
+
 ## 3. First start
 
 With no users yet, the server logs a one-time **setup token**. Open the web UI, enter it, and create the owner account. Then add services in Settings.
@@ -79,4 +109,5 @@ Try everything without real services: `quorum-server --demo` (fake data, in-memo
 | `QUORUM_SECRET_KEY` | Required. 32 bytes, base64. Encrypts service secrets at rest |
 | `QUORUM_CONFIG` | Config path (default `/etc/quorum/quorum.toml`) |
 | `QUORUM_BIND`, `QUORUM_DATABASE`, `QUORUM_PUBLIC_URL` | Override the config file |
+| `QUORUM_TRUSTED_PROXIES` | Comma-separated proxy IPs/ranges, overrides `trusted_proxies` |
 | `RUST_LOG` | Log filter, e.g. `info` or `quorum_server=debug` |
