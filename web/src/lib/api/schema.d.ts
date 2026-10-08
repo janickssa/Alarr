@@ -132,7 +132,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The signed-in user. */
+        /**
+         * The signed-in user. A cookie-based sign-in gets its cookie re-issued, which keeps it
+         *     from expiring while the app is used and moves cookies set by older versions to the
+         *     current attributes.
+         */
         get: operations["me"];
         put?: never;
         post?: never;

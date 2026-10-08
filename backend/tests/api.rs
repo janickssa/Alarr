@@ -163,6 +163,22 @@ async fn login_logout_and_rate_limit() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(me["user"]["role"], "owner");
     assert_eq!(me["auth"], "session");
+    // /auth/me re-issues the cookie (sliding expiry), as SameSite=Lax: iOS home-screen
+    // apps can drop SameSite=Strict cookies after a relaunch.
+    let req = Request::get("/api/v1/auth/me")
+        .header(header::COOKIE, &cookie)
+        .body(Body::empty())
+        .unwrap();
+    let response = app.router.clone().oneshot(req).await.unwrap();
+    let set = response.headers()[header::SET_COOKIE]
+        .to_str()
+        .unwrap()
+        .to_owned();
+    assert!(set.starts_with(&format!("{cookie};")), "{set}");
+    assert!(
+        set.contains("SameSite=Lax") && set.contains("HttpOnly") && set.contains("Max-Age="),
+        "{set}"
+    );
 
     let (status, _, cleared) = app
         .call("POST", "/api/v1/auth/logout", Some(&cookie), None)
@@ -757,14 +773,15 @@ async fn media_overview_tracks_requests_across_services() {
     let salt = req("Saltwater Kings");
     assert_eq!(state(&salt, 2), "stuck");
     assert_eq!(salt["steps"][2]["detail"], "No seeders · 6 h");
-    // Harbor Lights: available. Static Bloom: waiting for approval.
+    // Harbor Lights is available, so it has left the tracker (Seerr lists it).
     assert!(
-        req("Harbor Lights")["steps"]
+        !m["requests"]
             .as_array()
             .unwrap()
             .iter()
-            .all(|s| s["state"] == "done")
+            .any(|r| r["request"]["title"] == "Harbor Lights")
     );
+    // Static Bloom: waiting for approval.
     assert_eq!(state(&req("Static Bloom"), 1), "current");
     assert!(!m["calendar"].as_array().unwrap().is_empty());
 
