@@ -1553,6 +1553,7 @@ dependencies = [
  "futures-util",
  "hex",
  "http-body-util",
+ "hyper",
  "md-5",
  "mime_guess",
  "rand 0.8.8",
