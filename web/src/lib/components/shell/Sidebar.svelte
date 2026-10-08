@@ -85,13 +85,13 @@
 	);
 </script>
 
-<nav class="sidebar" aria-label="Main">
+<nav class="sidebar" aria-label="Main sidebar">
 	<a class="brand" href={resolve('/')}><Logo /></a>
 	<ul class="nav">
 		{#each nav as n (n.label)}
 			<li>
 				<a href={n.href} aria-current={n.match(path) ? 'page' : undefined}>
-					<Icon name={n.icon} size={18} />{n.label}
+					<Icon name={n.icon} size={18} /><span class="lbl">{n.label}</span>
 					{#if 'badge' in n && n.badge}<span class="badge num" aria-label="{n.badge} active"
 							>{n.badge}</span
 						>{/if}
@@ -201,6 +201,39 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	/* Phones use the tab bar; tablets get an icon rail. */
+	@media (max-width: 767px) {
+		.sidebar {
+			display: none;
+		}
+	}
+	@media (min-width: 768px) and (max-width: 1023px) {
+		.sidebar {
+			width: 68px;
+			padding: 18px 10px 24px;
+			align-items: center;
+		}
+		.sidebar :global(.name),
+		.lbl,
+		.group {
+			display: none;
+		}
+		.nav a {
+			justify-content: center;
+			width: 44px;
+			min-height: 44px;
+			padding: 0;
+			position: relative;
+		}
+		.badge {
+			position: absolute;
+			top: 2px;
+			right: 0;
+			min-width: 16px;
+			padding: 0 4px;
+			font-size: 10px;
+		}
 	}
 	.dot {
 		width: 7px;

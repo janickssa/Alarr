@@ -1,0 +1,17 @@
+// Build settings shared by the app and the widget extension.
+// Put your own values in Config/Local.xcconfig (not committed), e.g.:
+//
+//   DEVELOPMENT_TEAM = ABCDE12345
+//   QUORUM_BUNDLE_ID = com.yourname.quorum
+//
+// The bundle id must match `[apns] bundle_id` in quorum.toml.
+
+QUORUM_BUNDLE_ID = com.example.quorum
+QUORUM_APP_GROUP = group.$(QUORUM_BUNDLE_ID)
+CODE_SIGN_STYLE = Automatic
+MARKETING_VERSION = 0.6.0
+CURRENT_PROJECT_VERSION = 1
+SWIFT_VERSION = 5.0
+IPHONEOS_DEPLOYMENT_TARGET = 17.0
+
+#include? "Local.xcconfig"

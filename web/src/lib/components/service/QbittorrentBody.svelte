@@ -8,6 +8,7 @@
 		type ServiceView,
 		type Torrent
 	} from '#lib/api/client.js';
+	import { swipe } from '#lib/swipe.js';
 	import { toasts } from '#lib/toasts.svelte.js';
 	import { runAction } from '#lib/actions.svelte.js';
 	import { bytes, duration, rate } from '#lib/format.js';
@@ -231,7 +232,29 @@
 	<ul class="torrents">
 		{#each shown as t (t.hash)}
 			{@const st = STATE[t.state] ?? STATE.other}
-			<li class="t">
+			{@const stopped = t.state === 'stopped' || t.state === 'errored'}
+			<li
+				class="t"
+				use:swipe={{
+					disabled: !canAct,
+					right: {
+						label: stopped ? 'Start' : 'Stop',
+						color: stopped ? 'var(--health-healthy-fill)' : 'var(--health-progress-fill)',
+						run: () =>
+							stopped
+								? act('start', [t.hash], `Starting ${t.name}`)
+								: act('stop', [t.hash], `Stopping ${t.name}`)
+					},
+					left: {
+						label: 'Delete',
+						color: 'var(--health-down-fill)',
+						run: () => {
+							deleteFiles = false;
+							deleting = t;
+						}
+					}
+				}}
+			>
 				<div class="top">
 					<span class="mono name" title={t.name}>{t.name}</span>
 					<span class="state" style:color={st.color}>

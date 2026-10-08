@@ -170,7 +170,13 @@
 	</div>
 	<div class="card tablecard">
 		<table class="table">
-			<thead><tr><th>Username</th><th>Role</th><th>Access</th><th>Added</th><th></th></tr></thead>
+			<thead
+				><tr
+					><th>Username</th><th>Role</th><th class="hide-sm">Access</th><th class="hide-sm"
+						>Added</th
+					><th></th></tr
+				></thead
+			>
 			<tbody>
 				{#each users as u (u.id)}
 					<tr>
@@ -183,14 +189,14 @@
 							><span class="tag {u.role === 'owner' ? 'tag-accent' : 'tag-neutral'}">{u.role}</span
 							></td
 						>
-						<td class="muted caption">
+						<td class="muted caption hide-sm">
 							{#if u.role === 'guest'}
 								{u.allowed_services.length
 									? u.allowed_services.join(', ')
 									: 'No services'}{u.can_act ? ' · can run actions' : ' · view only'}
 							{:else if u.role === 'member'}All services · can run actions{:else}Everything{/if}
 						</td>
-						<td class="caption muted">{date(u.created_at)}</td>
+						<td class="caption muted hide-sm">{date(u.created_at)}</td>
 						<td class="right">
 							<button class="btn btn-ghost btn-sm" onclick={() => openUser(u)}>Edit</button>
 							{#if u.id !== session.me?.user.id}
@@ -234,17 +240,18 @@
 			<table class="table">
 				<thead
 					><tr
-						><th>Device</th><th>Platform</th><th>User</th><th>Paired</th><th>Last seen</th><th
-						></th></tr
+						><th>Device</th><th class="hide-sm">Platform</th><th>User</th><th class="hide-sm"
+							>Paired</th
+						><th>Last seen</th><th></th></tr
 					></thead
 				>
 				<tbody>
 					{#each devices as d (d.id)}
 						<tr>
 							<td>{d.name}</td>
-							<td class="mono muted">{d.platform}</td>
+							<td class="mono muted hide-sm">{d.platform}{d.push ? ' · push' : ''}</td>
 							<td>{userName(d.user_id)}</td>
-							<td class="caption muted">{date(d.created_at)}</td>
+							<td class="caption muted hide-sm">{date(d.created_at)}</td>
 							<td class="caption muted"><RelativeTime value={d.last_seen_at} /></td>
 							<td class="right"
 								><button class="btn btn-ghost btn-sm danger" onclick={() => (confirmDevice = d)}
@@ -318,7 +325,10 @@
 	{#if pairing}
 		<div class="pair">
 			{#if qr}<img src={qr} alt="Pairing QR code" width="220" height="220" />{/if}
-			<p class="caption muted">Scan with the Quorum app, or open the PWA and type this code:</p>
+			<p class="caption muted">
+				Scan with the Quorum app, or open <span class="mono">{location.host}/pair</span> on the phone
+				and scan or type this code:
+			</p>
 			<span class="code mono">{pairing.code}</span>
 			<span class="caption faint">
 				{remaining > 0

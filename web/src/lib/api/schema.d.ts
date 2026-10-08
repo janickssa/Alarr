@@ -117,7 +117,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** End the current web session. */
+        /** Sign out: ends the web session, or unpairs the device (PWA cookie or bearer token). */
         post: operations["logout"];
         delete?: never;
         options?: never;
@@ -224,6 +224,24 @@ export interface paths {
         post?: never;
         /** Revoke a device. The owner can revoke any device; others only their own. */
         delete: operations["delete_device"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/devices/{id}/push-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register this device's APNs token so alerts chosen for `push` reach it. */
+        post: operations["set_push_token"];
+        /** Stop push to this device (turned off in the app). */
+        delete: operations["delete_push_token"];
         options?: never;
         head?: never;
         patch?: never;
@@ -810,6 +828,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/widget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Everything the iPhone widgets show, in one call. */
+        get: operations["widget"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1004,7 +1039,8 @@ export interface components {
             health_path?: string | null;
             /** @description Phosphor icon name. */
             icon: string;
-            kind?: components["schemas"]["ServiceKind"] | null;
+            /** @description Module kind used for this preset. `None` = module not implemented yet. */
+            kind?: components["schemas"]["ServiceKind"];
             /** @description Integration level from the design catalogue (full, read-only, health). */
             level: string;
             name: string;
@@ -1088,7 +1124,7 @@ export interface components {
         };
         CreateService: {
             base_url?: string | null;
-            category?: components["schemas"]["Category"] | null;
+            category?: components["schemas"]["Category"];
             enabled?: boolean | null;
             /** @description Slug (`a-z`, `0-9`, `-`). Default: derived from the name. */
             id?: string | null;
@@ -1135,6 +1171,10 @@ export interface components {
             last_seen_at: string;
             name: string;
             platform: string;
+            /** @description An APNs token is registered (iOS push). */
+            push: boolean;
+            /** @description `sandbox` or `production` when `push` is set. */
+            push_env?: string | null;
             /** Format: int64 */
             user_id: number;
         };
@@ -1247,10 +1287,12 @@ export interface components {
             total: number;
         };
         GuestDetail: {
-            backup?: components["schemas"]["GuestBackup"] | null;
+            /** @description Latest backup of this guest, including backup jobs over several guests. */
+            backup?: components["schemas"]["GuestBackup"];
             guest: components["schemas"]["Guest"];
             ha_managed: boolean;
-            last_backup?: components["schemas"]["Task"] | null;
+            /** @description Latest finished backup (`vzdump`) task that names this guest. */
+            last_backup?: components["schemas"]["Task"];
             linked_services: components["schemas"]["ServiceRef"][];
             /** @description QEMU guest state (`running`, `paused`, …) from the live status. */
             qmp_status?: string | null;
@@ -1265,7 +1307,7 @@ export interface components {
         Health: "healthy" | "warning" | "down" | "in_progress" | "disabled" | "unknown";
         HealthChange: {
             health: components["schemas"]["Health"];
-            previous?: components["schemas"]["Health"] | null;
+            previous?: components["schemas"]["Health"];
             reason?: string | null;
             service_id: string;
         };
@@ -1318,8 +1360,9 @@ export interface components {
             tls_fingerprint: string | null;
         };
         HealthEntry: {
-            backup?: components["schemas"]["GuestBackup"] | null;
-            guest_type?: components["schemas"]["GuestType"] | null;
+            /** @description Guests: latest backup in the last 35 days. */
+            backup?: components["schemas"]["GuestBackup"];
+            guest_type?: components["schemas"]["GuestType"];
             health: components["schemas"]["Health"];
             health_reason?: string | null;
             /** @description `svc:<id>` or `guest:<vmid>`. */
@@ -1793,8 +1836,11 @@ export interface components {
         };
         PairingCompleted: {
             device: components["schemas"]["Device"];
-            /** @description Bearer token for `Authorization: Bearer …`. Shown once; store it in the Keychain. */
-            token: string;
+            /**
+             * @description Bearer token for `Authorization: Bearer …`. Shown once; store it in the Keychain.
+             *     `null` for the PWA, which gets it as an HttpOnly cookie instead.
+             */
+            token?: string | null;
         };
         PairingStarted: {
             /** @description Code to type on the device, formatted `XXXX-XXXX`. */
@@ -1826,7 +1872,7 @@ export interface components {
         };
         Problem: {
             health: components["schemas"]["Health"];
-            quick_action?: components["schemas"]["QuickAction"] | null;
+            quick_action?: components["schemas"]["QuickAction"];
             reason?: string | null;
             service_id?: string | null;
             title: string;
@@ -1866,6 +1912,15 @@ export interface components {
             /** @description Nginx accepted the host's config (`meta.nginx_online`), when reported. */
             online?: boolean | null;
             ssl_forced: boolean;
+        };
+        PushToken: {
+            /**
+             * @description `sandbox` (Xcode debug build) or `production` (TestFlight, ad hoc). Default: the
+             *     server's `[apns] environment`.
+             */
+            environment?: string | null;
+            /** @description APNs device token, hex as the app gets it from `registerForRemoteNotifications`. */
+            token: string;
         };
         QbittorrentData: {
             /** @description Alternative ("turtle") speed limits on. */
@@ -2023,7 +2078,8 @@ export interface components {
             version: string;
         };
         ServiceHistory: {
-            last_incident?: components["schemas"]["Incident"] | null;
+            /** @description Latest run of `down` minutes in the last 7 days. */
+            last_incident?: components["schemas"]["Incident"];
             /** @description Per-minute samples for the last 24 h, oldest first. */
             points: components["schemas"]["HistoryPoint"][];
             /**
@@ -2080,7 +2136,8 @@ export interface components {
             id: string;
             kind: components["schemas"]["ServiceKind"];
             level: components["schemas"]["IntegrationLevel"];
-            linked_guest?: components["schemas"]["LinkedGuest"] | null;
+            /** @description The linked guest (by config or `svc-<id>` tag), if Proxmox knows it. */
+            linked_guest?: components["schemas"]["LinkedGuest"];
             /**
              * Format: int32
              * @description Container/VM explicitly linked in the service config.
@@ -2196,7 +2253,7 @@ export interface components {
             subtitle?: string | null;
             /** @description Movie title or series name. */
             title: string;
-            transcode?: components["schemas"]["Transcode"] | null;
+            transcode?: components["schemas"]["Transcode"];
             user: string;
         };
         SubtitleEvent: {
@@ -2392,12 +2449,12 @@ export interface components {
             /** @description `ntfy` and/or `push`. */
             channels: string[];
             enabled: boolean;
-            quiet_hours?: components["schemas"]["QuietHours"] | null;
+            quiet_hours?: components["schemas"]["QuietHours"];
         };
         /** @description Partial update. Absent fields stay as they are; `null` clears optional fields. */
         UpdateService: {
             base_url?: string | null;
-            category?: components["schemas"]["Category"] | null;
+            category?: components["schemas"]["Category"];
             /** Format: int32 */
             linked_vmid?: number | null;
             name?: string | null;
@@ -2417,7 +2474,7 @@ export interface components {
             can_act?: boolean | null;
             /** @description Set a new password (signs the user out everywhere on the web). */
             password?: string | null;
-            role?: components["schemas"]["Role"] | null;
+            role?: components["schemas"]["Role"];
         };
         User: {
             /** @description Guests only: service ids the guest may see. */
@@ -2465,6 +2522,79 @@ export interface components {
             rx_bytes: number;
             /** Format: int64 */
             tx_bytes: number;
+        };
+        WidgetDownload: {
+            /**
+             * Format: int64
+             * @description Bytes per second.
+             */
+            dl_speed: number;
+            /** Format: int64 */
+            eta_s?: number | null;
+            name: string;
+            /**
+             * Format: double
+             * @description 0.0–1.0.
+             */
+            progress: number;
+        };
+        WidgetDownloads: {
+            /**
+             * Format: int64
+             * @description Bytes per second, across qBittorrent instances.
+             */
+            dl_speed: number;
+            /** Format: int32 */
+            downloading: number;
+            /** Format: int32 */
+            errored: number;
+            /** @description Busiest downloads first (at most 4). */
+            items: components["schemas"]["WidgetDownload"][];
+            /** Format: int64 */
+            up_speed: number;
+        };
+        /** @description One number per visible service for the small widget ("Sonarr: 3 in queue"). */
+        WidgetService: {
+            headline: string;
+            health: components["schemas"]["Health"];
+            /** @description Phosphor icon name. */
+            icon: string;
+            id: string;
+            name: string;
+        };
+        WidgetStream: {
+            paused: boolean;
+            /**
+             * Format: double
+             * @description 0.0–1.0.
+             */
+            progress?: number | null;
+            service_name: string;
+            subtitle?: string | null;
+            title: string;
+            transcoding: boolean;
+            user: string;
+        };
+        WidgetStreams: {
+            /** Format: int32 */
+            count: number;
+            /** @description At most 4. */
+            items: components["schemas"]["WidgetStream"][];
+            /** Format: int32 */
+            transcodes: number;
+        };
+        WidgetSummary: {
+            /** @description `null` without a visible qBittorrent. */
+            downloads?: components["schemas"]["WidgetDownloads"];
+            /** Format: date-time */
+            generated_at: string;
+            nodes: components["schemas"]["NodeSummary"][];
+            /** @description Worst first. */
+            problems: components["schemas"]["Problem"][];
+            services: components["schemas"]["WidgetService"][];
+            status: components["schemas"]["StatusSummary"];
+            /** @description `null` without a visible Jellyfin or Navidrome. */
+            streams?: components["schemas"]["WidgetStreams"];
         };
         WireguardData: {
             /** @description False when no agent answers: the page shows install steps. */
@@ -2695,7 +2825,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Signed out; cookie cleared */
+            /** @description Signed out; cookies cleared */
             204: {
                 headers: {
                     [name: string]: unknown;
@@ -2914,6 +3044,72 @@ export interface operations {
                 content?: never;
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    set_push_token: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushToken"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    delete_push_token: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4027,6 +4223,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    widget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WidgetSummary"];
                 };
             };
         };

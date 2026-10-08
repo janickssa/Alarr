@@ -63,15 +63,43 @@
 									: 'ph-circle'}
 						fill={state === 'done' || state === 'stuck'}
 						size={13}
-					/>{step.label}
+					/><span class="t">{step.label}</span>
 				</div>
 				<span class="sub">{step.detail ?? ''}</span>
 			</li>
 		{/each}
 	</ol>
+	{#each items.filter((i) => i.state === 'current' || i.state === 'stuck') as now (now.label)}
+		<span class="now {now.state}">{now.label}{now.detail ? ` · ${now.detail}` : ''}</span>
+	{/each}
 </div>
 
 <style>
+	.now {
+		display: none;
+	}
+	/* Phones: the bars only, plus one line for the step it is waiting on. */
+	@media (max-width: 767px) {
+		.t,
+		.sub {
+			display: none;
+		}
+		.lbl {
+			justify-content: center;
+		}
+		.now {
+			display: block;
+			font-size: 13px;
+			color: var(--health-progress);
+		}
+		.now.stuck {
+			color: var(--health-warning);
+		}
+		.top {
+			flex-direction: column;
+			gap: 2px;
+		}
+	}
 	.tracker {
 		background: var(--color-surface);
 		border-radius: var(--radius-md);

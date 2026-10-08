@@ -77,4 +77,44 @@
 		justify-content: flex-end;
 		flex-wrap: wrap;
 	}
+	/* Phones: a bottom sheet with full-width, thumb-sized buttons. */
+	@media (max-width: 767px) {
+		dialog {
+			width: 100% !important;
+			max-width: 100%;
+			margin: auto 0 0;
+			border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+			animation: sheet-up 180ms ease-out;
+		}
+		.body {
+			padding: 10px 16px calc(16px + var(--safe-bottom));
+		}
+		.body::before {
+			content: '';
+			align-self: center;
+			width: 36px;
+			height: 4px;
+			border-radius: 2px;
+			background: var(--color-border);
+		}
+		.actions {
+			flex-direction: column-reverse;
+		}
+		.actions :global(.btn) {
+			width: 100%;
+			min-height: 48px;
+			justify-content: center;
+		}
+	}
+	@keyframes sheet-up {
+		from {
+			transform: translateY(40%);
+			opacity: 0.4;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		dialog {
+			animation: none;
+		}
+	}
 </style>

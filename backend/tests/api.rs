@@ -132,7 +132,7 @@ async fn public_endpoints_and_auth_required() {
 
 #[test]
 fn openapi_operation_ids_are_unique() {
-    let spec = serde_json::to_value(quorum_server::api::openapi()).unwrap();
+    let spec = quorum_server::api::openapi();
     let mut seen = std::collections::HashSet::new();
     for item in spec["paths"].as_object().unwrap().values() {
         for op in item.as_object().unwrap().values() {
@@ -496,7 +496,50 @@ async fn pairing_issues_a_revocable_device_token() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(me["auth"], "device");
 
+    // The iPhone registers its APNs token for itself; the owner's session can't do it for it.
     let id = done["device"]["id"].as_i64().unwrap();
+    let push = format!("/api/v1/devices/{id}/push-token");
+    let body = json!({"token": "A1B2".repeat(16), "environment": "sandbox"});
+    let (status, _, _) = app
+        .call("POST", &push, Some(&owner), Some(body.clone()))
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let (status, _, _) = app
+        .call(
+            "POST",
+            &push,
+            Some(&token),
+            Some(json!({"token": "not hex"})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let (status, _, _) = app.call("POST", &push, Some(&token), Some(body)).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, devices, _) = app.call("GET", "/api/v1/devices", Some(&owner), None).await;
+    let d = devices
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|d| d["id"] == id)
+        .unwrap();
+    assert_eq!(
+        (d["push"].as_bool(), d["push_env"].as_str()),
+        (Some(true), Some("sandbox"))
+    );
+    let targets = app.state.db.push_targets().await.unwrap();
+    assert_eq!(targets[0].token, "a1b2".repeat(16), "stored lower-case");
+    let (status, _, _) = app.call("DELETE", &push, Some(&token), None).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert!(app.state.db.push_targets().await.unwrap().is_empty());
+
+    // The widget summary works with a device token.
+    let (status, w, _) = app.call("GET", "/api/v1/widget", Some(&token), None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(w["status"]["total"].as_u64().unwrap() > 0);
+    assert!(w["downloads"]["dl_speed"].as_u64().is_some(), "{w}");
+    assert!(w["streams"]["count"].as_u64().is_some(), "{w}");
+    assert!(!w["services"].as_array().unwrap().is_empty());
+
     let (status, _, _) = app
         .call(
             "DELETE",
@@ -507,6 +550,42 @@ async fn pairing_issues_a_revocable_device_token() {
         .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (status, _, _) = app.call("GET", "/api/v1/auth/me", Some(&token), None).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    // The PWA gets its device token as an HttpOnly cookie, never in the body.
+    let (_, started, _) = app
+        .call(
+            "POST",
+            "/api/v1/pairing/start",
+            Some(&owner),
+            Some(json!({})),
+        )
+        .await;
+    let (status, done, cookie) = app
+        .call(
+            "POST",
+            "/api/v1/pairing/complete",
+            None,
+            Some(json!({"code": started["code"], "device_name": "Pixel", "platform": "pwa"})),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(done["token"].is_null());
+    let cookie = cookie.expect("device cookie");
+    assert!(cookie.starts_with("quorum_device=qd_"), "{cookie}");
+    let (status, me, _) = app
+        .call("GET", "/api/v1/auth/me", Some(&cookie), None)
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(me["auth"], "device");
+    // Signing out unpairs the device.
+    let (status, _, _) = app
+        .call("POST", "/api/v1/auth/logout", Some(&cookie), None)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, _, _) = app
+        .call("GET", "/api/v1/auth/me", Some(&cookie), None)
+        .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
 
@@ -808,5 +887,29 @@ async fn media_actions_queries_and_confirm() {
         .collect();
     assert!(
         actions.contains(&"service.action.delete") && actions.contains(&"service.action.approve")
+    );
+}
+
+/// swift-openapi-generator skips properties whose `oneOf` includes a bare `null`; optional
+/// references are written as a plain `$ref` outside `required` instead.
+#[test]
+fn openapi_has_no_null_one_of() {
+    let spec = quorum_server::api::openapi();
+    let text = spec.to_string();
+    assert!(
+        !text.contains(r#"{"type":"null"}"#),
+        "a oneOf with a null branch is left"
+    );
+    let problem = &spec["components"]["schemas"]["Problem"];
+    assert_eq!(
+        problem["properties"]["quick_action"]["$ref"],
+        "#/components/schemas/QuickAction"
+    );
+    assert!(
+        !problem["required"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|r| r == "quick_action")
     );
 }

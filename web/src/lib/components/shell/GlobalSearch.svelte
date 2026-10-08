@@ -145,7 +145,7 @@
 		bind:value={query}
 		bind:input
 		shortcut
-		width="360px"
+		width="min(360px, 100%)"
 		label="Search services, containers and media"
 		placeholder="Search services, containers, media…"
 		{onkeydown}
@@ -187,7 +187,7 @@
 		top: calc(100% + 4px);
 		left: 0;
 		width: 420px;
-		max-width: 90vw;
+		max-width: calc(100vw - 2 * var(--gutter));
 		z-index: 40;
 		list-style: none;
 		margin: 0;

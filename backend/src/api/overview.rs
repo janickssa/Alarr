@@ -108,11 +108,16 @@ fn plural(n: u32, one: &str, many: &str) -> String {
 #[utoipa::path(get, path = "/overview", tag = "overview",
     responses((status = 200, body = Overview)))]
 async fn overview(State(state): State<AppState>, user: CurrentUser) -> ApiResult<Json<Overview>> {
-    let views = services::visible_views(&state, &user).await?;
+    Ok(Json(build(&state, &user).await?))
+}
+
+/// The Home overview for one user (also used by `GET /widget`).
+pub async fn build(state: &AppState, user: &CurrentUser) -> ApiResult<Overview> {
+    let views = services::visible_views(state, user).await?;
     let stats = state.db.uptime_stats(crate::db::now()).await?;
-    let settings = load_settings(&state).await?;
+    let settings = load_settings(state).await?;
     let rows = state.db.list_services().await?;
-    let guests = services::guests_with_links(&state, &rows)
+    let guests = services::guests_with_links(state, &rows)
         .filter(|(pve, _)| user.can_see(pve))
         .map(|(_, g)| g)
         .unwrap_or_default();
@@ -221,15 +226,15 @@ async fn overview(State(state): State<AppState>, user: CurrentUser) -> ApiResult
     });
     let highlights = cards
         .into_iter()
-        .map(|v| highlight(&state, v, stats.get(&format!("svc:{}", v.id))))
+        .map(|v| highlight(state, v, stats.get(&format!("svc:{}", v.id))))
         .collect();
 
-    Ok(Json(Overview {
+    Ok(Overview {
         status,
         problems,
         nodes,
         highlights,
-    }))
+    })
 }
 
 fn highlight(state: &AppState, v: &ServiceView, stats: Option<&UptimeStats>) -> Highlight {

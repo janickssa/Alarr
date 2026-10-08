@@ -1,0 +1,1 @@
+{"service_id":"apt-cacher-ng","kind":"health_check","health":"healthy","health_reason":null,"response_ms":71,"updated_at":"2026-10-08T06:01:23.760133526Z","version":null,"stale":false,"data":{"type":"health_check","value":{"check":"http","target":"http://10.0.20.103","status_code":200}}}

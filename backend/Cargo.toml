@@ -12,6 +12,7 @@ name = "quorum-server"
 path = "src/main.rs"
 
 [dependencies]
+a2 = { version = "0.10", default-features = false, features = ["ring"] }
 anyhow = "1"
 argon2 = "0.5"
 async-trait = "0.1"
@@ -29,7 +30,7 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 rust-embed = "8"
 rustls = { version = "0.23", default-features = false, features = ["logging", "ring", "std", "tls12"] }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["preserve_order"] }
 sha2 = "0.10"
 sqlx = { version = "0.8", default-features = false, features = ["macros", "migrate", "runtime-tokio", "sqlite"] }
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
@@ -43,6 +44,7 @@ utoipa-axum = "0.3"
 [dev-dependencies]
 http-body-util = "0.1"
 rcgen = "0.13"
+ring = "0.17"
 tower = { version = "0.5", features = ["util"] }
 wiremock = "0.6"
 

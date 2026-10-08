@@ -54,7 +54,7 @@
 				alert_type: t.alert_type,
 				enabled: t.enabled,
 				channels: [...t.channels],
-				quiet_hours: t.quiet_hours ? { ...t.quiet_hours } : null
+				quiet_hours: t.quiet_hours ? { ...t.quiet_hours } : undefined
 			}));
 		}
 		if (m.data) mutes = m.data.types;
@@ -100,7 +100,7 @@
 						alert_type: t.alert_type,
 						enabled: t.enabled,
 						channels: t.channels,
-						quiet_hours: t.quiet_hours ?? null
+						quiet_hours: t.quiet_hours ?? undefined
 					}))
 				)
 	);
@@ -152,7 +152,7 @@
 	}
 
 	function setQuiet(t: TypeSettings, on: boolean) {
-		t.quiet_hours = on ? { start: '22:00', end: '07:00' } : null;
+		t.quiet_hours = on ? { start: '22:00', end: '07:00' } : undefined;
 	}
 </script>
 

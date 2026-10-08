@@ -31,6 +31,12 @@ class Live {
 	healthTick = $state(0);
 	/** Bumped on every action event. */
 	actionTick = $state(0);
+	/** Bumped by pull to refresh: every page using refetchOnLive reloads. */
+	refreshTick = $state(0);
+
+	refresh() {
+		this.refreshTick++;
+	}
 
 	#source: EventSource | null = null;
 	#listeners = new Set<ActionListener>();
@@ -112,16 +118,19 @@ export function refetchOnLive(
 	let last = 0;
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	let first = true;
+	let lastRefresh = live.refreshTick;
 
 	$effect(() => {
 		for (const id of ids()) void live.ticks[id];
 		if (opts.health) void live.healthTick;
 		if (opts.actions) void live.actionTick;
+		const refresh = live.refreshTick;
 		if (first) {
 			first = false;
 			return;
 		}
-		const wait = Math.max(0, last + minInterval - Date.now());
+		const wait = refresh !== lastRefresh ? 0 : Math.max(0, last + minInterval - Date.now());
+		lastRefresh = refresh;
 		if (timer) return;
 		timer = setTimeout(() => {
 			timer = null;

@@ -17,11 +17,12 @@ database = "/var/lib/quorum/quorum.db"
 # url = "https://ntfy.example.lan"
 # topic = "quorum"
 
-# Used from phase 6 (iOS push).
+# iOS push for the iPhone app (see ios/README.md). Each iPhone tells the server whether its
+# token is sandbox or production; `environment` is only the default.
 # [apns]
 # enabled = true
 # team_id = "ABCDE12345"
 # key_id = "XYZ987WVUT"
 # key_path = "/etc/quorum/AuthKey_XYZ987WVUT.p8"   # file mode 600, never committed
 # bundle_id = "com.example.quorum"
-# environment = "production"                        # or "sandbox" for Xcode debug builds
+# environment = "production"

@@ -457,3 +457,42 @@ button.tag {
 .spacer {
 	flex: 1;
 }
+
+/*
+ * Phones (< 768 px): comfortable density. Secondary table columns carry `hide-sm` and drop
+ * out; buttons and inputs get 44 px targets.
+ */
+@media (max-width: 767px) {
+	.hide-sm {
+		display: none !important;
+	}
+	.table td {
+		padding: 0 6px;
+		white-space: normal;
+	}
+	.table th {
+		padding: 8px 6px;
+	}
+	.btn,
+	.input,
+	.seg-opt {
+		min-height: var(--target);
+	}
+	.page-title {
+		font: var(--text-title);
+		font-size: 26px;
+	}
+	.seg {
+		max-width: 100%;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+	.seg-opt {
+		flex: none;
+	}
+}
+@media (min-width: 768px) {
+	.show-sm {
+		display: none !important;
+	}
+}

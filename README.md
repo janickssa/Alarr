@@ -358,32 +358,34 @@ Backend module + web page for each, in this order. Each needs demo data and wire
 
 Same web codebase; this phase makes it a first-class mobile app.
 
-- [ ] Mobile layouts for every page (breakpoints below 768 px): bottom navigation with the 5 destinations, pushed detail pages with back button and edge swipe, comfortable density (56 pt rows, 44 pt targets, 16 px margins).
-- [ ] Mobile interactions: swipe actions on guest rows, torrents and Seerr requests; bottom sheets for power menus and confirmations; pull to refresh; toasts above the bottom nav.
-- [ ] Safe areas and notch (`viewport-fit=cover`, `env(safe-area-inset-*)`), standalone display mode, no browser chrome.
-- [ ] Web app manifest, icons from the design (`icon-192/512`, `maskable-192/512`, `apple-touch-icon` 180, favicon 16/32 + SVG), splash screens, `theme_color`/`background_color` `#161826`.
-- [ ] Service worker: cache the app shell for instant start; never cache API responses with secrets; clear "backend unreachable / not on VPN" screen.
-- [ ] Device pairing from the PWA by scanning the QR from desktop or typing the code; token stored securely (HttpOnly cookie where possible).
-- [ ] Test on iPhone Safari (installed to home screen) and Android Chrome (installed). Tablet layout 768–1024 px.
-- [ ] Light mode: **not designed yet.** Structure tokens so a light theme can be added; ask the owner whether to derive one now or wait for the designer.
+- [x] Mobile layouts for every page (breakpoints below 768 px): bottom navigation with the 5 destinations, pushed detail pages with back button and edge swipe, comfortable density (56 pt rows, 44 pt targets, 16 px margins).
+- [x] Mobile interactions: swipe actions on guest rows, torrents and Seerr requests; bottom sheets for power menus and confirmations; pull to refresh; toasts above the bottom nav.
+- [x] Safe areas and notch (`viewport-fit=cover`, `env(safe-area-inset-*)`), standalone display mode, no browser chrome.
+- [x] Web app manifest, icons from the design (`icon-192/512`, `maskable-192/512`, `apple-touch-icon` 180, favicon 16/32 + SVG), splash screens, `theme_color`/`background_color` `#161826`.
+- [x] Service worker: cache the app shell for instant start; never cache API responses with secrets; clear "backend unreachable / not on VPN" screen.
+- [x] Device pairing from the PWA by scanning the QR from desktop or typing the code; token stored securely (HttpOnly cookie where possible).
+- [ ] Test on iPhone Safari (installed to home screen) and Android Chrome (installed). Tablet layout 768–1024 px. *(Emulated in Chromium for iPhone SE/13, Pixel 7, iPad Mini/Pro 11 — still needs real devices; tablet layout done.)*
+- [x] Light mode: **not designed yet.** Structure tokens so a light theme can be added; ask the owner whether to derive one now or wait for the designer. **Owner (7 Oct 2026): wait for the designer; dark only until then.**
 
 **Definition of done:** the PWA installs on iPhone and Android, feels like an app, and every page is usable one-handed.
 
 ### Phase 6 – Native iPhone app
 
-- [ ] Xcode project in `ios/` (SwiftUI, iOS 17+), targets: app, widget extension, shared package for API + models.
-- [ ] API client generated from `openapi/openapi.json` with `swift-openapi-generator`; SSE client using `URLSession` byte streams; device token in Keychain.
-- [ ] Pairing by scanning the desktop QR code with the camera, or entering the code.
-- [ ] Tab bar with the 5 destinations, large titles, SF Symbols where Phosphor has no equivalent asset (or bundle Phosphor as SVG assets to match the web), SF Pro / SF Mono, Dynamic Type.
-- [ ] Screens: Home, Proxmox overview, guest list (swipe actions, context menus), guest detail, Media, every service page, Health, Manage services, add service flow, Activity, Settings.
-- [ ] Power confirmations as sheets (normal + destructive), toasts/banners, haptics on action results.
-- [ ] Widgets via App Group cache: small (problems count or one service number), medium (download queue or active streams), large (nodes + problems), lock screen (download speed gauge, problems count).
-- [ ] Optional: Live Activity for an active download or library scan.
-- [ ] App icon (1024, single size) from the design.
-- [ ] APNs in the backend: `a2` crate, token-based auth with the `.p8` key from `[apns]` config, device push tokens registered per paired device (`POST /devices/{id}/push-token`), invalid tokens (HTTP 410) removed automatically, sandbox vs production per device, delivery result in the activity log.
-- [ ] APNs in the app: request permission after pairing, register the token with the backend, notification categories with actions where safe (e.g. "Approve" / "Decline" on a new Seerr request, "Open" on a down service; never power actions from a notification), deep links from a notification to the right page, Time Sensitive interruption level for "service down" and "node offline".
-- [ ] Notification settings screen in the app: per alert type ntfy / push / both, quiet hours, mirrored from the web Settings.
-- [ ] Distribution notes in `ios/README.md`: the owner has a paid Apple Developer account, so install via TestFlight or ad hoc builds (no 7-day expiry). Document creating the App ID with the Push Notifications capability, the APNs `.p8` key, and the App Group for widgets.
+- [x] Xcode project in `ios/` (SwiftUI, iOS 17+), targets: app, widget extension, shared package for API + models.
+- [x] API client generated from `openapi/openapi.json` with `swift-openapi-generator`; SSE client using `URLSession` byte streams; device token in Keychain.
+- [x] Pairing by scanning the desktop QR code with the camera, or entering the code.
+- [x] Tab bar with the 5 destinations, large titles, SF Symbols where Phosphor has no equivalent asset (or bundle Phosphor as SVG assets to match the web), SF Pro / SF Mono, Dynamic Type.
+- [x] Screens: Home, Proxmox overview, guest list (swipe actions, context menus), guest detail, Media, every service page, Health, Manage services, add service flow, Activity, Settings.
+- [x] Power confirmations as sheets (normal + destructive), toasts/banners, haptics on action results.
+- [x] Widgets via App Group cache: small (problems count or one service number), medium (download queue or active streams), large (nodes + problems), lock screen (download speed gauge, problems count).
+- [ ] Optional: Live Activity for an active download or library scan. *(Not built in this phase.)*
+- [x] App icon (1024, single size) from the design.
+- [x] APNs in the backend: `a2` crate, token-based auth with the `.p8` key from `[apns]` config, device push tokens registered per paired device (`POST /devices/{id}/push-token`), invalid tokens (HTTP 410) removed automatically, sandbox vs production per device, delivery result in the activity log.
+- [x] APNs in the app: request permission after pairing, register the token with the backend, notification categories with actions where safe (e.g. "Approve" / "Decline" on a new Seerr request, "Open" on a down service; never power actions from a notification), deep links from a notification to the right page, Time Sensitive interruption level for "service down" and "node offline".
+- [x] Notification settings screen in the app: per alert type ntfy / push / both, quiet hours, mirrored from the web Settings.
+- [x] Distribution notes in `ios/README.md`: the owner has a paid Apple Developer account, so install via TestFlight or ad hoc builds (no 7-day expiry). Document creating the App ID with the Push Notifications capability, the APNs `.p8` key, and the App Group for widgets.
+
+*Status (8 Oct 2026): the app and widgets compile for the iOS Simulator and QuorumKit's tests pass in CI on macOS (Xcode 26). It has not run on a device yet: pairing, push delivery and widgets on a real iPhone still need the owner's Apple Developer setup (see `ios/README.md`).*
 
 **Definition of done:** the app pairs with the backend, shows all pages live, runs power actions and scans, the widgets update, and alerts arrive as iOS push notifications (and in ntfy when chosen).
 
@@ -467,3 +469,22 @@ Same web codebase; this phase makes it a first-class mobile app.
 | 2026-10-07 | Backup status comes from `vzdump` tasks (single-guest tasks by id, multi-guest jobs by parsing their logs), last 35 days, cached 5 min; Health warns when a guest's last backup failed. Listing backup files was rejected: it needs `Datastore.AllocateSpace` + `VM.Backup`, outside the read-only token role | Security rules keep the Proxmox token minimal |
 | 2026-10-07 | Launcher is its own page (`/launcher`, linked from Services, `g o`) rather than a Home mode | Optional per the README; Home stays the status view |
 | 2026-10-07 | Phase 4 verified in demo mode with a scripted headless-Chromium run (new service pages, pause blocking, alerts list/settings with a live alert, auto-throttle switch, Health backups, launcher) and an axe-core WCAG 2.1 AA audit with no violations on those pages | Same approach as phases 2 and 3 |
+| 2026-10-07 | Phones (< 768 px) get a bottom tab bar with Home, Proxmox, Media, Services and More (Proxmox/Media only when configured); More holds Health, Alerts, Activity, Launcher, Settings, every service and the account. Pages reached from More, service pages and settings sub-pages are "pushed": back button in the header and a left-edge swipe go back. Tablets (768–1023 px) get an icon-rail sidebar | The README's 5 destinations; matches the decision logged in phase 2 |
+| 2026-10-07 | Phone tables drop secondary columns (`hide-sm`) rather than becoming separate card layouts; the request tracker shows its bars plus one line for the step it waits on | One codebase per page; important columns fit at 44 px targets |
+| 2026-10-07 | Swipe actions: torrents (right stop/start, left delete), Seerr requests (right approve, left decline), guest rows (left opens the power sheet). Destructive swipes still open the confirmation sheet. Dialogs and the power menu are bottom sheets on phones. Pull to refresh reloads every page using `refetchOnLive` | Buttons stay the accessible path; swipes never skip a confirmation |
+| 2026-10-07 | Service worker is SvelteKit's built-in one, not `vite-plugin-pwa`: it precaches the build and static files (woff2 only), serves navigations network-first with the cached shell offline, and never intercepts `/api/`. The manifest is a static file | No extra dependency on Vite 8; full control that nothing from the API is cached |
+| 2026-10-07 | Installing the PWA and the service worker need HTTPS (browsers only allow them on secure origins, except localhost). Serve Quorum over HTTPS on the tailnet, e.g. `tailscale serve` or a `tailscale cert` certificate, and set `public_url` to that address | Browser rule; Quorum itself doesn't terminate TLS |
+| 2026-10-07 | PWA pairing: `/pair` scans the desktop QR (`quorum://pair?server=…&code=…`, checked against this host) with BarcodeDetector or jsQR (iOS Safari has no BarcodeDetector), or takes the typed code. With `platform: pwa` the backend sets the device token as an HttpOnly, SameSite=Strict cookie (400 days, the browser maximum) and returns `token: null`; signing out from a device unpairs it | README: token stored securely, HttpOnly cookie where possible |
+| 2026-10-07 | PWA icons and iOS launch screens are rendered from the design's 1j board by `web/scripts/pwa-assets.mjs` (Chromium); launch screens are JPEG (420 KB for 14 sizes instead of 7 MB of PNG) | Small binary; reproducible assets |
+| 2026-10-07 | Light mode: tokens already live in a `[data-theme]` block with layout tokens separate; the owner chose to wait for the designer, so the app stays dark (`color-scheme: dark`) | Owner's answer to the phase 5 question |
+| 2026-10-07 | Phase 5 verified with Chromium device emulation (iPhone SE, iPhone 13, Pixel 7, iPad Mini, iPad Pro 11): no sideways scrolling on any page, gestures driven with CDP touch events (swipe actions, edge swipe back, pull to refresh), service worker install/offline/recovery, and an axe WCAG 2.1 AA audit at phone size with no violations. Real iPhone Safari / Android Chrome installs are still to do (WebKit isn't available in the build environment) | Emulation catches layout and logic; installed-PWA behaviour needs real devices |
+| 2026-10-08 | iOS project is an XcodeGen spec (`ios/project.yml`); the `.xcodeproj` is generated, not committed. Bundle id, app group and team come from `ios/Config/*.xcconfig` (`Local.xcconfig` is the owner's, not committed) | A hand-edited `project.pbxproj` is hard to review and merge |
+| 2026-10-08 | The Swift client is generated at build time by the swift-openapi-generator plug-in from `openapi/openapi.json` (symlinked into `QuorumKit/Sources/QuorumAPI`), idiomatic naming, public access. Generator 1.14 needs Xcode 26 (Swift 6.2). The package compiles in Swift 5 language mode | Always matches the server's spec; no generated code to commit |
+| 2026-10-08 | The spec writes optional references (`Option<Struct>`) as a plain `$ref` left out of `required` instead of `oneOf [$ref, {type: null}]`: swift-openapi-generator skipped those 16 properties. Same meaning for clients; the web client now types them as optional instead of `| null` | Generator limitation; one transform in `api::optional_refs` |
+| 2026-10-08 | No Swift toolchain in the build environment, so the iPhone code is compiled and tested by a macOS GitHub Actions job (`.github/workflows/ios.yml`, only when `ios/` or the spec changes). QuorumKit tests decode JSON captured from `--demo` for every module | Real compile + decode checks without a Mac; macOS minutes cost 10× on private repos |
+| 2026-10-08 | iOS uses SF Symbols mapped from the catalogue's Phosphor names (`QuorumCore/Theme.swift`), SF Pro / SF Mono with text styles (Dynamic Type), colours converted from the design's OKLCH tokens. iPhone only, portrait, dark | Native look; Phosphor as assets would add ~100 files for icons iOS already has |
+| 2026-10-08 | Device token stored as one Keychain item with the App Group as access group and `AfterFirstUnlockThisDeviceOnly`, so the widget extension can refresh while the phone is locked | Widgets need the token; it never leaves the device |
+| 2026-10-08 | Widgets read a summary from a new `GET /widget` (problems, nodes, downloads, streams, one line per service), cached in the App Group by the app and refreshed by the widgets every 15 min. The small "service" widget's service is picked in the app's Settings | One cheap call per refresh; no App Intents configuration to maintain |
+| 2026-10-08 | APNs: each iPhone registers its token with its environment (Debug builds sandbox, Release/TestFlight/ad hoc production). Push honours per-device mutes and guest visibility; `Unregistered`/`BadDeviceToken`/410 tokens are dropped; one `push.send` activity entry per delivery. Down/offline are Time Sensitive, recoveries passive. Categories: `SEERR_REQUEST` (Approve/Decline, need unlock) and `SERVICE_DOWN` (Open) | README rules; never power actions from a notification |
+| 2026-10-08 | App Transport Security: HTTPS required except local-network addresses (`NSAllowsLocalNetworking`); use `tailscale serve`/`tailscale cert` as for the PWA | No global ATS exception |
+| 2026-10-08 | Live Activity (optional) not built in this phase | Optional; needs push-to-start tokens and a new server path |

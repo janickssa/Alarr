@@ -56,7 +56,7 @@ impl AppState {
             },
             demo,
         );
-        let channels = crate::alerts::channels::from_config(&config);
+        let channels = crate::alerts::channels::from_config(&config, &db, &events);
         Self(Arc::new(AppStateInner {
             channels,
             throttle: Default::default(),

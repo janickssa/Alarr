@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { swipe } from '#lib/swipe.js';
 	// Seerr: pending requests (approve/decline), new request search, request history.
 	import {
 		api,
@@ -88,7 +89,30 @@
 	{:else}
 		<ul class="list">
 			{#each data.pending as r (r.id)}
-				<li class="req">
+				<li
+					class="req"
+					use:swipe={{
+						disabled: !canAct,
+						right: {
+							label: 'Approve',
+							color: 'var(--health-healthy-fill)',
+							run: () =>
+								void runAction(service.id, 'approve', {
+									label: `Approving ${r.title}`,
+									args: { id: r.id }
+								})
+						},
+						left: {
+							label: 'Decline',
+							color: 'var(--health-down-fill)',
+							run: () =>
+								void runAction(service.id, 'decline', {
+									label: `Declining ${r.title}`,
+									args: { id: r.id }
+								})
+						}
+					}}
+				>
 					<div
 						class="poster"
 						style:background={r.poster_url
@@ -235,6 +259,18 @@
 		padding: 8px 12px;
 		border-radius: var(--radius-md);
 		background: var(--color-surface);
+	}
+	@media (max-width: 767px) {
+		.req:not(.small) {
+			flex-wrap: wrap;
+		}
+		.req:not(.small) .txt {
+			flex: 1 1 calc(100% - 64px);
+		}
+		.req:not(.small) :global(.btn) {
+			flex: 1;
+			justify-content: center;
+		}
 	}
 	.req.small {
 		min-height: 48px;

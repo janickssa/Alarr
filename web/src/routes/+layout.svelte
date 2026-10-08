@@ -2,8 +2,7 @@
 	import '#lib/styles/fonts.js';
 	import '#lib/styles/tokens.css';
 	import '#lib/styles/base.css';
-	import favicon from '#lib/assets/favicon.svg';
-	import { goto } from '$app/navigation';
+	import { afterNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -12,24 +11,62 @@
 	import { api } from '#lib/api/client.js';
 	import Banner from '#lib/components/Banner.svelte';
 	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
+	import Icon from '#lib/components/Icon.svelte';
 	import Logo from '#lib/components/Logo.svelte';
 	import Header from '#lib/components/shell/Header.svelte';
 	import Sidebar from '#lib/components/shell/Sidebar.svelte';
+	import PullToRefresh from '#lib/components/shell/PullToRefresh.svelte';
+	import TabBar from '#lib/components/shell/TabBar.svelte';
 	import Toaster from '#lib/components/Toaster.svelte';
 	import { connection } from '#lib/connection.svelte.js';
 	import { time } from '#lib/format.js';
 	import { live, refetchOnLive } from '#lib/live.svelte.js';
+	import { nav, parentOf } from '#lib/nav.svelte.js';
 	import { session } from '#lib/session.svelte.js';
 
 	let { children }: LayoutProps = $props();
 
-	const PUBLIC = ['/login', '/setup'];
+	afterNavigate((n) => {
+		if (n.type === 'enter') return;
+		if (n.type === 'popstate') nav.depth = Math.max(0, nav.depth - (n.delta ?? 1));
+		else nav.depth++;
+	});
+
+	// Edge swipe (phones): from the left edge to the right goes back on pushed pages.
+	let swipe: { x: number; y: number } | null = null;
+	function ontouchstart(e: TouchEvent) {
+		const t = e.touches[0];
+		swipe =
+			t.clientX < 24 && window.innerWidth < 768 && parentOf(page.url.pathname)
+				? { x: t.clientX, y: t.clientY }
+				: null;
+	}
+	function ontouchend(e: TouchEvent) {
+		if (!swipe) return;
+		const t = e.changedTouches[0];
+		const dx = t.clientX - swipe.x;
+		const dy = Math.abs(t.clientY - swipe.y);
+		swipe = null;
+		if (dx > 80 && dy < 50) nav.back(page.url.pathname);
+	}
+
+	const PUBLIC = ['/login', '/setup', '/pair'];
 	const isPublic = $derived(PUBLIC.some((p) => page.url.pathname.startsWith(p)));
 	let ready = $state(false);
 	let searchInput: HTMLInputElement | undefined = $state();
 
+	/** True when the first request failed at the network level (no VPN, server down). */
+	let offline = $state(false);
+
 	async function boot() {
+		offline = false;
 		const me = await session.loadMe().catch(() => null);
+		if (!me && !connection.reachable) {
+			// Don't send the user to sign-in when the server just can't be reached.
+			offline = true;
+			ready = true;
+			return;
+		}
 		if (!me) {
 			ready = true;
 			if (!isPublic) {
@@ -106,16 +143,31 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
 	<title>{APP_NAME}</title>
 </svelte:head>
 
-<svelte:window {onkeydown} />
+<svelte:window {onkeydown} {ontouchstart} {ontouchend} />
 
 <a class="skip" href="#main">Skip to content</a>
 
 {#if isPublic}
 	{@render children()}
+{:else if offline}
+	<div class="splash" role="alert">
+		<Logo size={56} />
+		<h1 class="off-title">Can't reach Quorum</h1>
+		<p class="off-text">
+			<span class="mono">{page.url.host}</span> isn't answering. Are you on Tailscale (or your VPN)? Is
+			the server running?
+		</p>
+		<button
+			class="btn btn-primary"
+			onclick={() => {
+				ready = false;
+				void boot();
+			}}><Icon name="ph-arrow-clockwise" />Try again</button
+		>
+	</div>
 {:else if !ready || !session.me}
 	<div class="splash">
 		<Logo size={56} />
@@ -139,10 +191,12 @@
 				</div>
 			{/if}
 			<main id="main" tabindex="-1">
+				<PullToRefresh />
 				{@render children()}
 			</main>
 		</div>
 	</div>
+	<TabBar />
 	<Toaster />
 	<ConfirmDialog />
 {/if}
@@ -161,6 +215,9 @@
 	main {
 		flex: 1;
 		min-width: 0;
+		padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+		padding-left: var(--safe-left);
+		padding-right: var(--safe-right);
 	}
 	main:focus {
 		outline: none;
@@ -176,6 +233,16 @@
 		justify-content: center;
 		gap: 18px;
 		background: radial-gradient(60% 40% at 50% 44%, #262a60 0%, #161826 70%);
+	}
+	.off-title {
+		font: var(--text-title);
+	}
+	.off-text {
+		max-width: 320px;
+		text-align: center;
+		color: var(--color-neutral-300);
+		font-size: 14px;
+		margin: 0 16px;
 	}
 	.skip {
 		position: absolute;

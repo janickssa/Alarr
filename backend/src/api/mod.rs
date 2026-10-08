@@ -12,6 +12,7 @@ pub mod pairing;
 pub mod proxmox;
 pub mod services;
 pub mod settings;
+pub mod widget;
 
 use axum::extract::State;
 use axum::{Json, Router};
@@ -101,18 +102,68 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(alerts::router())
         .merge(automation::router())
         .merge(settings::router())
+        .merge(widget::router())
         .merge(events::router())
 }
 
-fn split() -> (Router<AppState>, utoipa::openapi::OpenApi) {
+fn split() -> (Router<AppState>, serde_json::Value) {
     let (router, mut spec) = api_router().split_for_parts();
     spec.info.version = crate::VERSION.to_owned();
     spec.servers = Some(vec![utoipa::openapi::Server::new("/api/v1")]);
-    (router, spec)
+    let mut json = serde_json::to_value(&spec).expect("OpenAPI document serializes");
+    optional_refs(&mut json);
+    (router, json)
 }
 
-/// The OpenAPI document for the whole API.
-pub fn openapi() -> utoipa::openapi::OpenApi {
+/// Writes optional references (`Option<Struct>`), which utoipa emits as
+/// `oneOf: [{$ref}, {type: null}]`, as a plain `$ref` that is left out of `required`.
+/// Same meaning for clients (absent or null), and swift-openapi-generator skips properties
+/// whose schema includes a bare `null` type.
+fn optional_refs(spec: &mut serde_json::Value) {
+    fn is_null(v: &serde_json::Value) -> bool {
+        v.as_object()
+            .is_some_and(|o| o.len() == 1 && o.get("type") == Some(&"null".into()))
+    }
+    fn walk(v: &mut serde_json::Value) {
+        match v {
+            serde_json::Value::Object(o) => {
+                let mut optional = Vec::new();
+                if let Some(serde_json::Value::Object(props)) = o.get_mut("properties") {
+                    for (name, prop) in props.iter_mut() {
+                        let Some(items) = prop.get("oneOf").and_then(|x| x.as_array()) else {
+                            continue;
+                        };
+                        if items.len() != 2 || !items.iter().any(is_null) {
+                            continue;
+                        }
+                        let mut other = items
+                            .iter()
+                            .find(|i| !is_null(i))
+                            .cloned()
+                            .unwrap_or_default();
+                        if let (Some(desc), Some(obj)) =
+                            (prop.get("description"), other.as_object_mut())
+                        {
+                            obj.entry("description").or_insert_with(|| desc.clone());
+                        }
+                        *prop = other;
+                        optional.push(name.clone());
+                    }
+                }
+                if let Some(serde_json::Value::Array(req)) = o.get_mut("required") {
+                    req.retain(|r| !optional.iter().any(|n| r.as_str() == Some(n)));
+                }
+                o.values_mut().for_each(walk);
+            }
+            serde_json::Value::Array(a) => a.iter_mut().for_each(walk),
+            _ => {}
+        }
+    }
+    walk(spec);
+}
+
+/// The OpenAPI document for the whole API, as JSON.
+pub fn openapi() -> serde_json::Value {
     split().1
 }
 

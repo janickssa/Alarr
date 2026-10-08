@@ -217,13 +217,17 @@
 								{:else}<span>{p.title}</span>{/if}
 								<span class="muted">{p.reason ?? ''}</span>
 							</div>
-							<HealthBadge health={p.health} small />
+							<span class="hide-sm"><HealthBadge health={p.health} small /></span>
 							{#if p.quick_action && (!p.service_id || session.canAct(p.service_id) || p.quick_action.kind === 'retry')}
-								<button class="btn btn-secondary btn-sm" onclick={() => quick(p)}>
+								<button
+									class="btn btn-secondary btn-sm"
+									aria-label="{p.quick_action.label} {p.title}"
+									onclick={() => quick(p)}
+								>
 									<Icon
 										name={p.quick_action.kind === 'start_guest' ? 'ph-play' : 'ph-arrow-clockwise'}
 									/>
-									{p.quick_action.label}
+									<span class="hide-sm">{p.quick_action.label}</span>
 								</button>
 							{/if}
 						</div>

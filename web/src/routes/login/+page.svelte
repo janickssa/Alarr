@@ -64,6 +64,7 @@
 		<button class="btn btn-primary" type="submit" disabled={busy}>
 			{busy ? 'Signing in…' : 'Sign in'}
 		</button>
+		<a class="caption" href={resolve('/pair')}>Pair this device with a code instead</a>
 	</form>
 </div>
 
