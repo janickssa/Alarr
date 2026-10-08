@@ -63,14 +63,17 @@
 		processing: { health: 'in_progress', label: 'Processing' },
 		pending: { health: 'warning', label: 'Pending' },
 		deleted: { health: 'disabled', label: 'Deleted' },
+		blocklisted: { health: 'disabled', label: 'Blocklisted' },
 		unknown: { health: 'unknown', label: 'Unknown' }
 	};
 	const label = (r: MediaRequest) =>
 		r.status === 'declined'
 			? { health: 'down' as const, label: 'Declined' }
-			: r.status === 'pending'
-				? STATUS.pending
-				: (STATUS[r.media_status] ?? STATUS.unknown);
+			: r.status === 'failed'
+				? { health: 'down' as const, label: 'Failed' }
+				: r.status === 'pending'
+					? STATUS.pending
+					: (STATUS[r.media_status] ?? STATUS.unknown);
 	const seasons = (r: MediaRequest) =>
 		r.seasons.length ? ` · S${r.seasons.map((s) => String(s).padStart(2, '0')).join(', S')}` : '';
 </script>
