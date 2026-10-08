@@ -2,6 +2,8 @@
 
 Quorum is one binary (`quorum-server`) with the web UI built in. Run it in a small Debian or Alpine LXC on Proxmox, or as a Docker container. Clients reach it over Tailscale/WireGuard only; it still requires sign-in for everything.
 
+**Step-by-step guide for a Debian 13 LXC (build and run in the container): [INSTALL-DEBIAN-LXC.md](INSTALL-DEBIAN-LXC.md).**
+
 | File | Purpose |
 | --- | --- |
 | `Dockerfile` | Multi-stage build: web UI, then a static musl binary, then a small Alpine image |
