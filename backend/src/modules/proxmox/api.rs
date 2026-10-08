@@ -269,9 +269,16 @@ impl HttpProxmox {
             bail!("authentication failed (check the API token)");
         }
         if !status.is_success() {
-            // Proxmox puts the reason in the status line, e.g. "403 Permission check failed".
-            let reason = status.canonical_reason().unwrap_or("error");
-            bail!("Proxmox returned HTTP {} {reason}", status.as_u16());
+            // Proxmox puts the reason in the status line, e.g.
+            // "403 Permission check failed (/, Sys.Audit)".
+            let reason = response
+                .extensions()
+                .get::<hyper::ext::ReasonPhrase>()
+                .and_then(|r| std::str::from_utf8(r.as_bytes()).ok())
+                .map(str::to_owned)
+                .or_else(|| status.canonical_reason().map(str::to_owned))
+                .unwrap_or_else(|| "error".into());
+            bail!("{}", http_error(status.as_u16(), &reason));
         }
         let envelope: Envelope<T> = response
             .json()
@@ -428,5 +435,30 @@ impl ProxmoxApi for HttpProxmox {
             .and_then(Value::as_object)
             .map(|m| m.keys().cloned().collect())
             .unwrap_or_default())
+    }
+}
+
+/// The message for a failed Proxmox call, with a hint for missing privileges.
+fn http_error(code: u16, reason: &str) -> String {
+    let hint = if code == 403 {
+        " — the API token lacks a privilege. With privilege separation, give QuorumRole to \
+         both the user and the token (deploy/README.md, section 1)"
+    } else {
+        ""
+    };
+    format!("Proxmox returned HTTP {code} {reason}{hint}")
+}
+
+#[cfg(test)]
+mod error_tests {
+    #[test]
+    fn forbidden_explains_acls() {
+        let m = super::http_error(403, "Permission check failed (/, Sys.Audit)");
+        assert!(m.starts_with("Proxmox returned HTTP 403 Permission check failed (/, Sys.Audit)"));
+        assert!(m.contains("both the user and the token"), "{m}");
+        assert_eq!(
+            super::http_error(500, "boom"),
+            "Proxmox returned HTTP 500 boom"
+        );
     }
 }

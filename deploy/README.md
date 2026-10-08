@@ -20,8 +20,12 @@ Quorum only reads and powers guests on/off. Give it a dedicated user and token w
 pveum role add QuorumRole -privs "VM.Audit Sys.Audit Datastore.Audit VM.PowerMgmt"
 pveum user add quorum@pve --comment "Quorum control center"
 pveum user token add quorum@pve quorum --privsep 1
-# With privilege separation the token needs its own ACL:
+# With privilege separation a token gets only what BOTH the user and the token are
+# granted, so give the role to both:
+pveum acl modify / --roles QuorumRole --users quorum@pve
 pveum acl modify / --roles QuorumRole --tokens 'quorum@pve!quorum'
+# Check: should list VM.Audit, Sys.Audit, Datastore.Audit and VM.PowerMgmt on "/"
+pveum user token permissions quorum@pve quorum
 ```
 
 The `token add` command prints the secret once. In Quorum, add a **Proxmox cluster** service with:
