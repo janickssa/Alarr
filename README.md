@@ -35,6 +35,7 @@ You are building this project from this README plus the design files in `design/
 ├─ backend/                  ← Rust server (cargo crate: quorum-server)
 ├─ web/                      ← Web UI + PWA (one codebase)
 ├─ ios/                      ← Native SwiftUI app (phase 6)
+├─ android/                  ← Native Kotlin / Jetpack Compose app (phase 7)
 ├─ agent/                    ← Tiny Rust agent for WireGuard peers (phase 4)
 ├─ openapi/openapi.json      ← Generated from the backend, committed
 └─ deploy/                   ← Dockerfile, LXC/systemd setup, example config
@@ -389,6 +390,27 @@ Same web codebase; this phase makes it a first-class mobile app.
 
 **Definition of done:** the app pairs with the backend, shows all pages live, runs power actions and scans, the widgets update, and alerts arrive as iOS push notifications (and in ntfy when chosen).
 
+### Phase 7 – Native Android app
+
+Target device: the owner's Poco F1 (`beryllium`) on LineageOS 22 (Android 15). Same feature set and behaviour as the iPhone app; the backend changes are push delivery and accepting the `android` platform.
+
+- [ ] Gradle project in `android/` (Kotlin, Jetpack Compose, Material 3 styled with the Nocturne tokens, minSdk 26, targetSdk 35). Modules: `app`, and a shared `core` module for API + models.
+- [ ] API client generated from `openapi/openapi.json` (OpenAPI Generator, Kotlin + OkHttp/kotlinx.serialization); SSE client on OkHttp; device token in Android Keystore-backed encrypted storage.
+- [ ] Pairing by scanning the desktop QR code with the camera (CameraX + ML Kit or ZXing, whichever works without Google Play services), or entering the code. Backend: `platform` accepts `android`.
+- [ ] Never signs out by itself: "Can't connect" / "Sign-in not accepted" screen with Try again and Log out, as on web and iOS.
+- [ ] Bottom navigation with the 5 destinations, Phosphor icons, Inter + JetBrains Mono, respects the system font scale.
+- [ ] Screens: Home, Proxmox overview, guest list (swipe actions, long-press menus), guest detail, Media, every service page, Health, Manage services, add service flow, Activity, Settings.
+- [ ] Power confirmations as bottom sheets (normal + destructive), snackbars/toasts, haptics on action results.
+- [ ] Home-screen widgets (Jetpack Glance) from a cached summary (`/widget`): small (problems count), medium (download queue or active streams), large (nodes + problems).
+- [ ] Adaptive app icon and splash from the design.
+- [ ] FCM in the backend: HTTP v1 API (`POST https://fcm.googleapis.com/v1/projects/{project_id}/messages:send`) with an OAuth 2 access token from a Firebase service-account JSON (`[fcm]` config, file mode 600, never committed), tokens registered per device through the existing `POST /devices/{id}/push-token`, unregistered tokens removed automatically, delivery result in the activity log. Push becomes a channel next to APNs and ntfy.
+- [ ] FCM in the app: ask for the notification permission (Android 13+) after pairing, register the token, notification channels per alert type ("Service down" and "Node offline" high importance), actions where safe ("Approve" / "Decline" on a Seerr request, "Open"; never power actions), deep links to the right page.
+- [ ] Notification settings screen, mirrored from the web Settings.
+- [ ] CI builds and tests the app on Linux and uploads a signed release `.apk` as a build artifact; installed by sideloading (no Play Store).
+- [ ] `android/README.md`: step-by-step guide for creating the free Firebase project (Spark plan), registering the app, downloading `google-services.json` and the service-account key, putting them in place, building or downloading the `.apk`, and installing it on LineageOS (including what to do without Google Play services, see the open question).
+
+**Definition of done:** the app pairs with the backend, shows all pages live, runs power actions and scans, the widgets update, and alerts arrive as Android push notifications (and in ntfy when chosen).
+
 ---
 
 ## Open questions for the owner
@@ -397,6 +419,7 @@ Same web codebase; this phase makes it a first-class mobile app.
 - Light mode: derive now or wait for the designer? (Brief asks for both; batch 1 is dark only.)
 - What does `lxc-updater` (CT 104) output?
 - Are there more containers/VMs beyond CT 128 to add to the catalogue?
+- Phase 7: does the Poco F1's LineageOS have Google Play services (GApps such as MindTheGapps) or microG? FCM push needs one of them. Without either, push would use UnifiedPush through the ntfy app instead.
 
 ## Decisions log
 
@@ -493,3 +516,4 @@ Same web codebase; this phase makes it a first-class mobile app.
 | 2026-10-08 | Seerr request statuses are 1 pending, 2 approved, 3 declined, 4 failed, 5 completed; media statuses gained 6 blocklisted (deleted is 7), per Seerr's `server/constants/media.ts`. The request tracker counts anything completed, failed, queued, imported or available as approved; a failed request is stuck at "Grabbed" | Fulfilled requests (status 5) showed "waiting for approval" while Seerr said Available |
 | 2026-10-08 | Session and device cookies are `SameSite=Lax` (was Strict) and `GET /auth/me` re-issues the cookie. iOS home-screen web apps can drop Strict cookies after a relaunch. Lax still keeps cookies off cross-site POST/PUT/DELETE and fetches, and no GET changes anything, so CSRF protection is unchanged. The web app now treats only a 401 from `/auth/me` as signed out; any other failure shows "Can't reach Quorum" and retries every 3 s | The owner's PWA showed the sign-in page after being closed |
 | 2026-10-08 | The apps never sign out by themselves. The web app remembers it was signed in (`localStorage`), and the iPhone app keeps its pairing in the Keychain; when the server can't be reached or refuses the session, both show the reason ("Can't connect" or "Sign-in not accepted") with Try again and Log out, and retry on their own (web 3 s / 15 s, iPhone 5 s / 15 s). Only Log out forgets the sign-in | The owner wants to land on the sign-in page only after choosing Log out |
+| 2026-10-08 | Native Android app added as phase 7 (Kotlin, Jetpack Compose), with push through Firebase Cloud Messaging (free) and installed by sideloading an `.apk` | The owner wants a native app on their Poco F1 (LineageOS 22) |
