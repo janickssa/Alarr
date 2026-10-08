@@ -1,4 +1,5 @@
 import OpenAPIRuntime
+import QuorumAPI
 import QuorumCore
 import SwiftUI
 

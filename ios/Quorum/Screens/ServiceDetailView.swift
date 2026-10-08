@@ -1,4 +1,5 @@
 import Charts
+import QuorumAPI
 import QuorumCore
 import SwiftUI
 

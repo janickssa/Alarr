@@ -889,3 +889,27 @@ async fn media_actions_queries_and_confirm() {
         actions.contains(&"service.action.delete") && actions.contains(&"service.action.approve")
     );
 }
+
+/// swift-openapi-generator skips properties whose `oneOf` includes a bare `null`; optional
+/// references are written as a plain `$ref` outside `required` instead.
+#[test]
+fn openapi_has_no_null_one_of() {
+    let spec = quorum_server::api::openapi();
+    let text = spec.to_string();
+    assert!(
+        !text.contains(r#"{"type":"null"}"#),
+        "a oneOf with a null branch is left"
+    );
+    let problem = &spec["components"]["schemas"]["Problem"];
+    assert_eq!(
+        problem["properties"]["quick_action"]["$ref"],
+        "#/components/schemas/QuickAction"
+    );
+    assert!(
+        !problem["required"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|r| r == "quick_action")
+    );
+}
