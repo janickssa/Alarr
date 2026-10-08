@@ -371,19 +371,21 @@ Same web codebase; this phase makes it a first-class mobile app.
 
 ### Phase 6 – Native iPhone app
 
-- [ ] Xcode project in `ios/` (SwiftUI, iOS 17+), targets: app, widget extension, shared package for API + models.
-- [ ] API client generated from `openapi/openapi.json` with `swift-openapi-generator`; SSE client using `URLSession` byte streams; device token in Keychain.
-- [ ] Pairing by scanning the desktop QR code with the camera, or entering the code.
-- [ ] Tab bar with the 5 destinations, large titles, SF Symbols where Phosphor has no equivalent asset (or bundle Phosphor as SVG assets to match the web), SF Pro / SF Mono, Dynamic Type.
-- [ ] Screens: Home, Proxmox overview, guest list (swipe actions, context menus), guest detail, Media, every service page, Health, Manage services, add service flow, Activity, Settings.
-- [ ] Power confirmations as sheets (normal + destructive), toasts/banners, haptics on action results.
-- [ ] Widgets via App Group cache: small (problems count or one service number), medium (download queue or active streams), large (nodes + problems), lock screen (download speed gauge, problems count).
-- [ ] Optional: Live Activity for an active download or library scan.
-- [ ] App icon (1024, single size) from the design.
+- [x] Xcode project in `ios/` (SwiftUI, iOS 17+), targets: app, widget extension, shared package for API + models.
+- [x] API client generated from `openapi/openapi.json` with `swift-openapi-generator`; SSE client using `URLSession` byte streams; device token in Keychain.
+- [x] Pairing by scanning the desktop QR code with the camera, or entering the code.
+- [x] Tab bar with the 5 destinations, large titles, SF Symbols where Phosphor has no equivalent asset (or bundle Phosphor as SVG assets to match the web), SF Pro / SF Mono, Dynamic Type.
+- [x] Screens: Home, Proxmox overview, guest list (swipe actions, context menus), guest detail, Media, every service page, Health, Manage services, add service flow, Activity, Settings.
+- [x] Power confirmations as sheets (normal + destructive), toasts/banners, haptics on action results.
+- [x] Widgets via App Group cache: small (problems count or one service number), medium (download queue or active streams), large (nodes + problems), lock screen (download speed gauge, problems count).
+- [ ] Optional: Live Activity for an active download or library scan. *(Not built in this phase.)*
+- [x] App icon (1024, single size) from the design.
 - [x] APNs in the backend: `a2` crate, token-based auth with the `.p8` key from `[apns]` config, device push tokens registered per paired device (`POST /devices/{id}/push-token`), invalid tokens (HTTP 410) removed automatically, sandbox vs production per device, delivery result in the activity log.
-- [ ] APNs in the app: request permission after pairing, register the token with the backend, notification categories with actions where safe (e.g. "Approve" / "Decline" on a new Seerr request, "Open" on a down service; never power actions from a notification), deep links from a notification to the right page, Time Sensitive interruption level for "service down" and "node offline".
-- [ ] Notification settings screen in the app: per alert type ntfy / push / both, quiet hours, mirrored from the web Settings.
-- [ ] Distribution notes in `ios/README.md`: the owner has a paid Apple Developer account, so install via TestFlight or ad hoc builds (no 7-day expiry). Document creating the App ID with the Push Notifications capability, the APNs `.p8` key, and the App Group for widgets.
+- [x] APNs in the app: request permission after pairing, register the token with the backend, notification categories with actions where safe (e.g. "Approve" / "Decline" on a new Seerr request, "Open" on a down service; never power actions from a notification), deep links from a notification to the right page, Time Sensitive interruption level for "service down" and "node offline".
+- [x] Notification settings screen in the app: per alert type ntfy / push / both, quiet hours, mirrored from the web Settings.
+- [x] Distribution notes in `ios/README.md`: the owner has a paid Apple Developer account, so install via TestFlight or ad hoc builds (no 7-day expiry). Document creating the App ID with the Push Notifications capability, the APNs `.p8` key, and the App Group for widgets.
+
+*Status (8 Oct 2026): the app and widgets compile for the iOS Simulator and QuorumKit's tests pass in CI on macOS (Xcode 26). It has not run on a device yet: pairing, push delivery and widgets on a real iPhone still need the owner's Apple Developer setup (see `ios/README.md`).*
 
 **Definition of done:** the app pairs with the backend, shows all pages live, runs power actions and scans, the widgets update, and alerts arrive as iOS push notifications (and in ntfy when chosen).
 

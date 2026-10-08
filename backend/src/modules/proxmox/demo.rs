@@ -564,7 +564,8 @@ impl ProxmoxApi for DemoProxmox {
             });
         }
         if node == "pve-02" {
-            let start = now() - 5 * 3600;
+            // Between last night's job and now, so it is always the newest backup of 113.
+            let start = Self::nightly(0) + (now() - Self::nightly(0)) / 2;
             out.push(TaskListEntry {
                 upid: format!("UPID:{node}:0000D0FF:00000001:{start:08X}:vzdump:113:root@pam:"),
                 node: Some(node.into()),
@@ -572,7 +573,7 @@ impl ProxmoxApi for DemoProxmox {
                 id: Some("113".into()),
                 user: Some("root@pam".into()),
                 starttime: Some(start as u64),
-                endtime: Some(start as u64 + 240),
+                endtime: Some(start.saturating_add(240).min(now()) as u64),
                 status: Some("OK".into()),
             });
         }
