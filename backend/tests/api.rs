@@ -757,14 +757,15 @@ async fn media_overview_tracks_requests_across_services() {
     let salt = req("Saltwater Kings");
     assert_eq!(state(&salt, 2), "stuck");
     assert_eq!(salt["steps"][2]["detail"], "No seeders · 6 h");
-    // Harbor Lights: available. Static Bloom: waiting for approval.
+    // Harbor Lights is available, so it has left the tracker (Seerr lists it).
     assert!(
-        req("Harbor Lights")["steps"]
+        !m["requests"]
             .as_array()
             .unwrap()
             .iter()
-            .all(|s| s["state"] == "done")
+            .any(|r| r["request"]["title"] == "Harbor Lights")
     );
+    // Static Bloom: waiting for approval.
     assert_eq!(state(&req("Static Bloom"), 1), "current");
     assert!(!m["calendar"].as_array().unwrap().is_empty());
 

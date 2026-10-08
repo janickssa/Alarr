@@ -511,7 +511,11 @@ async fn overview(
             if r.status == "declined" || !ids.insert(r.id) {
                 continue;
             }
-            requests.push(track(id, r.clone(), &arrs, &torrents));
+            let t = track(id, r.clone(), &arrs, &torrents);
+            // Finished requests leave the tracker; Seerr's page lists them.
+            if !t.steps.iter().all(|s| s.state == StepState::Done) {
+                requests.push(t);
+            }
         }
     }
     requests.sort_by_key(|t| std::cmp::Reverse(t.request.requested_at));

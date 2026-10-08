@@ -134,8 +134,8 @@
 			{#if data.requests.length === 0}
 				<EmptyState
 					icon="ph-ticket"
-					title="No requests"
-					detail="Requests from Seerr show up here with their progress."
+					title="Nothing on its way"
+					detail="Seerr requests show up here until they are available. Finished ones are on the Seerr page."
 				/>
 			{:else}
 				<div class="col">
