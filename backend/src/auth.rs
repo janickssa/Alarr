@@ -80,8 +80,12 @@ fn bearer(parts: &Parts) -> Option<&str> {
 }
 
 pub fn cookie<'a>(parts: &'a Parts, name: &str) -> Option<&'a str> {
-    parts
-        .headers
+    cookie_in(&parts.headers, name)
+}
+
+/// A cookie's value from request headers.
+pub fn cookie_in<'a>(headers: &'a axum::http::HeaderMap, name: &str) -> Option<&'a str> {
+    headers
         .get_all(header::COOKIE)
         .iter()
         .filter_map(|v| v.to_str().ok())
@@ -134,7 +138,7 @@ impl FromRequestParts<AppState> for CurrentUser {
 /// `Set-Cookie` value for a new session.
 pub fn session_cookie(token: &str, secure: bool) -> String {
     format!(
-        "{SESSION_COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict; Max-Age={SESSION_TTL}{}",
+        "{SESSION_COOKIE}={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={SESSION_TTL}{}",
         if secure { "; Secure" } else { "" }
     )
 }
@@ -142,21 +146,21 @@ pub fn session_cookie(token: &str, secure: bool) -> String {
 /// `Set-Cookie` value carrying a PWA device token.
 pub fn device_cookie(token: &str, secure: bool) -> String {
     format!(
-        "{DEVICE_COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict; Max-Age={DEVICE_COOKIE_MAX_AGE}{}",
+        "{DEVICE_COOKIE}={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={DEVICE_COOKIE_MAX_AGE}{}",
         if secure { "; Secure" } else { "" }
     )
 }
 
 pub fn clear_device_cookie(secure: bool) -> String {
     format!(
-        "{DEVICE_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0{}",
+        "{DEVICE_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0{}",
         if secure { "; Secure" } else { "" }
     )
 }
 
 pub fn clear_session_cookie(secure: bool) -> String {
     format!(
-        "{SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0{}",
+        "{SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0{}",
         if secure { "; Secure" } else { "" }
     )
 }

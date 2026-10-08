@@ -24,9 +24,19 @@ class Session {
 		return this.services.find((s) => s.kind === 'proxmox' && s.enabled);
 	}
 
+	/**
+	 * The signed-in user, or `null` when the server says we're not signed in (401). Any
+	 * other failure (no network yet, proxy error, server restarting) throws, so a slow
+	 * VPN at app start doesn't look like being signed out.
+	 */
 	async loadMe(): Promise<Me | null> {
 		const res = await api.GET('/auth/me');
-		this.me = res.response.ok ? (res.data ?? null) : null;
+		if (res.response.status === 401) {
+			this.me = null;
+			return null;
+		}
+		if (!res.response.ok || !res.data) throw new Error(`HTTP ${res.response.status}`);
+		this.me = res.data;
 		return this.me;
 	}
 

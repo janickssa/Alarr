@@ -326,7 +326,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "The signed-in user.",
+        "summary": "The signed-in user. A cookie-based sign-in gets its cookie re-issued, which keeps it\nfrom expiring while the app is used and moves cookies set by older versions to the\ncurrent attributes.",
         "operationId": "me",
         "responses": {
           "200": {

@@ -252,19 +252,39 @@ async fn logout(State(state): State<AppState>, user: CurrentUser) -> ApiResult<i
     ))
 }
 
-/// The signed-in user.
+/// The signed-in user. A cookie-based sign-in gets its cookie re-issued, which keeps it
+/// from expiring while the app is used and moves cookies set by older versions to the
+/// current attributes.
 #[utoipa::path(get, path = "/auth/me", tag = "auth",
     responses((status = 200, body = Me), (status = 401, body = ErrorBody)))]
-async fn me(user: CurrentUser) -> Json<Me> {
-    let (auth, device_id) = match user.via {
-        AuthVia::Session(_) => ("session", None),
-        AuthVia::Device(id) => ("device", Some(id)),
+async fn me(
+    State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
+    user: CurrentUser,
+) -> impl IntoResponse {
+    let secure = state.config.secure_cookies();
+    let (auth, device_id, refresh) = match user.via {
+        AuthVia::Session(_) => (
+            "session",
+            None,
+            crate::auth::cookie_in(&headers, crate::auth::SESSION_COOKIE)
+                .map(|t| crate::auth::session_cookie(t, secure)),
+        ),
+        AuthVia::Device(id) => (
+            "device",
+            Some(id),
+            crate::auth::cookie_in(&headers, crate::auth::DEVICE_COOKIE)
+                .map(|t| crate::auth::device_cookie(t, secure)),
+        ),
     };
-    Json(Me {
-        user: user.user,
-        auth: auth.into(),
-        device_id,
-    })
+    (
+        axum::response::AppendHeaders(refresh.map(|c| (header::SET_COOKIE, c))),
+        Json(Me {
+            user: user.user,
+            auth: auth.into(),
+            device_id,
+        }),
+    )
 }
 
 /// Change your own password. Signs out your other web sessions.

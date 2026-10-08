@@ -55,16 +55,22 @@
 	let ready = $state(false);
 	let searchInput: HTMLInputElement | undefined = $state();
 
-	/** True when the first request failed at the network level (no VPN, server down). */
+	/** True when the server couldn't be asked who we are (no VPN yet, proxy error, restart). */
 	let offline = $state(false);
+	let retry: ReturnType<typeof setTimeout> | undefined;
 
 	async function boot() {
 		offline = false;
-		const me = await session.loadMe().catch(() => null);
-		if (!me && !connection.reachable) {
-			// Don't send the user to sign-in when the server just can't be reached.
+		clearTimeout(retry);
+		let me;
+		try {
+			me = await session.loadMe();
+		} catch {
+			// Not the same as signed out: keep the sign-in and try again shortly (the VPN is
+			// often still connecting when the app is opened).
 			offline = true;
 			ready = true;
+			retry = setTimeout(() => void boot(), 3000);
 			return;
 		}
 		if (!me) {
@@ -158,7 +164,7 @@
 		<h1 class="off-title">Can't reach Quorum</h1>
 		<p class="off-text">
 			<span class="mono">{page.url.host}</span> isn't answering. Are you on Tailscale (or your VPN)? Is
-			the server running?
+			the server running? Retrying every few seconds; you stay signed in.
 		</p>
 		<button
 			class="btn btn-primary"

@@ -163,6 +163,22 @@ async fn login_logout_and_rate_limit() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(me["user"]["role"], "owner");
     assert_eq!(me["auth"], "session");
+    // /auth/me re-issues the cookie (sliding expiry), as SameSite=Lax: iOS home-screen
+    // apps can drop SameSite=Strict cookies after a relaunch.
+    let req = Request::get("/api/v1/auth/me")
+        .header(header::COOKIE, &cookie)
+        .body(Body::empty())
+        .unwrap();
+    let response = app.router.clone().oneshot(req).await.unwrap();
+    let set = response.headers()[header::SET_COOKIE]
+        .to_str()
+        .unwrap()
+        .to_owned();
+    assert!(set.starts_with(&format!("{cookie};")), "{set}");
+    assert!(
+        set.contains("SameSite=Lax") && set.contains("HttpOnly") && set.contains("Max-Age="),
+        "{set}"
+    );
 
     let (status, _, cleared) = app
         .call("POST", "/api/v1/auth/logout", Some(&cookie), None)
