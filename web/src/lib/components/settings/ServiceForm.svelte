@@ -162,6 +162,9 @@
 	function secrets(): Record<string, string> | undefined {
 		if (kind === 'proxmox' && tokenSecret) return { token_secret: tokenSecret };
 		if (usesApiKey && apiKey) return { api_key: apiKey.trim() };
+		// qBittorrent 5.2+ also takes an API key instead of the sign-in.
+		if (kind === 'qbittorrent' && (apiKey || password))
+			return { ...(apiKey ? { api_key: apiKey.trim() } : {}), ...(password ? { password } : {}) };
 		if (usesPassword && password) return { password };
 		return undefined;
 	}
@@ -397,6 +400,22 @@
 					</div>
 				</div>
 				<span class="hint">{PASSWORD_HINT[kind] ?? ''} Stored encrypted. Never shown again.</span>
+				{#if kind === 'qbittorrent'}
+					<div class="field">
+						<label for="qbkey">API key (qBittorrent 5.2 and later, optional)</label>
+						<input
+							id="qbkey"
+							class="input mono"
+							type="password"
+							autocomplete="off"
+							bind:value={apiKey}
+							placeholder={apiKeySet ? '•••• (set, leave empty to keep)' : 'qbt_…'}
+						/>
+						<span class="hint"
+							>Options → WebUI → API key. When set, it is used instead of the username and password.</span
+						>
+					</div>
+				{/if}
 			{/if}
 			<div class="field">
 				<label for="mfp">Certificate fingerprint (optional)</label>

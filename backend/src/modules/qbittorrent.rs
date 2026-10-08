@@ -258,6 +258,22 @@ pub fn sort_torrents(torrents: &mut [Torrent]) {
     });
 }
 
+/// The session cookie from a login response, as `name=value`. qBittorrent before 5.2 calls
+/// it `SID`; 5.2 and later `QBT_SID_<WebUI port>`.
+fn session_cookie(headers: &reqwest::header::HeaderMap) -> Option<String> {
+    headers
+        .get_all(reqwest::header::SET_COOKIE)
+        .iter()
+        .filter_map(|v| v.to_str().ok())
+        .filter_map(|c| c.split(';').next())
+        .map(str::trim)
+        .find(|kv| {
+            let name = kv.split('=').next().unwrap_or_default();
+            name == "SID" || name.starts_with("QBT_SID_")
+        })
+        .map(str::to_owned)
+}
+
 pub fn validate(cfg: &InstanceConfig) -> Result<(), String> {
     validate_http(cfg, &[])
 }
@@ -266,6 +282,9 @@ pub struct QbittorrentModule {
     http: Option<ServiceHttp>,
     username: Option<String>,
     password: Option<String>,
+    /// qBittorrent 5.2+ API key (`Authorization: Bearer qbt_…`); replaces the login.
+    api_key: Option<String>,
+    /// Session cookie as `name=value`: `SID` before 5.2, `QBT_SID_<port>` since.
     sid: tokio::sync::Mutex<Option<String>>,
     api_version: tokio::sync::Mutex<Option<String>>,
     history: Mutex<VecDeque<SpeedPoint>>,
@@ -278,6 +297,11 @@ impl QbittorrentModule {
             http: Some(ServiceHttp::new(cfg, &[])?),
             username: cfg.setting_str("username").map(str::to_owned),
             password: cfg.secret("password").map(str::to_owned),
+            api_key: cfg
+                .secret("api_key")
+                .map(str::trim)
+                .filter(|k| !k.is_empty())
+                .map(str::to_owned),
             sid: tokio::sync::Mutex::new(None),
             api_version: tokio::sync::Mutex::new(None),
             history: Mutex::new(VecDeque::new()),
@@ -289,6 +313,7 @@ impl QbittorrentModule {
             http: None,
             username: None,
             password: None,
+            api_key: None,
             sid: tokio::sync::Mutex::new(None),
             api_version: tokio::sync::Mutex::new(Some("2.11.3".into())),
             history: Mutex::new(VecDeque::new()),
@@ -300,6 +325,9 @@ impl QbittorrentModule {
     }
 
     async fn login(&self) -> anyhow::Result<()> {
+        if self.api_key.is_some() {
+            return Ok(());
+        }
         let (Some(user), Some(pass)) = (&self.username, &self.password) else {
             return Ok(()); // auth bypassed for this client (whitelist / localhost)
         };
@@ -310,25 +338,29 @@ impl QbittorrentModule {
             .form(&[("username", user.as_str()), ("password", pass.as_str())])
             .send()
             .await?;
-        if response.status() == reqwest::StatusCode::FORBIDDEN {
+        let status = response.status();
+        if status == reqwest::StatusCode::FORBIDDEN {
             anyhow::bail!("login blocked: too many failed attempts (IP banned by qBittorrent)");
         }
-        let sid = response
-            .headers()
-            .get_all(reqwest::header::SET_COOKIE)
-            .iter()
-            .filter_map(|v| v.to_str().ok())
-            .find_map(|c| c.split(';').next()?.strip_prefix("SID=").map(str::to_owned));
+        let sid = session_cookie(response.headers());
         let body = response.text().await.unwrap_or_default();
         match sid {
             Some(sid) => {
                 *self.sid.lock().await = Some(sid);
                 Ok(())
             }
-            None if body.trim() == "Fails." => {
+            None if body.trim() == "Fails." || status == reqwest::StatusCode::UNAUTHORIZED => {
                 anyhow::bail!("authentication failed (check username and password)")
             }
-            None => anyhow::bail!("login failed: {}", body.trim()),
+            None => anyhow::bail!(
+                "login failed: qBittorrent answered HTTP {} without a session cookie{}",
+                status.as_u16(),
+                if body.trim().is_empty() {
+                    String::new()
+                } else {
+                    format!(" ({})", body.trim())
+                }
+            ),
         }
     }
 
@@ -347,8 +379,10 @@ impl QbittorrentModule {
                 .http()
                 .request(method.clone(), path)
                 .header("Referer", self.http().base());
-            if let Some(sid) = self.sid.lock().await.as_deref() {
-                req = req.header(reqwest::header::COOKIE, format!("SID={sid}"));
+            if let Some(key) = &self.api_key {
+                req = req.bearer_auth(key);
+            } else if let Some(sid) = self.sid.lock().await.as_deref() {
+                req = req.header(reqwest::header::COOKIE, sid);
             }
             if method == Method::POST {
                 req = req.form(form);
@@ -356,6 +390,9 @@ impl QbittorrentModule {
                 req = req.query(form);
             }
             let response = req.send().await?;
+            if self.api_key.is_some() && response.status() == reqwest::StatusCode::UNAUTHORIZED {
+                anyhow::bail!("API key rejected (Options → WebUI → API key)");
+            }
             if response.status() == reqwest::StatusCode::FORBIDDEN
                 && attempt == 0
                 && self.username.is_some()
@@ -638,6 +675,85 @@ mod tests {
         assert_eq!(out.health, Health::Warning);
         assert_eq!(d.headline().0, "1 downloading");
         assert!(d.headline().1.unwrap().contains("38.2 MB/s"));
+    }
+
+    /// qBittorrent 5.2+: the cookie is `QBT_SID_<port>` and a successful login has no body.
+    #[tokio::test]
+    async fn logs_in_with_the_5_2_cookie_name() {
+        let s = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/api/v2/auth/login"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("set-cookie", "QBT_SID_8080=xyz; HttpOnly; path=/"),
+            )
+            .mount(&s)
+            .await;
+        Mock::given(method("GET"))
+            .and(path("/api/v2/app/webapiVersion"))
+            .and(header("cookie", "QBT_SID_8080=xyz"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("2.12.0"))
+            .expect(1)
+            .mount(&s)
+            .await;
+        let m = QbittorrentModule::new(&cfg(&s.uri())).unwrap();
+        assert_eq!(m.api_version().await.unwrap(), "2.12.0");
+    }
+
+    #[tokio::test]
+    async fn wrong_password_and_missing_cookie_are_explained() {
+        let s = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/api/v2/auth/login"))
+            .respond_with(ResponseTemplate::new(401))
+            .mount(&s)
+            .await;
+        let m = QbittorrentModule::new(&cfg(&s.uri())).unwrap();
+        let err = m.api_version().await.unwrap_err().to_string();
+        assert!(err.contains("check username and password"), "{err}");
+
+        let s = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/api/v2/auth/login"))
+            .respond_with(ResponseTemplate::new(200))
+            .mount(&s)
+            .await;
+        let m = QbittorrentModule::new(&cfg(&s.uri())).unwrap();
+        let err = m.api_version().await.unwrap_err().to_string();
+        assert!(err.contains("HTTP 200 without a session cookie"), "{err}");
+    }
+
+    /// qBittorrent 5.2+ API key: bearer header, no login call.
+    #[tokio::test]
+    async fn api_key_skips_login() {
+        let s = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/api/v2/auth/login"))
+            .respond_with(ResponseTemplate::new(500))
+            .expect(0)
+            .mount(&s)
+            .await;
+        Mock::given(method("GET"))
+            .and(path("/api/v2/app/webapiVersion"))
+            .and(header("authorization", "Bearer qbt_key"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("2.12.0"))
+            .mount(&s)
+            .await;
+        let mut c = cfg(&s.uri());
+        c.settings = json!({});
+        c.secrets = [("api_key".to_owned(), "qbt_key".to_owned())].into();
+        let m = QbittorrentModule::new(&c).unwrap();
+        assert_eq!(m.api_version().await.unwrap(), "2.12.0");
+
+        let s = MockServer::start().await;
+        Mock::given(method("GET"))
+            .respond_with(ResponseTemplate::new(401))
+            .mount(&s)
+            .await;
+        c.base_url = Some(s.uri());
+        let m = QbittorrentModule::new(&c).unwrap();
+        let err = m.api_version().await.unwrap_err().to_string();
+        assert!(err.contains("API key rejected"), "{err}");
     }
 
     #[tokio::test]
