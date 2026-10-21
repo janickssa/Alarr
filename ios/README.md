@@ -3,10 +3,16 @@
 Native SwiftUI app (iOS 17+) with widgets. It talks only to your Quorum server, never to
 the services themselves.
 
+The same sources build two ways: **on Linux** with xtool through the Forgejo `ios` runner
+(the main route, straight to TestFlight), or **on a Mac** with Xcode and XcodeGen.
+
 ```
 ios/
-├─ project.yml            XcodeGen spec (the Xcode project is generated, not committed)
-├─ Config/Shared.xcconfig bundle id, app group, versions; your values go in Local.xcconfig
+├─ Package.swift          Linux build: the app and widget products for xtool
+├─ xtool.yml              Linux build: bundle ids, Info.plists, entitlements
+├─ AppConfig/             Linux build: literal Info.plists and entitlements
+├─ project.yml            Mac build: XcodeGen spec (the Xcode project is generated, not committed)
+├─ Config/Shared.xcconfig Mac build: bundle id, app group, versions; your values go in Local.xcconfig
 ├─ QuorumKit/             Swift package shared by the app and the widgets
 │  ├─ Sources/QuorumAPI   API client generated from openapi/openapi.json at build time
 │  └─ Sources/QuorumCore  Keychain, live events (SSE), widget cache, formatting, colours
@@ -14,7 +20,42 @@ ios/
 └─ QuorumWidgets/         widget extension
 ```
 
-## Build it
+## Build it on Linux (Forgejo → TestFlight)
+
+Every push to `main` that touches `ios/` or the API spec runs `.forgejo/workflows/ios.yml`
+on the self-hosted `ios` runner through the shared `jss/ios-ship@v1` action: QuorumKit's
+tests (`swift test`), an xtool release build, App Store signing, offline validation and the
+upload to TestFlight. *Run workflow* in Forgejo can build without uploading.
+
+| | |
+| --- | --- |
+| App | `dk.schwabejss.quorum` |
+| Widgets | `dk.schwabejss.quorum.widgets` |
+| App Group | `group.dk.schwabejss.quorum` |
+| Marketing version | `CFBundleShortVersionString` in both `AppConfig/*-Info.plist` (keep them equal); `ship.sh` stamps the build number |
+
+Values that Xcode would fill in from build settings are written out literally in
+`AppConfig/`, since xtool doesn't expand `$(…)`. Push uses the production APNs environment
+(release builds), so set `environment = "production"` under `[apns]` on the server.
+
+### Apple-side setup (once, in the browser)
+
+`ship.sh` registers the two bundle ids and creates their App Store profiles itself, but
+it can't create App Groups, enable capabilities or create the app record:
+
+- [ ] Identifiers → App Groups → **+** → `group.dk.schwabejss.quorum`
+- [ ] App ID `dk.schwabejss.quorum`: enable **Push Notifications**, **App Groups** (tick
+      the group), **Time Sensitive Notifications**
+- [ ] App ID `dk.schwabejss.quorum.widgets`: enable **App Groups** (tick the group)
+- [ ] App Store Connect → Apps → **+** → New App with bundle id `dk.schwabejss.quorum`
+- [ ] TestFlight: internal group with automatic distribution
+- [ ] APNs key and server config: steps 4–5 under *Distribution* below, with
+      `bundle_id = "dk.schwabejss.quorum"`
+
+If the App IDs don't exist yet when you do this, run the workflow once (it registers them
+and then fails at signing or upload), or register them by hand.
+
+## Build it on a Mac (Xcode)
 
 You need a Mac with **Xcode 26** or newer (the API generator needs Swift 6.2) and
 [XcodeGen](https://github.com/yonaskolb/XcodeGen).
@@ -124,5 +165,8 @@ cd ../ios && python3 -c "from PIL import Image; Image.open('app-icon-1024.jpg').
 
 ## CI
 
-`.github/workflows/ios.yml` runs on macOS when `ios/` or the API spec changes: QuorumKit
+`.forgejo/workflows/ios.yml` (Forgejo, Linux) builds, signs and uploads to TestFlight; see
+*Build it on Linux* above.
+
+`.github/workflows/ios.yml` (GitHub) runs on macOS when `ios/` or the API spec changes: QuorumKit
 unit tests, then an unsigned simulator build of the app and widgets.

@@ -11,3 +11,6 @@ Quorum/Info.plist
 Quorum/Quorum.entitlements
 QuorumWidgets/Info.plist
 QuorumWidgets/QuorumWidgets.entitlements
+# Written by xtool / ship.sh (Linux build)
+xtool/
+*.ipa

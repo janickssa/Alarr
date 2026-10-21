@@ -1,0 +1,10 @@
+version: 1
+bundleID: dk.schwabejss.quorum
+product: Quorum
+infoPath: AppConfig/Quorum-Info.plist
+entitlementsPath: AppConfig/Quorum.entitlements
+extensions:
+  - product: QuorumWidgets
+    bundleID: dk.schwabejss.quorum.widgets
+    infoPath: AppConfig/QuorumWidgets-Info.plist
+    entitlementsPath: AppConfig/QuorumWidgets.entitlements

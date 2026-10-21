@@ -1,3 +1,5 @@
+import Foundation
+#if canImport(SwiftUI)
 import SwiftUI
 
 /// Colours from the design tokens (`design/_ds/…/styles.css`). Dark only, like the web
@@ -65,6 +67,7 @@ public extension Color {
         self.init(.sRGB, red: r, green: g, blue: b, opacity: 1)
     }
 }
+#endif
 
 public enum OKLCH {
     /// Björn Ottosson's OKLab → linear sRGB, then gamma; out-of-gamut values are clipped.

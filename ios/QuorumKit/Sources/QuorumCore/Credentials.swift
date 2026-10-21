@@ -1,5 +1,7 @@
 import Foundation
+#if canImport(Security)
 import Security
+#endif
 
 /// What pairing leaves behind: the server and this device's token.
 public struct Credentials: Codable, Equatable, Sendable {
@@ -27,10 +29,15 @@ public enum AppGroup {
     }
 
     public static var container: URL? {
+        #if canImport(Darwin)
         id.flatMap { FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: $0) }
+        #else
+        nil
+        #endif
     }
 }
 
+#if canImport(Security)
 /// Credentials in the Keychain, readable by the widget extension through the App Group
 /// (app groups are keychain access groups too) and available after the first unlock so
 /// widgets can refresh while the phone is locked.
@@ -75,6 +82,7 @@ public enum Keychain {
         SecItemDelete(query() as CFDictionary)
     }
 }
+#endif
 
 /// `quorum://pair?server=<url>&code=<code>` from the desktop QR code.
 public struct PairingLink: Equatable, Sendable {

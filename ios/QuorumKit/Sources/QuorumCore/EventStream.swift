@@ -54,6 +54,7 @@ public struct EventParser: Sendable {
     }
 }
 
+#if canImport(Darwin)
 /// The live connection: reconnects with a growing delay (1 s → 30 s) until cancelled.
 public final class EventStream: @unchecked Sendable {
     private let credentials: Credentials
@@ -107,3 +108,4 @@ public final class EventStream: @unchecked Sendable {
         }
     }
 }
+#endif

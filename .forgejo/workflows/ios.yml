@@ -1,0 +1,39 @@
+name: iOS
+
+# push only (no pull_request): the runner executes code directly on the build
+# machine, so only commits from people with write access should reach it.
+on:
+  push:
+    branches: [main]
+    paths: ['ios/**', 'openapi/openapi.json', '.forgejo/workflows/ios.yml']
+  workflow_dispatch:
+    inputs:
+      upload:
+        description: Upload to TestFlight
+        type: boolean
+        default: true
+
+jobs:
+  ship:
+    runs-on: ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: ship
+        uses: https://forgejo.schwabejss.dk/jss/ios-ship@v1
+        with:
+          guard-token: ${{ secrets.IOS_RUNNER_GUARD }}
+          project-dir: ios
+          bundle-id: dk.schwabejss.quorum
+          upload: ${{ github.event_name == 'push' || inputs.upload }}
+          core-package: ios/QuorumKit
+          asc-key-p8: ${{ secrets.ASC_KEY_P8 }}
+          asc-key-id: ${{ secrets.ASC_KEY_ID }}
+          asc-issuer-id: ${{ secrets.ASC_ISSUER_ID }}
+
+      - uses: https://code.forgejo.org/forgejo/upload-artifact@v4
+        if: steps.ship.outputs.ipa-path != ''
+        with:
+          name: ipa-${{ github.sha }}
+          path: ${{ steps.ship.outputs.ipa-path }}
+          retention-days: 30
